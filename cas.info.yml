@@ -1,0 +1,4 @@
+name: cas
+description: 'Provides CAS authentication for Drupal.'
+type: module
+core: 8.x

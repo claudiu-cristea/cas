@@ -1,0 +1,6 @@
+services:
+  cas.cas_subscriber:
+    class: Drupal\cas\CasSubscriber
+    tags:
+      - { name: 'event_subscriber' }
+    
