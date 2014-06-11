@@ -4,6 +4,11 @@
  * Contains Drupal\cas\CasSubscriber.
  */
 namespace Drupal\cas;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Logger\LoggerChannelInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
+use Drupal\Core\Path\AliasManagerInterface;
+use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -12,6 +17,56 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
  * Provides a CasSubscriber.
  */
 class CasSubscriber implements EventSubscriberInterface {
+
+  /**
+   * The config factory.
+   *
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
+   * The logger factory.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
+   */
+  protected $loggerFactory;
+
+  /**
+   * The module handler.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
+   * The alias manager.
+   *
+   * @var \Drupal\Core\Path\AliasManagerInterface
+   */
+  protected $aliasManager;
+
+  /**
+   * The current user service.
+   *
+   * @var \Drupal\Core\Session\AccountInterface
+   */
+  protected $currentUser;
+
+  /**
+   * Constructs a new CasSubscriber.
+   *
+   * @param \Drupal\Core\Config\ConfigFactoryInterface
+   *   The config factory.
+   */
+  public function __construct(ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory, ModuleHandlerInterface $module_handler, AliasManagerInterface $alias_manager, AccountInterface $current_user) {
+    $this->configFactory = $config_factory;
+    $this->loggerFactory = $logger_factory;
+    $this->moduleHandler = $module_handler;
+    $this->aliasManager = $alias_manager;
+    $this->currentUser = $current_user;
+  }
+
   /**
    * // only if KernelEvents::REQUEST
    * @see Symfony\Component\HttpKernel\KernelEvents for details.
@@ -20,8 +75,7 @@ class CasSubscriber implements EventSubscriberInterface {
    *   The Event to process.
    */
   public function casLoad(GetResponseEvent $event) {
-    $account = \Drupal::currentUser();
-    if ($account->id() == 0) {
+    if ($this->currentUser->id() == 0) {
       $force_authentication = $this->force_login();
       $check_authentication = $this->allow_check_for_login();
       $request_type = $_SERVER['REQUEST_METHOD'];
@@ -49,8 +103,7 @@ class CasSubscriber implements EventSubscriberInterface {
    *   user is already logged in.
    */
   private function login_check($force_authentication = TRUE) {
-    $user = \Drupal::currentUser();
-    if ($user->id()) {
+    if ($this->currentUser->id()) {
       // User already logged in.
       return;
     }
@@ -87,9 +140,9 @@ class CasSubscriber implements EventSubscriberInterface {
     $cas_user = new stdClass;
     $cas_user->name = phpCAS::getUser();
     $cas_user->login = TRUE;
-    $cas_user->register = \Drupal::config('cas.settings')->get('user_register');
+    $cas_user->register = $this->configFactory->get('cas.settings')->get('user_register');
     $cas_user->attributes = $this->phpcas_attributes();
-    \Drupal::moduleHandler()->alter('cas_user', $cas_user);
+    $this->moduleHandler->alter('cas_user', $cas_user);
 
     // Bail out if a module denied login access for this user or unset the user
     // name.
@@ -113,7 +166,7 @@ class CasSubscriber implements EventSubscriberInterface {
     if ($blocked) {
       // Only display error messages if the user intended to log in.
       if ($force_authentication) {
-        watchdog('cas', $blocked, array('%cas_name' => $cas_name), WATCHDOG_WARNING);
+        $this->loggerFactory->get('cas')->log(WATCHDOG_WARNING, $blocked, array('%cas_name' => $cas_name));
         drupal_set_message(t($blocked, array('%cas_name' => $cas_name)), 'error');
       }
       return;
@@ -176,7 +229,7 @@ class CasSubscriber implements EventSubscriberInterface {
     $account = new \Drupal\user\Entity\User;
     $account->setUsername($cas_name);
     $account->setPassword(user_password());
-    $email = \Drupal::config('cas.settings')->get('domain') ? $cas_name . '@' . \Drupal::config('cas.settings')->get('domain') : '';
+    $email = $this->configFactory->get('cas.settings')->get('domain') ? $cas_name . '@' . $this->configFactory->get('cas.settings')->get('domain') : '';
     $account->setEmail($email);
     $account->activate();
 
@@ -187,7 +240,7 @@ class CasSubscriber implements EventSubscriberInterface {
 
     // Save the account.
     $account->save();
-    watchdog("user", 'new user: %n (CAS)', array('%n' => $cas_name), WATCHDOG_NOTICE, l(t("edit user"), "admin/user/edit/" . $account->id()));
+    $this->loggerFactory->get("user")->log(WATCHDOG_NOTICE, 'new user: %n (CAS)', array('%n' => $cas_name));
 
     if (!empty($options['invoke_cas_user_presave'])) {
       // Populate $edit with some basic properties.
@@ -217,7 +270,7 @@ class CasSubscriber implements EventSubscriberInterface {
    *   authenticated, FALSE otherwise.
    */
   private function allow_check_for_login() {
-    if (\Drupal::config('cas.settings')->get('check_frequency') == -2) {
+    if ($this->configFactory->get('cas.settings')->get('check_frequency') == -2) {
       // The user has disabled the feature.
       return FALSE;
     }
@@ -268,8 +321,8 @@ class CasSubscriber implements EventSubscriberInterface {
     }
 
     // Test against exclude pages.
-    if ($pages = \Drupal::config('cas.settings')->get('exclude')) {
-      $path = \Drupal::service('path.alias.manager.cached')->getPathAlias($_GET['q']);
+    if ($pages = $this->configFactory->get('cas.settings')->get('exclude')) {
+      $path = $this->aliasManager->getPathAlias($_GET['q']);
       if (drupal_match_path($path, $pages)) {
         return FALSE;
       }
@@ -302,18 +355,18 @@ class CasSubscriber implements EventSubscriberInterface {
     }
 
     // Excluded pages do not need login.
-    $pages = \Drupal::config('cas.settings')->get('exclude');
-    $path = \Drupal::service('path.alias_manager.cached')->getPathAlias($_GET['q']);
+    $pages = $this->configFactory->get('cas.settings')->get('exclude');
+    $path = $this->aliasManager->getPathAlias($_GET['q']);
     if (drupal_match_path($path, $pages)) {
       return FALSE;
     }
 
     // Set the default behavior.
-    $force_login = \Drupal::config('cas.settings')->get('access');
+    $force_login = $this->configFactory->get('cas.settings')->get('access');
 
     // If we match the specified paths, reverse the behavior.
-    if ($pages = \Drupal::config('cas.settings')->get('pages')) {
-      $path = \Drupal::service('path.alias_manager.cached')->getPathAlias($_GET['q']);
+    if ($pages = $this->configFactory->get('cas.settings')->get('pages')) {
+      $path = $this->aliasManager->getPathAlias($_GET['q']);
       if (drupal_match_path($path, $pages)) {
         $force_login = !$force_login;
       }
