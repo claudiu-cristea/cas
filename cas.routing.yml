@@ -1,0 +1,7 @@
+cas.settings:
+  path: '/admin/config/people/cas'
+  defaults:
+    _form: '\Drupal\cas\Form\CASSettings'
+    _title: 'CAS settings'
+  requirements:
+    _permission: 'administer account settings'

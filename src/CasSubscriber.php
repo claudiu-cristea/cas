@@ -87,7 +87,7 @@ class CasSubscriber implements EventSubscriberInterface {
     $cas_user = new stdClass;
     $cas_user->name = phpCAS::getUser();
     $cas_user->login = TRUE;
-    $cas_user->register = \Drupal::config('cas.user')->get('user_register');
+    $cas_user->register = \Drupal::config('cas.settings')->get('user_register');
     $cas_user->attributes = $this->phpcas_attributes();
     \Drupal::moduleHandler()->alter('cas_user', $cas_user);
 
@@ -176,7 +176,7 @@ class CasSubscriber implements EventSubscriberInterface {
     $account = new \Drupal\user\Entity\User;
     $account->setUsername($cas_name);
     $account->setPassword(user_password());
-    $email = \Drupal::config('cas.user')->get('domain') ? $cas_name . '@' . \Drupal::config('cas_user')->get('domain') : '';
+    $email = \Drupal::config('cas.settings')->get('domain') ? $cas_name . '@' . \Drupal::config('cas.settings')->get('domain') : '';
     $account->setEmail($email);
     $account->activate();
 
@@ -217,7 +217,7 @@ class CasSubscriber implements EventSubscriberInterface {
    *   authenticated, FALSE otherwise.
    */
   private function allow_check_for_login() {
-    if (\Drupal::config('cas.redirection')->get('check_frequency') == -2) {
+    if (\Drupal::config('cas.settings')->get('check_frequency') == -2) {
       // The user has disabled the feature.
       return FALSE;
     }
@@ -268,7 +268,7 @@ class CasSubscriber implements EventSubscriberInterface {
     }
 
     // Test against exclude pages.
-    if ($pages = \Drupal::config('cas.redirection')->get('exclude')) {
+    if ($pages = \Drupal::config('cas.settings')->get('exclude')) {
       $path = \Drupal::service('path.alias.manager.cached')->getPathAlias($_GET['q']);
       if (drupal_match_path($path, $pages)) {
         return FALSE;
@@ -302,17 +302,17 @@ class CasSubscriber implements EventSubscriberInterface {
     }
 
     // Excluded pages do not need login.
-    $pages = \Drupal::config('cas.redirection')->get('exclude');
+    $pages = \Drupal::config('cas.settings')->get('exclude');
     $path = \Drupal::service('path.alias_manager.cached')->getPathAlias($_GET['q']);
     if (drupal_match_path($path, $pages)) {
       return FALSE;
     }
 
     // Set the default behavior.
-    $force_login = \Drupal::config('cas.redirection')->get('access');
+    $force_login = \Drupal::config('cas.settings')->get('access');
 
     // If we match the specified paths, reverse the behavior.
-    if ($pages = \Drupal::config('cas.redirection')->get('pages')) {
+    if ($pages = \Drupal::config('cas.settings')->get('pages')) {
       $path = \Drupal::service('path.alias_manager.cached')->getPathAlias($_GET['q']);
       if (drupal_match_path($path, $pages)) {
         $force_login = !$force_login;
