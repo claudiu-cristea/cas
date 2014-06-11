@@ -178,12 +178,12 @@ class CASSettings extends ConfigFormBase
       '#default_value' => $config->get('hide_password'),
       '#description' => $this->t('Hide password field on the edit user form. This also removes the requirement to enter your current password before changing your e-mail address.'),
     );
-    
+
     $form['pages'] = array(
       '#type' => 'details',
       '#title' => $this->t('Redirection'),
       '#open' => FALSE,
-    );    
+    );
     $form['pages']['check_frequency'] = array(
       '#type' => 'select',
       '#title' => $this->t('Check with the CAS server to see if the user is already logged in?'),
@@ -217,7 +217,7 @@ class CASSettings extends ConfigFormBase
       '#rows' => 5,
       '#description' => $this->t("Indicates which pages will be ignored (no login checks). The '*' character is a wildcard. Example paths are '<em>blog</em>' for the blog page and <em>blog/*</em> for every personal blog. '<em>&lt;front&gt;</em> is the front page."),
     );
-    
+
     $form['destinations'] = array(
       '#type' => 'details',
       '#title' => $this->t('Login/Logout destinations'),
@@ -333,7 +333,7 @@ class CASSettings extends ConfigFormBase
           ->set('domain', $form_state['values']['domain'])
           ->set('auto_assigned_role', $form_state['values']['auto_assigned_role'])
           ->set('hide_email', $form_state['values']['hide_email'])
-          ->set('hide_password', $form_state['values']['hide_password'])  
+          ->set('hide_password', $form_state['values']['hide_password'])
         ->save();
     parent::submitForm($form, $form_state);
   }
