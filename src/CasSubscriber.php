@@ -68,6 +68,14 @@ class CasSubscriber implements EventSubscriberInterface {
   }
 
   /**
+   * {@inheritdoc}
+   */
+  static function getSubscribedEvents() {
+    $events[KernelEvents::REQUEST][] = array('casLoad', 20);
+    return $events;
+  }
+
+  /**
    * // only if KernelEvents::REQUEST
    * @see Symfony\Component\HttpKernel\KernelEvents for details.
    *
@@ -76,22 +84,14 @@ class CasSubscriber implements EventSubscriberInterface {
    */
   public function casLoad(GetResponseEvent $event) {
     if ($this->currentUser->id() == 0) {
-      $force_authentication = $this->force_login();
-      $check_authentication = $this->allow_check_for_login();
+      $force_authentication = $this->forceLogin();
+      $check_authentication = $this->allowCheckForLogin();
       $request_type = $_SERVER['REQUEST_METHOD'];
       $conditions = $force_authentication || ($check_authentication && $request_type == 'GET');
       if ($conditions) {
-        $this->login_check($force_authentication);
+        $this->loginCheck($force_authentication);
       }
     }
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  static function getSubscribedEvents() {
-    $events[KernelEvents::REQUEST][] = array('casLoad', 20);
-    return $events;
   }
 
   /**
@@ -102,7 +102,7 @@ class CasSubscriber implements EventSubscriberInterface {
    *   before proceeding. Otherwise, check with the CAS server to see if the
    *   user is already logged in.
    */
-  private function login_check($force_authentication = TRUE) {
+  private function loginCheck($force_authentication = TRUE) {
     if ($this->currentUser->id()) {
       // User already logged in.
       return;
@@ -178,7 +178,7 @@ class CasSubscriber implements EventSubscriberInterface {
     if (!$account && $cas_user->register) {
       // No account could be found and auto registration is enabled, so attempt
       // to register a new user.
-      $account = $this->user_register($cas_name);
+      $account = $this->userRegister($cas_name);
       if (!$account) {
         // The account could not be created, set a message.
         if ($force_authentication) {
@@ -207,20 +207,20 @@ class CasSubscriber implements EventSubscriberInterface {
   /**
    * Register a CAS user with some default values.
    *
-   * @param $cas_name
+   * @param string $cas_name
    *   The name of the CAS user.
-   * @param $options
+   * @param array $options
    *   An associative array of options, with the following elements:
    *    - 'edit': An array of fields and values for the new user. If omitted,
    *      reasonable defaults are use.
    *    - 'invoke_cas_user_presave': Defaults to FALSE. Whether or not to invoke
    *      hook_cas_user_presave() on the newly created account.
    *
-   * @return
+   * @return \Drupal\user\Entity\User
    *   The user object of the created user, or FALSE if the user cannot be
    *   created.
    */
-  private function user_register($cas_name, $options = array()) {
+  private function userRegister($cas_name, $options = array()) {
     // First check to see if user name is available.
     if ((bool) db_select('users')->fields('users', array('name'))->condition('name', db_like($cas_name), 'LIKE')->range(0, 1)->execute()->fetchField()) {
       return FALSE;
@@ -263,13 +263,14 @@ class CasSubscriber implements EventSubscriberInterface {
   /**
    * Determine if we should automatically check if the user is authenticated.
    * This implements part of the CAS gateway feature.
+   *
    * @see phpCAS::checkAuthentication()
    *
    * @return
    *   TRUE if we should query the CAS server to see if the user is already
    *   authenticated, FALSE otherwise.
    */
-  private function allow_check_for_login() {
+  private function allowCheckForLogin() {
     if ($this->configFactory->get('cas.settings')->get('check_frequency') == -2) {
       // The user has disabled the feature.
       return FALSE;
@@ -330,14 +331,13 @@ class CasSubscriber implements EventSubscriberInterface {
     return TRUE;
   }
 
-
   /**
    * Determine if we should require the user be authenticated.
    *
    * @return
    *   TRUE if we should require the user be authenticated, FALSE otherwise.
    */
-  private function force_login() {
+  private function forceLogin() {
     // The 'cas' page is a shortcut to force authentication.
     if (arg(0) == 'cas') {
       return TRUE;
@@ -373,5 +373,5 @@ class CasSubscriber implements EventSubscriberInterface {
     }
     return $force_login;
   }
+  
 }
-?>
