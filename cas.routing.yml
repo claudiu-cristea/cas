@@ -5,3 +5,9 @@ cas.settings:
     _title: 'CAS settings'
   requirements:
     _permission: 'administer account settings'
+cas.login:
+  path: '/caslogin'
+  defaults:
+    _controller: '\Drupal\cas\Controller\ForcedLoginController::forcedLogin'
+  requirements:
+    _permission: 'access content'

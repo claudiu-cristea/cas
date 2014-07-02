@@ -1,9 +1,11 @@
-<?php 
+<?php
 /**
  * @file
  * Contains Drupal\cas\CasSubscriber.
  */
+
 namespace Drupal\cas;
+
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
@@ -12,11 +14,27 @@ use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Drupal\Core\Routing\RouteMatchInterface;
 
 /**
  * Provides a CasSubscriber.
  */
 class CasSubscriber implements EventSubscriberInterface {
+
+  /**
+   * The request.
+   *
+   * @var \Symfony\Component\HttpFoundation\Request
+   */
+  protected $request;
+
+  /**
+   * Route matcher object.
+   *
+   * @var Drupal\Core\Routing\RouteMatchInterface
+   */
+  protected $routeMatcher;
 
   /**
    * The config factory.
@@ -59,7 +77,9 @@ class CasSubscriber implements EventSubscriberInterface {
    * @param \Drupal\Core\Config\ConfigFactoryInterface
    *   The config factory.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory, ModuleHandlerInterface $module_handler, AliasManagerInterface $alias_manager, AccountInterface $current_user) {
+  public function __construct(Request $request, RouteMatchInterface $route_matcher, ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory, ModuleHandlerInterface $module_handler, AliasManagerInterface $alias_manager, AccountInterface $current_user) {
+    $this->request = $request;
+    $this->routeMatcher = $route_matcher;
     $this->configFactory = $config_factory;
     $this->loggerFactory = $logger_factory;
     $this->moduleHandler = $module_handler;
@@ -70,7 +90,7 @@ class CasSubscriber implements EventSubscriberInterface {
   /**
    * {@inheritdoc}
    */
-  static function getSubscribedEvents() {
+  public static function getSubscribedEvents() {
     $events[KernelEvents::REQUEST][] = array('casLoad', 20);
     return $events;
   }
@@ -97,7 +117,7 @@ class CasSubscriber implements EventSubscriberInterface {
   /**
    * Checks to see if the user needs to be logged in.
    *
-   * @param $force_authentication
+   * @param bool $force_authentication
    *   If TRUE, require that the user be authenticated with the CAS server
    *   before proceeding. Otherwise, check with the CAS server to see if the
    *   user is already logged in.
@@ -137,7 +157,7 @@ class CasSubscriber implements EventSubscriberInterface {
     }
 
     // Build the cas_user object and allow modules to alter it.
-    $cas_user = new stdClass;
+    $cas_user = new stdClass();
     $cas_user->name = phpCAS::getUser();
     $cas_user->login = TRUE;
     $cas_user->register = $this->configFactory->get('cas.settings')->get('user_register');
@@ -171,7 +191,7 @@ class CasSubscriber implements EventSubscriberInterface {
       }
       return;
     }
-    
+
     $account = $this->user_load_by_name($cas_name);
 
     // Automatic user registration.
@@ -226,7 +246,7 @@ class CasSubscriber implements EventSubscriberInterface {
       return FALSE;
     }
 
-    $account = new \Drupal\user\Entity\User;
+    $account = new \Drupal\user\Entity\User();
     $account->setUsername($cas_name);
     $account->setPassword(user_password());
     $email = $this->configFactory->get('cas.settings')->get('domain') ? $cas_name . '@' . $this->configFactory->get('cas.settings')->get('domain') : '';
@@ -262,11 +282,12 @@ class CasSubscriber implements EventSubscriberInterface {
 
   /**
    * Determine if we should automatically check if the user is authenticated.
+   *
    * This implements part of the CAS gateway feature.
    *
    * @see phpCAS::checkAuthentication()
    *
-   * @return
+   * @return bool
    *   TRUE if we should query the CAS server to see if the user is already
    *   authenticated, FALSE otherwise.
    */
@@ -334,12 +355,12 @@ class CasSubscriber implements EventSubscriberInterface {
   /**
    * Determine if we should require the user be authenticated.
    *
-   * @return
+   * @return bool
    *   TRUE if we should require the user be authenticated, FALSE otherwise.
    */
   private function forceLogin() {
-    // The 'cas' page is a shortcut to force authentication.
-    if (arg(0) == 'cas') {
+    // We have a dedicate route for forcing a login.
+    if ($this->routeMatcher->getRouteName() == 'cas.login') {
       return TRUE;
     }
 
@@ -373,5 +394,5 @@ class CasSubscriber implements EventSubscriberInterface {
     }
     return $force_login;
   }
-  
+
 }
