@@ -197,7 +197,10 @@ class CASSettings extends ConfigFormBase {
       '#type' => 'radios',
       '#title' => $this->t('Require CAS login for'),
       '#default_value' => $config->get('access'),
-      '#options' => array($this->t('specific pages'), $this->t('all pages except specific pages')),
+      '#options' => array(
+        CAS_REQUIRE_SPECIFIC => $this->t('specific pages'),
+        CAS_REQUIRE_ALL_EXCEPT => $this->t('all pages except specific pages'),
+      ),
     );
     $form['pages']['pages'] = array(
       '#type' => 'textarea',

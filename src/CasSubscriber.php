@@ -10,6 +10,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Path\AliasManagerInterface;
+use Drupal\Core\Path\PathMatcherInterface;
 use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
@@ -72,12 +73,33 @@ class CasSubscriber implements EventSubscriberInterface {
   protected $currentUser;
 
   /**
+   * The patch matcher.
+   *
+   * @var \Drupal\Core\Path\PathMatcherInterface
+   */
+  protected $pathMatcher;
+
+  /**
    * Constructs a new CasSubscriber.
    *
-   * @param \Drupal\Core\Config\ConfigFactoryInterface
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request.
+   * @param \Drupal\Core\Routing\RouteMatchInterface $route_matcher
+   *   The route matcher.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
+   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
+   *   The logger factory.
+   * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
+   *   The module handler.
+   * @param \Drupal\Core\Path\AliasManagerInterface $alias_manager
+   *   The alias manager.
+   * @param \Drupal\Core\Session\AccountInterface $current_user
+   *   The current user.
+   * @param \Drupal\Core\Path\PathMatcherInterface $path_matcher
+   *   The path matcher.
    */
-  public function __construct(Request $request, RouteMatchInterface $route_matcher, ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory, ModuleHandlerInterface $module_handler, AliasManagerInterface $alias_manager, AccountInterface $current_user) {
+  public function __construct(Request $request, RouteMatchInterface $route_matcher, ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory, ModuleHandlerInterface $module_handler, AliasManagerInterface $alias_manager, AccountInterface $current_user, PathMatcherInterface $path_matcher) {
     $this->request = $request;
     $this->routeMatcher = $route_matcher;
     $this->configFactory = $config_factory;
@@ -85,6 +107,7 @@ class CasSubscriber implements EventSubscriberInterface {
     $this->moduleHandler = $module_handler;
     $this->aliasManager = $alias_manager;
     $this->currentUser = $current_user;
+    $this->pathMatcher = $path_matcher;
   }
 
   /**
@@ -96,21 +119,35 @@ class CasSubscriber implements EventSubscriberInterface {
   }
 
   /**
-   * // only if KernelEvents::REQUEST
-   * @see Symfony\Component\HttpKernel\KernelEvents for details.
+   * Method invoked for request event to initiate phpCAS.
+   *
+   * This is the main entry point for CAS functionality. Here we check
+   * if the proper conditions are met to load and run phpCAS code.
    *
    * @param Symfony\Component\HttpKernel\Event\GetResponseEvent $event
    *   The Event to process.
    */
   public function casLoad(GetResponseEvent $event) {
-    if ($this->currentUser->id() == 0) {
-      $force_authentication = $this->forceLogin();
-      $check_authentication = $this->allowCheckForLogin();
-      $request_type = $_SERVER['REQUEST_METHOD'];
-      $conditions = $force_authentication || ($check_authentication && $request_type == 'GET');
-      if ($conditions) {
-        $this->loginCheck($force_authentication);
-      }
+    // Nothing to do if the user is already logged in.
+    if ($this->currentUser->id() != 0) {
+      return;
+    }
+
+    // Don't do anything if this is a request from cron, drush, crawler, etc.
+    if ($this->isNotNormalRequest()) {
+      return;
+    }
+
+    // User can exclude certain paths from being CAS enabled.
+    if ($this->isExcludedPath()) {
+      return;
+    }
+
+    $force_authentication = $this->forceLogin();
+    $gateway_mode = $this->gatewayModeEnabled();
+    $request_method = $this->request->server->get('REQUEST_METHOD');
+    if ($force_authentication || ($gateway_mode && $request_method == 'GET')) {
+      $this->loginCheck($force_authentication);
     }
   }
 
@@ -123,11 +160,6 @@ class CasSubscriber implements EventSubscriberInterface {
    *   user is already logged in.
    */
   private function loginCheck($force_authentication = TRUE) {
-    if ($this->currentUser->id()) {
-      // User already logged in.
-      return;
-    }
-
     if (!$this->phpcas_load()) {
       // No need to print a message, as the user will already see the failed
       // include_once calls.
@@ -281,9 +313,7 @@ class CasSubscriber implements EventSubscriberInterface {
   }
 
   /**
-   * Determine if we should automatically check if the user is authenticated.
-   *
-   * This implements part of the CAS gateway feature.
+   * Determines if the user has enabled the gateway mode feature of CAS.
    *
    * @see phpCAS::checkAuthentication()
    *
@@ -291,12 +321,68 @@ class CasSubscriber implements EventSubscriberInterface {
    *   TRUE if we should query the CAS server to see if the user is already
    *   authenticated, FALSE otherwise.
    */
-  private function allowCheckForLogin() {
-    if ($this->configFactory->get('cas.settings')->get('check_frequency') == -2) {
-      // The user has disabled the feature.
-      return FALSE;
+  private function gatewayModeEnabled() {
+    $gateway_options = array(
+      CAS_CHECK_ONCE,
+      CAS_CHECK_ALWAYS,
+    );
+    if (in_array($this->configFactory->get('cas.settings')->get('check_frequency'), $gateway_options)) {
+      return TRUE;
     }
-    if (isset($_SERVER['HTTP_USER_AGENT'])) {
+
+    return FASLE;
+  }
+
+  /**
+   * Determine if we should require the user be authenticated.
+   *
+   * @return bool
+   *   TRUE if we should require the user be authenticated, FALSE otherwise.
+   */
+  private function forceLogin() {
+    // We have a dedicated route for forcing a login.
+    if ($this->routeMatcher->getRouteName() == 'cas.login') {
+      return TRUE;
+    }
+
+    // Set default behavior for how forced login pages should be handled.
+    // The user either wants to force by default, and exclude specific pages,
+    // or exclude by default, and force specific pages.
+    $force_login = ($this->configFactory->get('cas.settings')->get('access') === CAS_REQUIRE_ALL_EXCEPT) ? TRUE : FALSE;
+
+    // See if current path matches the list provided in settings. If so,
+    // we reverse the default behavior set above.
+    $aliased_path = $this->getCurrentPathAlias();
+    if ($pages = $this->configFactory->get('cas.settings')->get('pages')) {
+      if ($this->pathMatcher->matchPath($aliased_path, $pages)) {
+        $force_login = !$force_login;
+      }
+    }
+
+    return $force_login;
+  }
+
+  /**
+   * Check is the current request is a normal web request from a user.
+   *
+   * We don't want to perform any CAS redirects for things like cron
+   * and drush.
+   *
+   * @return bool
+   *   Whether or not this is a normal request.
+   */
+  public function isNotNormalRequest() {
+    if (stristr($this->request->server->get('SCRIPT_FILENAME'), 'xmlrpc.php')) {
+      return TRUE;
+    }
+    if (stristr($this->request->server->get('SCRIPT_FILENAME'), 'cron.php')) {
+      return TRUE;
+    }
+    if (function_exists('drush_verify_cli') && drush_verify_cli()) {
+      return TRUE;
+    }
+
+    if ($this->request->server->get('HTTP_USER_AGENT')) {
       $crawlers = array(
         'Google',
         'msnbot',
@@ -322,77 +408,42 @@ class CasSubscriber implements EventSubscriberInterface {
       );
       // Return on the first find.
       foreach ($crawlers as $c) {
-        if (stripos($_SERVER['HTTP_USER_AGENT'], $c) !== FALSE) {
-          return FALSE;
+        if (stripos($this->request->server->get('HTTP_USER_AGENT'), $c) !== FALSE) {
+          return TRUE;
         }
       }
     }
 
-    // Do not force login for XMLRPC, Cron, or Drush.
-    if (stristr($_SERVER['SCRIPT_FILENAME'], 'xmlrpc.php')) {
-      return FALSE;
-    }
-    if (stristr($_SERVER['SCRIPT_FILENAME'], 'cron.php')) {
-      return FALSE;
-    }
-    if (stristr($_SERVER['SCRIPT_FILENAME'], 'drush')) {
-      return FALSE;
-    }
-    if (!empty($_SERVER['argv'][0]) && stristr($_SERVER['argv'][0], 'drush')) {
-      return FALSE;
-    }
-
-    // Test against exclude pages.
-    if ($pages = $this->configFactory->get('cas.settings')->get('exclude')) {
-      $path = $this->aliasManager->getPathAlias($_GET['q']);
-      if (drupal_match_path($path, $pages)) {
-        return FALSE;
-      }
-    }
-    return TRUE;
+    return FALSE;
   }
 
   /**
-   * Determine if we should require the user be authenticated.
-   *
-   * @return bool
-   *   TRUE if we should require the user be authenticated, FALSE otherwise.
+   * Checks if the current path is excluded from any CAS authentication.
    */
-  private function forceLogin() {
-    // We have a dedicate route for forcing a login.
-    if ($this->routeMatcher->getRouteName() == 'cas.login') {
-      return TRUE;
-    }
+  public function isExcludedPath() {
+    $aliased_path = $this->getCurrentPathAlias();
 
-    // Do not force login for XMLRPC, Cron, or Drush.
-    if (stristr($_SERVER['SCRIPT_FILENAME'], 'xmlrpc.php')) {
+    // Check against the list of exclude paths.
+    $excluded_pages = $this->configFactory->get('cas.settings')->get('exclude');
+    if ($this->pathMatcher->matchPath($aliased_path, $excluded_pages)) {
       return FALSE;
     }
-    if (stristr($_SERVER['SCRIPT_FILENAME'], 'cron.php')) {
-      return FALSE;
-    }
-    if (function_exists('drush_verify_cli') && drush_verify_cli()) {
-      return FALSE;
-    }
+  }
 
-    // Excluded pages do not need login.
-    $pages = $this->configFactory->get('cas.settings')->get('exclude');
-    $path = $this->aliasManager->getPathAlias($_GET['q']);
-    if (drupal_match_path($path, $pages)) {
-      return FALSE;
-    }
-
-    // Set the default behavior.
-    $force_login = $this->configFactory->get('cas.settings')->get('access');
-
-    // If we match the specified paths, reverse the behavior.
-    if ($pages = $this->configFactory->get('cas.settings')->get('pages')) {
-      $path = $this->aliasManager->getPathAlias($_GET['q']);
-      if (drupal_match_path($path, $pages)) {
-        $force_login = !$force_login;
-      }
-    }
-    return $force_login;
+  /**
+   * Determine the current path alias.
+   *
+   * At the time of writing (pre D8 beta), I couldn't find the "recommended"
+   * approach to get this. However, the RequestPath condition plugin, which
+   * is used by the Block module to provide path exclusions, needs this
+   * functionality as well. We can check back on the final approach taken there.
+   *
+   * @return string
+   *   The current path as an alias.
+   */
+  private function getCurrentPathAlias() {
+    $current_path = current_path();
+    return $this->aliasManager->getAliasByPath($current_path);
   }
 
 }
