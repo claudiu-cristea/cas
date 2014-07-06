@@ -9,22 +9,19 @@ namespace Drupal\cas\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 
-class CASSettings extends ConfigFormBase
-{
+class CASSettings extends ConfigFormBase {
 
   /**
    * {@inheritdoc}
    */
-  public function getFormID()
-  {
+  public function getFormID() {
     return 'cas_settings';
   }
 
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state)
-  {
+  public function buildForm(array $form, array &$form_state) {
     $account = \Drupal::currentUser();
     $config = $this->config('cas.settings');
     $form['server'] = array(
@@ -97,7 +94,7 @@ class CASSettings extends ConfigFormBase
       '#options' => array(
         CAS_NO_LINK => $this->t('Do not add link to login forms'),
         CAS_ADD_LINK => $this->t('Add link to login forms'),
-        CAS_MAKE_DEFAULT => $this->t('Make CAS login default on login forms')
+        CAS_MAKE_DEFAULT => $this->t('Make CAS login default on login forms'),
       ),
     );
     $form['login']['login_invite'] = array(
@@ -146,6 +143,7 @@ class CASSettings extends ConfigFormBase
       '#description' => $this->t("If provided, automatically generate each new user's e-mail address. If omitted, the e-mail field will not be populated. Other modules may be used to populate the e-mail field from CAS attributes or LDAP servers."),
     );
 
+    $options = array();
     $roles = user_roles(TRUE);
     foreach ($roles as $role) {
       $options[$role->id] = $role->label;
@@ -270,7 +268,7 @@ class CASSettings extends ConfigFormBase
       '#title' => $this->t('CAS PGT storage file format'),
       '#default_value' => $config->get('pgtformat'),
       '#options' => array('plain' => $this->t('Plain Text'), 'xml' => t('XML')),
-      //'#after_build' => array('cas_pgtformat_version_check'),
+      // '#after_build' => array('cas_pgtformat_version_check'),
     );
     $form['advanced']['pgtpath'] = array(
       '#type' => 'textfield',
@@ -284,9 +282,8 @@ class CASSettings extends ConfigFormBase
       '#title' => $this->t('CAS proxy list'),
       '#description' => $this->t("If CAS client could be proxied, indicate each proxy server absolute url per line. If not provided, phpCAS will exclude by default all tickets provided by proxy. Each proxy server url could be a plain url or a regular expression. IMPORTANT: regular expression must be a slash. For example : https://proxy.example.com/ AND/OR regular expression : /^https:\/\/app[0-9]\.example\.com\/rest\//."),
       '#default_value' => $config->get('proxy_list'),
-      //'#after_build' => array('cas_proxy_list_version_check'),
+      // '#after_build' => array('cas_proxy_list_version_check'),
     );
-
 
     return parent::buildForm($form, $form_state);
   }
@@ -294,16 +291,14 @@ class CASSettings extends ConfigFormBase
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state)
-  {
+  public function validateForm(array &$form, array &$form_state) {
     return parent::validateForm($form, $form_state);
   }
 
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state)
-  {
+  public function submitForm(array &$form, array &$form_state) {
     $this->config('cas.settings')
           ->set('version', $form_state['values']['version'])
           ->set('server', $form_state['values']['server'])
