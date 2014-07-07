@@ -330,7 +330,7 @@ class CasSubscriber implements EventSubscriberInterface {
       return TRUE;
     }
 
-    return FASLE;
+    return FALSE;
   }
 
   /**
