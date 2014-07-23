@@ -15,7 +15,7 @@ use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
-use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Drupal\Core\Routing\RouteMatchInterface;
 
 /**
@@ -26,14 +26,14 @@ class CasSubscriber implements EventSubscriberInterface {
   /**
    * The request.
    *
-   * @var \Symfony\Component\HttpFoundation\Request
+   * @var \Symfony\Component\HttpFoundation\RequestStack
    */
-  protected $request;
+  protected $requestStack;
 
   /**
    * Route matcher object.
    *
-   * @var Drupal\Core\Routing\RouteMatchInterface
+   * @var \Drupal\Core\Routing\RouteMatchInterface
    */
   protected $routeMatcher;
 
@@ -82,7 +82,7 @@ class CasSubscriber implements EventSubscriberInterface {
   /**
    * Constructs a new CasSubscriber.
    *
-   * @param \Symfony\Component\HttpFoundation\Request $request
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The request.
    * @param \Drupal\Core\Routing\RouteMatchInterface $route_matcher
    *   The route matcher.
@@ -99,8 +99,8 @@ class CasSubscriber implements EventSubscriberInterface {
    * @param \Drupal\Core\Path\PathMatcherInterface $path_matcher
    *   The path matcher.
    */
-  public function __construct(Request $request, RouteMatchInterface $route_matcher, ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory, ModuleHandlerInterface $module_handler, AliasManagerInterface $alias_manager, AccountInterface $current_user, PathMatcherInterface $path_matcher) {
-    $this->request = $request;
+  public function __construct(RequestStack $request_stack, RouteMatchInterface $route_matcher, ConfigFactoryInterface $config_factory, LoggerChannelFactoryInterface $logger_factory, ModuleHandlerInterface $module_handler, AliasManagerInterface $alias_manager, AccountInterface $current_user, PathMatcherInterface $path_matcher) {
+    $this->requestStack = $request_stack;
     $this->routeMatcher = $route_matcher;
     $this->configFactory = $config_factory;
     $this->loggerFactory = $logger_factory;
@@ -124,7 +124,7 @@ class CasSubscriber implements EventSubscriberInterface {
    * This is the main entry point for CAS functionality. Here we check
    * if the proper conditions are met to load and run phpCAS code.
    *
-   * @param Symfony\Component\HttpKernel\Event\GetResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\GetResponseEvent $event
    *   The Event to process.
    */
   public function casLoad(GetResponseEvent $event) {
@@ -372,17 +372,18 @@ class CasSubscriber implements EventSubscriberInterface {
    *   Whether or not this is a normal request.
    */
   public function isNotNormalRequest() {
-    if (stristr($this->request->server->get('SCRIPT_FILENAME'), 'xmlrpc.php')) {
+    $current_request = $this->requestStack->getCurrentRequest();
+    if (stristr($current_request->server->get('SCRIPT_FILENAME'), 'xmlrpc.php')) {
       return TRUE;
     }
-    if (stristr($this->request->server->get('SCRIPT_FILENAME'), 'cron.php')) {
+    if (stristr($current_request->server->get('SCRIPT_FILENAME'), 'cron.php')) {
       return TRUE;
     }
     if (function_exists('drush_verify_cli') && drush_verify_cli()) {
       return TRUE;
     }
 
-    if ($this->request->server->get('HTTP_USER_AGENT')) {
+    if ($current_request->server->get('HTTP_USER_AGENT')) {
       $crawlers = array(
         'Google',
         'msnbot',
@@ -408,7 +409,7 @@ class CasSubscriber implements EventSubscriberInterface {
       );
       // Return on the first find.
       foreach ($crawlers as $c) {
-        if (stripos($this->request->server->get('HTTP_USER_AGENT'), $c) !== FALSE) {
+        if (stripos($current_request->server->get('HTTP_USER_AGENT'), $c) !== FALSE) {
           return TRUE;
         }
       }
