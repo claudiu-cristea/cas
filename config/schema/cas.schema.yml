@@ -1,0 +1,57 @@
+# Configuration schema for the CAS module
+
+cas.library:
+  type: mapping
+  label: 'CAS Library'
+  mapping:
+    path:
+      type: string
+      label: 'Path'
+    debug_enabled:
+      type: boolean
+      label: 'Debug Enabled'
+    debug_file:
+      type: string
+      label: 'Debug File'
+
+cas.server:
+  type: mapping
+  label: 'CAS Server'
+  mapping:
+    version:
+      type: string
+      label: 'Version'
+    hostname:
+      type: string
+      label: 'Hostname'
+    port:
+      type: string
+      label: 'Port'
+    path:
+      type: string
+      label: 'Path'
+    cert:
+      type: string
+      label: 'PEM Cert path'
+
+cas.gateway:
+  type: mapping
+  label: 'Gateway Feature'
+  mapping:
+    check_frequency:
+      type: integer
+      label: 'Check Frequency'
+    paths:
+      type: condition.plugin.request_path
+      label: 'Paths'
+
+cas.forced_login:
+  type: mapping
+  label: 'Forced Login'
+  mapping:
+    enabled:
+      type: boolean
+      label: 'Enable'
+    paths:
+      type: condition.plugin.request_path
+      label: 'Paths'

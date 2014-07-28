@@ -1,47 +1,19 @@
-name: destinations
-label: Login/Logout destinations
-first_login_destination: ''
-logout_destination: ''
-changePasswordURL: ''
-registerURL: ''
+library:
+  path: ''
+  debug_enabled: false
+  debug_path: ''
 
-name: login
-label: Login Form
-login_form: 2
-login_invite: 'Log in using CAS'
-login_drupal_invite: 'Cancel CAS login'
-login_redir_message: 'You will be redirected to the secure CAS login page.'
-login_message: 'Logged in via CAS as %cas_username.'
+server:
+  version: '2.0'
+  hostname: ''
+  port: '443'
+  path: '/'
+  cert: ''
 
-name: miscellaneous
-label: Miscellaneous and experimental settings
-proxy: 0
-pgtformat: 'plain'
-pgtpath: ''
-proxy_list: ''
+gateway:
+  check_frequency: -2
+  paths: {}
 
-name: redirection
-label: Redirection
-check_frequency: -2
-access: 0
-pages: ''
-exclude: 'services/*'
-
-name: server
-label: 'Server'
-version: 2.0
-server: 'sso-cas.univ-rennes1.fr'
-port: 443
-uri: ''
-cert: ''
-debugfile: ''
-force_https: 0
-
-name: user
-label: User Accounts
-user_register: 1
-domain: ''
-auto_assigned_role: ''
-hide_email: 0
-hide_password: 0
-
+forced_login:
+  enabled: false
+  paths: {}

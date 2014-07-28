@@ -1,7 +1,7 @@
 services:
   cas.cas_subscriber:
     class: Drupal\cas\CasSubscriber
-    arguments: ['@request_stack', '@current_route_match', '@config.factory', '@logger.factory', '@module_handler', '@path.alias_manager', '@current_user', '@path.matcher']
+    arguments: ['@request_stack', '@current_route_match', '@config.factory', '@logger.factory', '@module_handler', '@current_user', '@session_manager', '@plugin.manager.condition']
     tags:
       - { name: 'event_subscriber' }
     
