@@ -2,6 +2,9 @@
 /**
  * @file
  * Contains Drupal\cas\CasSubscriber.
+ *
+ * NOTE: This is being ripped apart and functionality split between
+ * several listeners and controllers and services.
  */
 
 namespace Drupal\cas;
@@ -135,6 +138,8 @@ class CasSubscriber implements EventSubscriberInterface {
    *   The Event to process.
    */
   public function casLoad(GetResponseEvent $event) {
+    $config = $this->configFactory->get('cas.settings');
+
     // Nothing to do if the user is already logged in.
     if ($this->currentUser->id() != 0) {
       return;
@@ -145,10 +150,10 @@ class CasSubscriber implements EventSubscriberInterface {
       return;
     }
 
-    $force_authentication = $this->forceLogin();
+    $force_login = $this->checkForceLogin();
     $gateway_mode = $this->gatewayModeEnabled();
     $request_method = $this->requestStack->getCurrentRequest()->server->get('REQUEST_METHOD');
-    if ($force_authentication || ($gateway_mode && $request_method == 'GET')) {
+    if ($force_login || ($gateway_mode && $request_method == 'GET')) {
       if (!$this->loadPhpCasLibrary()) {
         // No need to print a message, as the user will already see the failed
         // include_once calls.
@@ -195,7 +200,7 @@ class CasSubscriber implements EventSubscriberInterface {
    * @return bool
    *   TRUE if we should require the user be authenticated, FALSE otherwise.
    */
-  private function forceLogin() {
+  private function checkForceLogin() {
     // We have a dedicated route for forcing a login.
     if ($this->routeMatcher->getRouteName() == 'cas.login') {
       return TRUE;
@@ -274,41 +279,7 @@ class CasSubscriber implements EventSubscriberInterface {
     return FALSE;
   }
 
-  /**
-   * Include the phpCAS library.
-   *
-   * @return bool
-   *   Whether or not the library was loaded.
-   */
-  private function loadPhpCasLibrary() {
-    // @TODO: When libraries module is stable, see if we can use it
-    $path = $this->configFactory->get('cas.settings')->get('library.path');
+  private function buildServiceUrl() {
 
-    if (empty($path)) {
-      return FALSE;
-    }
-
-    // Build the name of the file to load.
-    $path = rtrim($path, '/') . '/';
-    $filename = $path . 'CAS.php';
-
-    include_once $filename;
-
-    if (!defined('PHPCAS_VERSION') || !class_exists('phpCAS')) {
-      // The file could not be loaded successfully.
-      return FALSE;
-    }
-    return TRUE;
-  }
-
-  /**
-   * Initialize the phpCAS library.
-   *
-   * The library is configured based on values set by the user in the
-   * CAS settings.
-   */
-  private function initializePhpCas() {
-    // @TODO
-    return;
   }
 }

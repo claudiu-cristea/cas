@@ -10,6 +10,8 @@ namespace Drupal\cas\Form;
 use Drupal\Component\Plugin\Factory\FactoryInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
+use Drupal\Core\Form\FormState;
+use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class CasSettings extends ConfigFormBase {
@@ -58,13 +60,13 @@ class CasSettings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function buildForm(array $form, array &$form_state) {
+  public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('cas.settings');
 
     // @TODO, We should use the libraries module, if applicable, when it's ready
     $form['library'] = array(
       '#type' => 'details',
-      '#title' => $this->t('CAS Library'),
+      '#title' => $this->t('phpCAS Library'),
       '#open' => TRUE,
       '#tree' => TRUE,
     );
@@ -139,8 +141,8 @@ class CasSettings extends ConfigFormBase {
       '#tree' => TRUE,
       '#description' => $this->t(
         'This implements the <a href="@cas-gateway">Gateway feature</a> of the CAS Protocol. ' .
-        'When enabled, Drupal will check if an anonymous visting user is logged into your CAS server before ' .
-        'serving a page request. If they have an active CAS session, they will be automatically' .
+        'When enabled, Drupal will check if an anonymous user is logged into your CAS server before ' .
+        'serving a page request. If they have an active CAS session, they will be automatically ' .
         'logged into the Drupal site. This is done by quickly redirecting them to the CAS server to perform the ' .
         'active session check, and then redirecting them back to page they initially requested.',
         array('@cas-gateway' => 'https://wiki.jasig.org/display/CAS/gateway')
@@ -152,8 +154,8 @@ class CasSettings extends ConfigFormBase {
       '#default_value' => $config->get('gateway.check_frequency'),
       '#options' => array(
         CAS_CHECK_NEVER => 'Disable gateway feature',
-        CAS_CHECK_ONCE => 'Check once per browser session (recommended)',
-        CAS_CHECK_ALWAYS => 'Check every page load (not recommended)',
+        CAS_CHECK_ONCE => 'Once per browser session',
+        CAS_CHECK_ALWAYS => 'Every page load (not recommended)',
       ),
     );
     $this->gatewayPaths->setConfiguration($config->get('gateway.paths'));
@@ -165,7 +167,7 @@ class CasSettings extends ConfigFormBase {
       '#open' => TRUE,
       '#tree' => TRUE,
       '#description' => $this->t(
-        'Anonymous users will be forced to login through CAS when enabled.' .
+        'Anonymous users will be forced to login through CAS when enabled. ' .
         'This differs from the "gateway feature" in that it will REQUIRE that a user be logged in to their CAS ' .
         'account, instead of just checking if they already are.'
       ),
@@ -185,15 +187,15 @@ class CasSettings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function validateForm(array &$form, array &$form_state) {
-    $condition_values = array(
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    $condition_values = new FormState(array(
       'values' => &$form_state['values']['gateway']['paths'],
-    );
+    ));
     $this->gatewayPaths->validateConfigurationForm($form, $condition_values);
 
-    $condition_values = array(
+    $condition_values = new FormState(array(
       'values' => &$form_state['values']['forced_login']['paths'],
-    );
+    ));
     $this->forcedLoginPaths->validateConfigurationForm($form, $condition_values);
     return parent::validateForm($form, $form_state);
   }
@@ -201,7 +203,7 @@ class CasSettings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function submitForm(array &$form, array &$form_state) {
+  public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = $this->config('cas.settings');
     $library_data = $form_state['values']['library'];
     $config
@@ -218,18 +220,18 @@ class CasSettings extends ConfigFormBase {
       ->set('server.cert', $server_data['cert']);
 
     $gateway_data = $form_state['values']['gateway'];
-    $condition_values = array(
+    $condition_values = new FormState(array(
       'values' => &$gateway_data['paths'],
-    );
+    ));
     $this->gatewayPaths->submitConfigurationForm($form, $condition_values);
     $config
       ->set('gateway.check_frequency', $gateway_data['check_frequency'])
       ->set('gateway.paths', $this->gatewayPaths->getConfiguration());
 
     $forced_login_data = $form_state['values']['forced_login'];
-    $condition_values = array(
+    $condition_values = new FormState(array(
       'values' => &$forced_login_data['paths'],
-    );
+    ));
     $this->forcedLoginPaths->submitConfigurationForm($form, $condition_values);
     $config
       ->set('forced_login.enabled', $forced_login_data['enabled'])

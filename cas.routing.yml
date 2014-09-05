@@ -8,6 +8,12 @@ cas.settings:
 cas.login:
   path: '/caslogin'
   defaults:
-    _controller: '\Drupal\cas\Controller\ForcedLoginController::forcedLogin'
+    _controller: '\Drupal\cas\Controller\ForceLoginController::forceLogin'
+  requirements:
+    _permission: 'access content'
+cas.service:
+  path: '/casvalidate'
+  defaults:
+    _controller: '\Drupal\cas\Controller\ValidateController::validate'
   requirements:
     _permission: 'access content'

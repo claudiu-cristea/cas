@@ -1,7 +1,14 @@
 services:
-  cas.cas_subscriber:
-    class: Drupal\cas\CasSubscriber
-    arguments: ['@request_stack', '@current_route_match', '@config.factory', '@logger.factory', '@module_handler', '@current_user', '@session_manager', '@plugin.manager.condition']
-    tags:
-      - { name: 'event_subscriber' }
-    
+  # This is being ripped apart into several different services, controllers,
+  # and event subscribers. Otherwise it's massive and hard to test.
+  #cas.cas_subscriber:
+  #  class: Drupal\cas\CasSubscriber
+  #  arguments: ['@request_stack', '@current_route_match', '@config.factory', '@logger.factory', '@module_handler', '@current_user', '@session_manager', '@plugin.manager.condition']
+  #  tags:
+  #    - { name: 'event_subscriber' }
+  cas.client:
+    class: Drupal\cas\CasClient
+    arguments: ['@config.factory', '@url_generator']
+  cas.login:
+    class: Drupal\cas\CasLogin
+    arguments: ['@cas.client', '@url_generator']
