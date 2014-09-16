@@ -37,7 +37,7 @@ class CasLogin {
 
     // Make sure the user is actually authenticated with CAS.
     if (!\phpCAS::isSessionAuthenticated()) {
-      throw \Exception("User is NOT authenticated with CAS, but should be.");
+      throw new \Exception("User is NOT authenticated with CAS, but should be.");
     }
 
     $user = user_load_by_name(\phpCAS::getUser());
