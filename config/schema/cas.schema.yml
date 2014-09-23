@@ -4,19 +4,6 @@ cas.settings:
   type: mapping
   label: 'CAS settings'
   mapping:
-    library:
-      type: mapping
-      label: 'CAS Library'
-      mapping:
-        path:
-          type: string
-          label: 'Path'
-        debug_enabled:
-          type: boolean
-          label: 'Debug Enabled'
-        debug_file:
-          type: string
-          label: 'Debug File'
     server:
       type: mapping
       label: 'CAS Server'

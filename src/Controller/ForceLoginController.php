@@ -2,44 +2,46 @@
 
 namespace Drupal\cas\Controller;
 
-use Drupal\cas\CasClient;
+use Drupal\cas\Cas;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class ForceLoginController implements ContainerInjectionInterface {
 
   /**
-   * @var \Drupal\cas\CasClient
+   * @var \Drupal\cas\Cas
    */
-  protected $casClient;
+  protected $cas;
+
+  /**
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
 
   /**
    * Constructor.
    *
-   * @param CasClient $cas_client
-   *   The configured phpCAS client.
+   * @param Cas $cas
+   *   The CAS service.
    */
-  public function __construct(CasClient $cas_client) {
-    $this->casClient = $cas_client;
+  public function __construct(Cas $cas) {
+    $this->cas = $cas;
   }
 
   /**
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('cas.client'));
+    return new static($container->get('cas.cas'));
   }
 
   /**
    * Handles a page request for our forced login route.
    */
   public function forceLogin() {
-    $this->casClient->configureClient();
-    \phpCAS::forceAuthentication();
+    $cas_login_url = $this->cas->getLoginUrl();
 
-    // TODO. It's possible that the user is already logged in. If so, throw
-    // an exception.
-    // It's also possible that phpCAS logged a user in already and set a
-    // session var containing their username. Maybe we should just unset it?
+    return new RedirectResponse($cas_login_url, 302);
   }
 }

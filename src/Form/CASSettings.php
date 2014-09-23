@@ -63,32 +63,6 @@ class CasSettings extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('cas.settings');
 
-    // @TODO, We should use the libraries module, if applicable, when it's ready
-    $form['library'] = array(
-      '#type' => 'details',
-      '#title' => $this->t('phpCAS Library'),
-      '#open' => TRUE,
-      '#tree' => TRUE,
-    );
-    $form['library']['path'] = array(
-      '#type' => 'textfield',
-      '#title' => $this->t('Path to phpCAS'),
-      '#description' => $this->t('Provide the full system path to the phpCAS library directory.'),
-      '#default_value' => $config->get('library.path'),
-    );
-    $form['library']['debug_enabled'] = array(
-      '#type' => 'checkbox',
-      '#title' => $this->t('Enable debug mode'),
-      '#description' => $this->t('When enabled, phpCAS will output helpful debugging information to the file provided below.'),
-      '#default_value' => $config->get('library.debug_enabled'),
-    );
-    $form['library']['debug_file'] = array(
-      '#type' => 'textfield',
-      '#title' => $this->t('Debug file'),
-      '#description' => $this->t('Full path and filename of the file to use for writing debug information.'),
-      '#default_value' => $config->get('library.debug_file'),
-    );
-
     $form['server'] = array(
       '#type' => 'details',
       '#title' => $this->t('CAS Server'),
@@ -205,11 +179,6 @@ class CasSettings extends ConfigFormBase {
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = $this->config('cas.settings');
-    $library_data = $form_state['values']['library'];
-    $config
-      ->set('library.path', $library_data['path'])
-      ->set('library.debug_enabled', $library_data['debug_enabled'])
-      ->set('library.debug_file', $library_data['debug_file']);
 
     $server_data = $form_state['values']['server'];
     $config
