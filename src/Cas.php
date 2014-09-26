@@ -8,6 +8,7 @@ use Drupal\Core\Http\Client;
 use GuzzleHttp\Exception\ClientException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Drupal\Component\Utility\UrlHelper;
 
 class Cas {
 
@@ -47,15 +48,31 @@ class Cas {
   /**
    * Return the login URL to the CAS server.
    *
+   * @param array $service_params
+   *   An array of query string parameters to add to the service URL.
    * @param bool $gateway
    *   TRUE if this should be a gateway request.
    */
-  public function getLoginUrl($gateway = FALSE) {
-    $url = $this->getBaseUrl() . 'login?service=' . $this->getServiceUrl();
+  public function getServerLoginUrl($service_params = array(), $gateway = FALSE) {
+    $login_url = $this->getBaseServerUrl() . 'login';
+
+    $params = array();
     if ($gateway) {
-      $url .= '&gateway=true';
+      $params['gateway'] = TRUE;
     }
-    return $url;
+    $params['service'] = $this->getServiceUrl($service_params);
+
+    return $login_url . '?' . UrlHelper::buildQuery($params);
+  }
+
+  /**
+   * Get the validate URL for the CAS server.
+   *
+   * @return string
+   *   The validation URL.
+   */
+  public function getServerValidateUrl() {
+    return $this->getBaseServerUrl() . 'validate';
   }
 
   /**
@@ -64,32 +81,34 @@ class Cas {
    * This method will return the username of the user if valid, and raise an
    * exception if the ticket is not found or not valid.
    *
-   * @param Request $request
-   *   The request that contains the validation data.
+   * @param string $ticket
+   *   The CAS authentication ticket to validate.
+   * @param array $service_params
+   *   An array of query string parameters to add to the service URL.
    */
-  public function validateTicket(Request $request) {
+  public function validateTicket($ticket, $service_params = array()) {
     switch ($this->settings->get('server.version')) {
       case "1.0":
-        return $this->validateVersion1($request);
+        return $this->validateVersion1($ticket, $service_params);
 
       case "2.0":
-        return $this->validateVersion2($request);
+        return $this->validateVersion2($ticket, $service_params);
     }
   }
 
   /**
    * Validation of a service ticket for Verison 1 of the CAS protocol.
    *
-   * @param Request $request
-   *   The request that contains the validation data.
+   * @param string $ticket
+   *   The CAS authentication ticket to validate.
+   * @param array $service_params
+   *   An array of query string parameters to add to the service URL.
    */
-  private function validateVersion1(Request $request) {
-    $ticket = $request->get('ticket');
-    $validate_url = $this->getBaseUrl() . 'validate';
+  private function validateVersion1($ticket, $service_params) {
     try {
-      $response = $this->httpClient->get($validate_url, array(
+      $response = $this->httpClient->get($this->getServerValidateUrl(), array(
         'query' => array(
-          'service' => $this->getServiceUrl(),
+          'service' => $this->getServiceUrl($service_params),
           'ticket' => $ticket,
         ),
       ));
@@ -118,10 +137,12 @@ class Cas {
   /**
    * Validation of a service ticket for Verison 2 of the CAS protocol.
    *
-   * @param Request $request
-   *   The request that contains the validation data.
+   * @param string $ticket
+   *   The CAS authentication ticket to validate.
+   * @param array $service_params
+   *   An array of query string parameters to add to the service URL.
    */
-  private function validateVersion2(Request $request) {
+  private function validateVersion2($ticket, $service_params) {
     // TODO.
   }
 
@@ -131,7 +152,8 @@ class Cas {
    * @return string
    *   The base URL.
    */
-  private function getBaseUrl() {
+  private function getBaseServerUrl() {
+    // TODO, make sure we always end with a slash.
     $server_path = $this->settings->get('server.path');
     $server_base = $this->settings->get('server.hostname');
     return sprintf('https://%s%s', $server_base, $server_path);
@@ -139,8 +161,11 @@ class Cas {
 
   /**
    * Return the service URL.
+   *
+   * @param array $service_params
+   *   An array of query string parameters to append to the service URL.
    */
-  private function getServiceUrl() {
-    return $this->urlGenerator->generate('cas.service', array(), TRUE);
+  private function getServiceUrl($service_params = array()) {
+    return $this->urlGenerator->generate('cas.validate', $service_params, TRUE);
   }
 }

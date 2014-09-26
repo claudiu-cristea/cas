@@ -11,7 +11,7 @@ cas.login:
     _controller: '\Drupal\cas\Controller\ForceLoginController::forceLogin'
   requirements:
     _permission: 'access content'
-cas.service:
+cas.validate:
   path: '/casvalidate'
   defaults:
     _controller: '\Drupal\cas\Controller\ValidateController::validate'
