@@ -15,7 +15,7 @@ use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Condition\ConditionManager;
-use Drupal\cas\Cas;
+use Drupal\cas\Service\CasHelper;
 
 /**
  * Provides a ForceLoginSubscriber.
@@ -58,9 +58,9 @@ class ForceLoginSubscriber implements EventSubscriberInterface {
   protected $conditionManager;
 
   /**
-   * @var \Drupal\cas\Cas
+   * @var \Drupal\cas\Service\CasHelper
    */
-  protected $cas;
+  protected $casHelper;
 
   /**
    * Constructs a new GatewayModeSusbcriber.
@@ -75,16 +75,16 @@ class ForceLoginSubscriber implements EventSubscriberInterface {
    *   The current user.
    * @param \Drupal\Core\Condition\ConditionManager $condition_manager
    *   The condition manager.
-   * @param \Drupal\cas\Cas $cas
-   *   The CAS service.
+   * @param \Drupal\cas\Service\CasHelper $cas_helper
+   *   The CAS Helper service.
    */
-  public function __construct(RequestStack $request_stack, RouteMatchInterface $route_matcher, ConfigFactoryInterface $config_factory, AccountInterface $current_user, ConditionManager $condition_manager, Cas $cas) {
+  public function __construct(RequestStack $request_stack, RouteMatchInterface $route_matcher, ConfigFactoryInterface $config_factory, AccountInterface $current_user, ConditionManager $condition_manager, CasHelper $cas_helper) {
     $this->requestStack = $request_stack;
     $this->routeMatcher = $route_matcher;
     $this->configFactory = $config_factory;
     $this->currentUser = $current_user;
     $this->conditionManager = $condition_manager;
-    $this->cas = $cas;
+    $this->casHelper = $cas_helper;
   }
 
   /**
@@ -123,7 +123,8 @@ class ForceLoginSubscriber implements EventSubscriberInterface {
 
     // TODO, why doesn't negate work for the above condition plugin?
     if ($condition->evaluate()) {
-      $cas_login_url = $this->cas->getLoginUrl();
+      // TODO: Get return path.
+      $cas_login_url = $this->casHelper->getServerLoginUrl();
       return new RedirectResponse($cas_login_url, 302);
     }
   }

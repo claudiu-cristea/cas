@@ -2,25 +2,30 @@
 
 namespace Drupal\cas\Controller;
 
-use Drupal\cas\CasLogin;
+use Drupal\cas\Service\CasHelper;
+use Drupal\cas\Service\CasLogin;
 use Drupal\cas\Exception\CasValidateException;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Drupal\cas\Cas;
+use Drupal\cas\Service\CasValidator;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 class ValidateController implements ContainerInjectionInterface {
-
   /**
-   * @var \Drupal\cas\Cas
+   * @var \Drupal\cas\Service\CasHelper
    */
-  protected $cas;
+  protected $casHelper;
 
   /**
-   * @var \Drupal\cas\CasLogin
+   * @var \Drupal\cas\Service\CasValidator
+   */
+  protected $casValidator;
+
+  /**
+   * @var \Drupal\cas\Service\CasLogin
    */
   protected $casLogin;
 
@@ -37,15 +42,18 @@ class ValidateController implements ContainerInjectionInterface {
   /**
    * Constructor.
    *
-   * @param Cas $cas
-   *   The CAS service.
+   * @param CasHelper $cas_helper
+   *   The CAS Helper service.
+   * @param CasValidator $cas_validator
+   *   The CAS Validator service.
    * @param CasLogin $cas_login
-   *   The service used to log a CAS user into Drupal.
+   *   The CAS Login service.
    * @param UrlGeneratorInterface $url_generator
    *   The URL generator.
    */
-  public function __construct(Cas $cas, CasLogin $cas_login, RequestStack $request_stack, UrlGeneratorInterface $url_generator) {
-    $this->cas = $cas;
+  public function __construct(CasHelper $cas_helper, CasValidator $cas_validator, CasLogin $cas_login, RequestStack $request_stack, UrlGeneratorInterface $url_generator) {
+    $this->casHelper = $cas_helper;
+    $this->casValidator = $cas_validator;
     $this->casLogin = $cas_login;
     $this->requestStack = $request_stack;
     $this->urlGenerator = $url_generator;
@@ -55,7 +63,7 @@ class ValidateController implements ContainerInjectionInterface {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('cas.cas'), $container->get('cas.login'), $container->get('request_stack'), $container->get('url_generator'));
+    return new static($container->get('cas.helper'), $container->get('cas.validator'), $container->get('cas.login'), $container->get('request_stack'), $container->get('url_generator'));
   }
 
   /**
@@ -72,31 +80,33 @@ class ValidateController implements ContainerInjectionInterface {
       return new RedirectResponse($this->urlGenerator->generate('<front>'));
     }
 
+    // Our CAS service will need to reconstruct the original service URL
+    // when validating the ticket. We always know what the base URL for
+    // the service URL (it's this page), but there may be some query params
+    // attached as well (like a destination param) that we need to pass in
+    // as well. So, detach the ticket param, and pass the rest off.
+    $service_params = $request->query->all();
+    $ticket = $service_params['ticket'];
+    unset($service_params['ticket']);
+    $cas_version = $this->casHelper->getCasProtocolVersion();
     try {
-      // Our CAS service will need to reconstruct the original service URL
-      // when validating the ticket. We always know what the base URL for
-      // the service URL (it's this page), but there may be some query params
-      // attached as well (like a destination param) that we need to pass in
-      // as well. So, detach the ticket param, and pass the rest off.
-      $params = $request->query->all();
-      $ticket = $params['ticket'];
-      unset($params['ticket']);
-      $username = $this->cas->validateTicket($ticket, $params);
-      if ($this->casLogin->loginToDrupal($username)) {
-        $this->handleReturnToParameter($request);
-        return new RedirectResponse($this->urlGenerator->generate('<front>'));
-      }
-      else {
-        // TODO: Cas Login failed. Redirect somewhere and set a message maybe?
-        // Maybe the CasLogin service should throw exceptions instead, and
-        // we use that to set the message to the user and redirect back to
-        // the homepage.
-        return new RedirectResponse($this->urlGenerator->generate('<front>'));
-      }
+      $username = $this->casValidator->validateTicket($cas_version, $ticket, $service_params);
     }
     catch (CasValidateException $e) {
       // Validation failed, redirect to homepage and set message.
       drupal_set_message(t('Error validating user.'), 'error');
+      return new RedirectResponse($this->urlGenerator->generate('<front>'));
+    }
+
+    if ($this->casLogin->loginToDrupal($username)) {
+      $this->handleReturnToParameter($request);
+      return new RedirectResponse($this->urlGenerator->generate('<front>'));
+    }
+    else {
+      // TODO: Cas Login failed. Redirect somewhere and set a message maybe?
+      // Maybe the CasLogin service should throw exceptions instead, and
+      // we use that to set the message to the user and redirect back to
+      // the homepage.
       return new RedirectResponse($this->urlGenerator->generate('<front>'));
     }
   }

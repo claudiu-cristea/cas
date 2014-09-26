@@ -1,23 +1,8 @@
 <?php
 
-namespace Drupal\cas;
+namespace Drupal\cas\Service;
 
 class CasLogin {
-
-  /**
-   * @var \Drupal\cas\Cas
-   */
-  protected $cas;
-
-  /**
-   * Constructor.
-   *
-   * @param Cas $cas
-   *   The phpCAS client library.
-   */
-  public function __construct(Cas $cas) {
-    $this->cas = $cas;
-  }
 
   /**
    * Attempts to log the authenticated CAS user into Drupal.

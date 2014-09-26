@@ -1,17 +1,19 @@
 services:
   cas.force_login_subscriber:
     class: Drupal\cas\Subscriber\ForceLoginSubscriber
-    arguments: ['@request_stack', '@current_route_match', '@config.factory',  '@current_user', '@plugin.manager.condition', '@cas.cas']
+    arguments: ['@request_stack', '@current_route_match', '@config.factory',  '@current_user', '@plugin.manager.condition', '@cas.helper']
     tags:
       - { name: 'event_subscriber' }
   cas.gateway_mode_subscriber:
     class: Drupal\cas\Subscriber\GatewayModeSubscriber
-    arguments: ['@request_stack', '@current_route_match', '@config.factory',  '@current_user', '@plugin.manager.condition', '@cas.cas']
+    arguments: ['@request_stack', '@current_route_match', '@config.factory',  '@current_user', '@plugin.manager.condition', '@cas.helper']
     tags:
       - { name: 'event_subscriber' }
-  cas.cas:
-    class: Drupal\cas\Cas
-    arguments: ['@config.factory', '@url_generator', '@http_client']
+  cas.helper:
+    class: Drupal\cas\Service\CasHelper
+    arguments: ['@config.factory', '@url_generator']
+  cas.validator:
+    class: Drupal\cas\Service\CasValidator
+    arguments: ['@http_client', '@cas.helper']
   cas.login:
-    class: Drupal\cas\CasLogin
-    arguments: ['@cas.cas']
+    class: Drupal\cas\Service\CasLogin

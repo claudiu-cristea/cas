@@ -2,18 +2,17 @@
 
 namespace Drupal\cas\Controller;
 
-use Drupal\cas\Cas;
+use Drupal\cas\Service\CasHelper;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 class ForceLoginController implements ContainerInjectionInterface {
-
   /**
-   * @var \Drupal\cas\Cas
+   * @var \Drupal\cas\Service\CasHelper
    */
-  protected $cas;
+  protected $casHelper;
 
   /**
    * @var \Drupal\Core\Config\ConfigFactoryInterface
@@ -28,13 +27,13 @@ class ForceLoginController implements ContainerInjectionInterface {
   /**
    * Constructor.
    *
-   * @param Cas $cas
-   *   The CAS service.
+   * @param CasHelper $cas_helper
+   *   The CAS helper service.
    * @param RequestStack $request_stack
    *   Symfony request stack.
    */
-  public function __construct(Cas $cas, RequestStack $request_stack) {
-    $this->cas = $cas;
+  public function __construct(CasHelper $cas_helper, RequestStack $request_stack) {
+    $this->casHelper = $cas_helper;
     $this->requestStack = $request_stack;
   }
 
@@ -42,7 +41,7 @@ class ForceLoginController implements ContainerInjectionInterface {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('cas.cas'), $container->get('request_stack'));
+    return new static($container->get('cas.helper'), $container->get('request_stack'));
   }
 
   /**
@@ -50,7 +49,7 @@ class ForceLoginController implements ContainerInjectionInterface {
    */
   public function forceLogin() {
     $query_params = $this->requestStack->getCurrentRequest()->query->all();
-    $cas_login_url = $this->cas->getServerLoginUrl($query_params);
+    $cas_login_url = $this->casHelper->getServerLoginUrl($query_params);
 
     return new RedirectResponse($cas_login_url, 302);
   }
