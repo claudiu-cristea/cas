@@ -1,7 +1,7 @@
 <?php
 /**
  * @file
- * Contains \Drupal\cas\Form\CASSettings.
+ * Contains \Drupal\cas\Form\CasSettings.
  */
 
 namespace Drupal\cas\Form;
@@ -179,7 +179,7 @@ class CasSettings extends ConfigFormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
     $config = $this->config('cas.settings');
 
-    $server_data = $form_state['values']['server'];
+    $server_data = $form_state->getValue('server');
     $config
       ->set('server.version', $server_data['version'])
       ->set('server.hostname', $server_data['hostname'])
@@ -187,7 +187,7 @@ class CasSettings extends ConfigFormBase {
       ->set('server.path', $server_data['path'])
       ->set('server.cert', $server_data['cert']);
 
-    $gateway_data = $form_state['values']['gateway'];
+    $gateway_data = $form_state->getValue('gateway');
     $condition_values = new FormState(array(
       'values' => &$gateway_data['paths'],
     ));
@@ -196,7 +196,7 @@ class CasSettings extends ConfigFormBase {
       ->set('gateway.check_frequency', $gateway_data['check_frequency'])
       ->set('gateway.paths', $this->gatewayPaths->getConfiguration());
 
-    $forced_login_data = $form_state['values']['forced_login'];
+    $forced_login_data = $form_state->getValue('forced_login');
     $condition_values = new FormState(array(
       'values' => &$forced_login_data['paths'],
     ));
