@@ -122,7 +122,7 @@ class ServiceController implements ContainerInjectionInterface {
       return new RedirectResponse($this->urlGenerator->generate('<front>'));
     }
 
-    if ($this->casLogin->loginToDrupal($info['username'])) {
+    if ($this->casLogin->loginToDrupal($info['username'], $ticket)) {
       if ($proxy_client && isset($info['pgt'])) {
         $this->casHelper->storePGTSession($info['pgt']);
       }  
