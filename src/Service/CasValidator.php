@@ -43,8 +43,10 @@ class CasValidator {
    *   The CAS authentication ticket to validate.
    * @param array $service_params
    *   An array of query string parameters to add to the service URL.
+   * @param boolean $proxy_client
+   *   TRUE if the client is to be initialized as a proxy, FALSE otherwise.
    */
-  public function validateTicket($version, $ticket, $service_params = array()) {
+  public function validateTicket($version, $ticket, $service_params = array(), $proxy_client = FALSE) {
     try {
       $validate_url = $this->casHelper->getServerValidateUrl($ticket, $service_params);
       $options = array();
@@ -67,7 +69,7 @@ class CasValidator {
         return $this->validateVersion1($response_data);
 
       case "2.0":
-        return $this->validateVersion2($response_data);
+        return $this->validateVersion2($response_data, $proxy_client);
     }
   }
 
@@ -87,7 +89,7 @@ class CasValidator {
 
     // Ticket is valid, need to extract the username.
     $arr = preg_split('/\n/', $data);
-    return trim($arr[1]);
+    return array('username' => trim($arr[1]));
   }
 
   /**
@@ -95,8 +97,10 @@ class CasValidator {
    *
    * @param string $data
    *   The raw validation response data from CAS server.
+   * @param boolean $proxy_client
+   *   TRUE if the client is to be initialized as a proxy, FALSE otherwise.
    */
-  private function validateVersion2($data) {
+  private function validateVersion2($data, $proxy_client) {
     $dom = new \DOMDocument();
     $dom->preserveWhiteSpace = FALSE;
     $dom->encoding = "utf-8";
@@ -127,6 +131,15 @@ class CasValidator {
     if ($user_element->length == 0) {
       throw new CasValidateException("No user found in ticket validation response.");
     }
-    return $user_element->item(0)->nodeValue;
+
+    $info = array();
+    if ($proxy_client) {
+      // Extract the PGTIOU from the XML. Place it into $info['proxy'].
+    }
+    else {
+      $info['proxy'] = NULL;
+    }
+    $info['username'] = $user_element->item(0)->nodeValue;
+    return $info;
   }
 }

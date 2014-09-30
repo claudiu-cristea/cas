@@ -6,7 +6,7 @@ services:
       - { name: 'event_subscriber' }
   cas.helper:
     class: Drupal\cas\Service\CasHelper
-    arguments: ['@config.factory', '@url_generator']
+    arguments: ['@config.factory', '@url_generator', '@database']
   cas.validator:
     class: Drupal\cas\Service\CasValidator
     arguments: ['@http_client', '@cas.helper']
@@ -14,3 +14,6 @@ services:
     class: Drupal\cas\Service\CasLogin
   cas.logout:
     class: Drupal\cas\Service\CasLogout
+  cas.proxy_helper:
+    class: Drupal\cas\Service\CasProxyHelper
+    arguments: ['@http_client', '@cas.helper']

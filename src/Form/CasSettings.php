@@ -153,7 +153,26 @@ class CasSettings extends ConfigFormBase {
     );
     $this->forcedLoginPaths->setConfiguration($config->get('forced_login.paths'));
     $form['forced_login']['paths'] = $this->forcedLoginPaths->buildConfigurationForm(array(), $form_state);
-
+    
+    $form['proxy'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Proxy'),
+      '#open' => FALSE,
+      '#tree' => TRUE,
+      '#description' => $this->t(
+        'These options relate to the proxy feature of the CAS protocol, ' . 
+        'including configuring this client as a proxy and configuring ' .
+        'this client to accept proxied connections from other clients.'),
+    );
+    $form['proxy']['initialize'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Initialize this client as a proxy?'),
+      '#description' => $this->t(
+        'Initializing this client as a proxy allows it to access ' .
+        'CAS-protected resources from other clients that have been ' .
+        'configured to accept it as a proxy.'),
+      '#default_value' => $config->get('proxy.initialize'),
+    );
     return parent::buildForm($form, $form_state);
   }
 
@@ -198,6 +217,10 @@ class CasSettings extends ConfigFormBase {
     $config
       ->set('forced_login.enabled', $form_state->getValue(['forced_login', 'enabled']))
       ->set('forced_login.paths', $this->forcedLoginPaths->getConfiguration());
+    
+    $proxy_data = $form_state->getValue('proxy');
+    $config
+      ->set('proxy.initialize', $proxy_data['initialize']);
 
     $config->save();
     parent::submitForm($form, $form_state);

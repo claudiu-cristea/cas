@@ -17,3 +17,9 @@ cas.service:
     _controller: '\Drupal\cas\Controller\ServiceController::handle'
   requirements:
     _permission: 'access content'
+cas.proxyCallback:
+    path: '/casproxycallback'
+    defaults:
+      _controller: '\Drupal\cas\Controller\ProxyCallbackController::callback'
+    requirements:
+        _permission: 'access content'
