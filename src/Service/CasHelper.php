@@ -99,6 +99,16 @@ class CasHelper {
   }
 
   /**
+   * Return CA PEM file path.
+   *
+   * @return mixed|null
+   *   The path to the PEM file for the CA.
+   */
+  public function getCertificateAuthorityPem() {
+    return $this->settings->get('server.cert');
+  }
+
+  /**
    * Return the service URL.
    *
    * @param array $service_params
@@ -108,7 +118,7 @@ class CasHelper {
    *   The fully constructed service URL to use for CAS server.
    */
   private function getCasServiceUrl($service_params = array()) {
-    return $this->urlGenerator->generate('cas.validate', $service_params, TRUE);
+    return $this->urlGenerator->generate('cas.service', $service_params, TRUE);
   }
 
   /**
@@ -118,9 +128,14 @@ class CasHelper {
    *   The base URL.
    */
   private function getServerBaseUrl() {
-    // TODO, make sure we always end with a slash.
-    $server_path = $this->settings->get('server.path');
-    $server_base = $this->settings->get('server.hostname');
-    return sprintf('https://%s%s', $server_base, $server_path);
+    $url = 'https://' . $this->settings->get('server.hostname');
+    $port = $this->settings->get('server.port');
+    if (!empty($port)) {
+      $url .= ':' . $this->settings->get('server.port');
+    }
+    $url .= $this->settings->get('server.path');
+    $url = rtrim($url, '/') . '/';
+
+    return $url;
   }
 }

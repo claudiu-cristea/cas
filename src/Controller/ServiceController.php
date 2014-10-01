@@ -12,8 +12,10 @@ use Drupal\cas\Service\CasValidator;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
+use Drupal\cas\Service\CasLogout;
+use Symfony\Component\HttpFoundation\Response;
 
-class ValidateController implements ContainerInjectionInterface {
+class ServiceController implements ContainerInjectionInterface {
   /**
    * @var \Drupal\cas\Service\CasHelper
    */
@@ -28,6 +30,11 @@ class ValidateController implements ContainerInjectionInterface {
    * @var \Drupal\cas\Service\CasLogin
    */
   protected $casLogin;
+
+  /**
+   * @var \Drupal\cas\Service\CasLogout
+   */
+  protected $casLogout;
 
   /**
    * @var \Symfony\Component\HttpFoundation\RequestStack
@@ -48,13 +55,16 @@ class ValidateController implements ContainerInjectionInterface {
    *   The CAS Validator service.
    * @param CasLogin $cas_login
    *   The CAS Login service.
+   * @param CasLogout $cas_logout
+   *   The CAS Logout service.
    * @param UrlGeneratorInterface $url_generator
    *   The URL generator.
    */
-  public function __construct(CasHelper $cas_helper, CasValidator $cas_validator, CasLogin $cas_login, RequestStack $request_stack, UrlGeneratorInterface $url_generator) {
+  public function __construct(CasHelper $cas_helper, CasValidator $cas_validator, CasLogin $cas_login, CasLogout $cas_logout, RequestStack $request_stack, UrlGeneratorInterface $url_generator) {
     $this->casHelper = $cas_helper;
     $this->casValidator = $cas_validator;
     $this->casLogin = $cas_login;
+    $this->casLogout = $cas_logout;
     $this->requestStack = $request_stack;
     $this->urlGenerator = $url_generator;
   }
@@ -63,14 +73,26 @@ class ValidateController implements ContainerInjectionInterface {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('cas.helper'), $container->get('cas.validator'), $container->get('cas.login'), $container->get('request_stack'), $container->get('url_generator'));
+    return new static($container->get('cas.helper'), $container->get('cas.validator'), $container->get('cas.login'), $container->get('cas.logout'), $container->get('request_stack'), $container->get('url_generator'));
   }
 
   /**
-   * Handles a request to validate a CAS service ticket.
+   * Handles a request to either validate a user login or log a user out.
+   *
+   * The path that this controller/action handle are always set to the "service"
+   * when authenticating with the CAS server, so CAS server communicates back to
+   * the Drupal site using this controller.
    */
-  public function validate() {
+  public function handle() {
     $request = $this->requestStack->getCurrentRequest();
+
+    // First, check if this is a single-log-out (SLO) request from the server.
+    if ($request->request->has('logoutRequest')) {
+      $this->casLogout->handleSlo($request->request->get('logoutRequest'));
+      // Always return a 200 code. CAS Server doens't care either way what
+      // happens here, since it is a fire-and-forget approach taken.
+      return new Response('', 200);
+    }
 
     // Check if there is a ticket parameter. If there isn't, we could be
     // returning from a gateway request and the user may not be logged into CAS.
@@ -98,7 +120,7 @@ class ValidateController implements ContainerInjectionInterface {
       return new RedirectResponse($this->urlGenerator->generate('<front>'));
     }
 
-    if ($this->casLogin->loginToDrupal($username)) {
+    if ($this->casLogin->loginToDrupal($username, $ticket)) {
       $this->handleReturnToParameter($request);
       return new RedirectResponse($this->urlGenerator->generate('<front>'));
     }

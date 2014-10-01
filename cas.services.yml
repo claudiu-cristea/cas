@@ -17,3 +17,5 @@ services:
     arguments: ['@http_client', '@cas.helper']
   cas.login:
     class: Drupal\cas\Service\CasLogin
+  cas.logout:
+    class: Drupal\cas\Service\CasLogout

@@ -47,7 +47,15 @@ class CasValidator {
   public function validateTicket($version, $ticket, $service_params = array()) {
     try {
       $validate_url = $this->casHelper->getServerValidateUrl($ticket, $service_params);
-      $response = $this->httpClient->get($validate_url);
+      $options = array();
+      $cert = $this->casHelper->getCertificateAuthorityPem();
+      if (!empty($cert)) {
+        $options['verify'] = $cert;
+      }
+      else {
+        $options['verify'] = FALSE;
+      }
+      $response = $this->httpClient->get($validate_url, $options);
     }
     catch (ClientException $e) {
       throw new CasValidateException("Error with request to validate ticket: " . $e->getMessage());

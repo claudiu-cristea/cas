@@ -48,6 +48,8 @@ class ForceLoginController implements ContainerInjectionInterface {
    * Handles a page request for our forced login route.
    */
   public function forceLogin() {
+    // TODO: What if CAS is not configured? need to handle that case.
+
     $query_params = $this->requestStack->getCurrentRequest()->query->all();
     $cas_login_url = $this->casHelper->getServerLoginUrl($query_params);
 
