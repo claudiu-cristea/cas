@@ -135,9 +135,14 @@ class CasValidator {
     $info = array();
     if ($proxy_client) {
       // Extract the PGTIOU from the XML. Place it into $info['proxy'].
+      $pgt_element = $success_element->getElementsByTagName("proxyGrantingTicket");
+      if ($pgt_element->length == 0) {
+        throw new CasValidateException("Proxy intialized, but no PGTIOU provided in response.");
+      }
+      $info['pgt'] = $pgt_element->item(0)->nodeValue;
     }
     else {
-      $info['proxy'] = NULL;
+      $info['pgt'] = NULL;
     }
     $info['username'] = $user_element->item(0)->nodeValue;
     return $info;
