@@ -106,15 +106,14 @@ class CasSettings extends ConfigFormBase {
       '#default_value' => $config->get('server.cert'),
     );
 
-
     $form['gateway'] = array(
       '#type' => 'details',
-      '#title' => $this->t('Gateweay Feature'),
+      '#title' => $this->t('Gateweay Feature (Auto Login)'),
       '#open' => TRUE,
       '#tree' => TRUE,
       '#description' => $this->t(
         'This implements the <a href="@cas-gateway">Gateway feature</a> of the CAS Protocol. ' .
-        'When enabled, Drupal will check if an anonymous user is logged into your CAS server before ' .
+        'When enabled, Drupal will check if a visitor is already logged into your CAS server before ' .
         'serving a page request. If they have an active CAS session, they will be automatically ' .
         'logged into the Drupal site. This is done by quickly redirecting them to the CAS server to perform the ' .
         'active session check, and then redirecting them back to page they initially requested.',
