@@ -109,7 +109,7 @@ class CasSettings extends ConfigFormBase {
     $form['gateway'] = array(
       '#type' => 'details',
       '#title' => $this->t('Gateweay Feature (Auto Login)'),
-      '#open' => TRUE,
+      '#open' => FALSE,
       '#tree' => TRUE,
       '#description' => $this->t(
         'This implements the <a href="@cas-gateway">Gateway feature</a> of the CAS Protocol. ' .
@@ -136,7 +136,7 @@ class CasSettings extends ConfigFormBase {
     $form['forced_login'] = array(
       '#type' => 'details',
       '#title' => $this->t('Forced Login'),
-      '#open' => TRUE,
+      '#open' => FALSE,
       '#tree' => TRUE,
       '#description' => $this->t(
         'Anonymous users will be forced to login through CAS when enabled. ' .
@@ -152,6 +152,22 @@ class CasSettings extends ConfigFormBase {
     );
     $this->forcedLoginPaths->setConfiguration($config->get('forced_login.paths'));
     $form['forced_login']['paths'] = $this->forcedLoginPaths->buildConfigurationForm(array(), $form_state);
+
+    $form['user_accounts'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('User Account Handling'),
+      '#open' => FALSE,
+      '#tree' => TRUE,
+    );
+    $form['user_accounts']['auto_register'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Auto Register Users'),
+      '#description' => $this->t(
+        'Enable to automatically create local Drupal accounts for first-time CAS logins. ' .
+        'If disabled, users must be pre-registered before being allowed to log in.'
+      ),
+      '#default_value' => $config->get('user_accounts.auto_register'),
+    );
 
     $form['proxy'] = array(
       '#type' => 'details',
@@ -171,22 +187,6 @@ class CasSettings extends ConfigFormBase {
         'CAS-protected resources from other clients that have been ' .
         'configured to accept it as a proxy.'),
       '#default_value' => $config->get('proxy.initialize'),
-    );
-
-    $form['user_accounts'] = array(
-      '#type' => 'details',
-      '#title' => $this->t('User Account Handling'),
-      '#open' => TRUE,
-      '#tree' => TRUE,
-    );
-    $form['user_accounts']['auto_register'] = array(
-      '#type' => 'checkbox',
-      '#title' => $this->t('Auto Register Users'),
-      '#description' => $this->t(
-        'Enable to automatically create local Drupal accounts for first-time CAS logins. ' .
-        'If disabled, users must be pre-registered before being allowed to log in.'
-      ),
-      '#default_value' => $config->get('user_accounts.auto_register'),
     );
 
     return parent::buildForm($form, $form_state);
