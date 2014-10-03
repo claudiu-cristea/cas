@@ -43,10 +43,8 @@ class CasValidator {
    *   The CAS authentication ticket to validate.
    * @param array $service_params
    *   An array of query string parameters to add to the service URL.
-   * @param bool $proxy_client
-   *   TRUE if the client is to be initialized as a proxy, FALSE otherwise.
    */
-  public function validateTicket($version, $ticket, $service_params = array(), $proxy_client = FALSE) {
+  public function validateTicket($version, $ticket, $service_params = array()) {
     try {
       $validate_url = $this->casHelper->getServerValidateUrl($ticket, $service_params);
       $options = array();
@@ -69,7 +67,7 @@ class CasValidator {
         return $this->validateVersion1($response_data);
 
       case "2.0":
-        return $this->validateVersion2($response_data, $proxy_client);
+        return $this->validateVersion2($response_data);
     }
   }
 
@@ -100,7 +98,7 @@ class CasValidator {
    * @param bool $proxy_client
    *   TRUE if the client is to be initialized as a proxy, FALSE otherwise.
    */
-  private function validateVersion2($data, $proxy_client) {
+  private function validateVersion2($data) {
     $dom = new \DOMDocument();
     $dom->preserveWhiteSpace = FALSE;
     $dom->encoding = "utf-8";
@@ -133,7 +131,7 @@ class CasValidator {
     }
 
     $info = array();
-    if ($proxy_client) {
+    if ($this->casHelper->isProxy()) {
       // Extract the PGTIOU from the XML. Place it into $info['proxy'].
       $pgt_element = $success_element->getElementsByTagName("proxyGrantingTicket");
       if ($pgt_element->length == 0) {

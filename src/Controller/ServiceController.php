@@ -111,10 +111,9 @@ class ServiceController implements ContainerInjectionInterface {
     $ticket = $service_params['ticket'];
     unset($service_params['ticket']);
     $cas_version = $this->casHelper->getCasProtocolVersion();
-    $proxy_client = $this->casHelper->isProxy();
     try {
       $info = $this->casValidator->validateTicket(
-        $cas_version, $ticket, $service_params, $proxy_client);
+        $cas_version, $ticket, $service_params);
     }
     catch (CasValidateException $e) {
       // Validation failed, redirect to homepage and set message.
@@ -123,7 +122,7 @@ class ServiceController implements ContainerInjectionInterface {
     }
 
     if ($this->casLogin->loginToDrupal($info['username'], $ticket)) {
-      if ($proxy_client && isset($info['pgt'])) {
+      if ($this->casHelper->isProxy() && isset($info['pgt'])) {
         $this->casHelper->storePGTSession($info['pgt']);
       }
       $this->handleReturnToParameter($request);
