@@ -95,8 +95,6 @@ class CasValidator {
    *
    * @param string $data
    *   The raw validation response data from CAS server.
-   * @param bool $proxy_client
-   *   TRUE if the client is to be initialized as a proxy, FALSE otherwise.
    */
   private function validateVersion2($data) {
     $dom = new \DOMDocument();
