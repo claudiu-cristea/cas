@@ -258,7 +258,7 @@ class CasSubscriber implements EventSubscriberInterface {
       'cas.service',
     );
 
-    $current_route = $this->requestStack->getCurrentRequest()->get(RouteObjectInterface::ROUTE_NAME);
+    $current_route = $this->routeMatcher->getRouteName();
     if (in_array($current_route, $routes_to_ignore)) {
       return TRUE;
     }
