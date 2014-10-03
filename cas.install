@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Implements hook_install().
+ * Implements hook_schema().
  */
 function cas_schema() {
   $schema = array();
@@ -37,5 +37,27 @@ function cas_schema() {
     ),
   );
 
+  $schema['cas_pgt_storage'] = array(
+    // Database table for storing PGT/PGTIOU relationships.
+    'description' => 'Stores PGT/PGTIOU relationships.',
+    'fields' => array(
+      'pgt_iou' => array(
+        'description' => 'PGTIOU is the key returned from the CAS server for the PGT',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'pgt' => array(
+        'description' => 'The actual ProxyGrantingTicket value.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+    ),
+    'unique keys' => array(
+      'pgtiou_pgt' => array('pgt_iou', 'pgt'),
+    ),
+    'primary key' => array('pgt_iou'),
+  );
   return $schema;
 }

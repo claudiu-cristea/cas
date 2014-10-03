@@ -12,3 +12,6 @@ gateway:
 forced_login:
   enabled: false
   paths: {}
+
+proxy:
+  initialize: false
