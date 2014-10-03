@@ -106,7 +106,6 @@ class CasSettings extends ConfigFormBase {
       '#default_value' => $config->get('server.cert'),
     );
 
-
     $form['gateway'] = array(
       '#type' => 'details',
       '#title' => $this->t('Gateweay Feature'),
@@ -153,14 +152,14 @@ class CasSettings extends ConfigFormBase {
     );
     $this->forcedLoginPaths->setConfiguration($config->get('forced_login.paths'));
     $form['forced_login']['paths'] = $this->forcedLoginPaths->buildConfigurationForm(array(), $form_state);
-    
+
     $form['proxy'] = array(
       '#type' => 'details',
       '#title' => $this->t('Proxy'),
       '#open' => FALSE,
       '#tree' => TRUE,
       '#description' => $this->t(
-        'These options relate to the proxy feature of the CAS protocol, ' . 
+        'These options relate to the proxy feature of the CAS protocol, ' .
         'including configuring this client as a proxy and configuring ' .
         'this client to accept proxied connections from other clients.'),
     );
@@ -217,7 +216,7 @@ class CasSettings extends ConfigFormBase {
     $config
       ->set('forced_login.enabled', $form_state->getValue(['forced_login', 'enabled']))
       ->set('forced_login.paths', $this->forcedLoginPaths->getConfiguration());
-    
+
     $proxy_data = $form_state->getValue('proxy');
     $config
       ->set('proxy.initialize', $proxy_data['initialize']);

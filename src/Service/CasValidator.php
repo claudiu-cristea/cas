@@ -43,7 +43,7 @@ class CasValidator {
    *   The CAS authentication ticket to validate.
    * @param array $service_params
    *   An array of query string parameters to add to the service URL.
-   * @param boolean $proxy_client
+   * @param bool $proxy_client
    *   TRUE if the client is to be initialized as a proxy, FALSE otherwise.
    */
   public function validateTicket($version, $ticket, $service_params = array(), $proxy_client = FALSE) {
@@ -97,7 +97,7 @@ class CasValidator {
    *
    * @param string $data
    *   The raw validation response data from CAS server.
-   * @param boolean $proxy_client
+   * @param bool $proxy_client
    *   TRUE if the client is to be initialized as a proxy, FALSE otherwise.
    */
   private function validateVersion2($data, $proxy_client) {

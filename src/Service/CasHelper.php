@@ -8,7 +8,7 @@ use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Database\Connection;
 
 class CasHelper {
-  
+
   /**
    * @var \Drupal\Core\Database\Connection
    */
@@ -153,7 +153,7 @@ class CasHelper {
   /**
    * Determine whether this client is configured to act as a proxy.
    *
-   * @return boolean
+   * @return bool
    *   TRUE if proxy, FALSE otherwise.
    */
   public function isProxy() {
@@ -176,14 +176,16 @@ class CasHelper {
   /**
    * Lookup a PGT by PGTIOU.
    *
-   * @param string $pgtIou
+   * @param string $pgt_iou
    *   A pgtIou to use a key for the lookup.
+   *
    * @return string
    *   The PGT value.
    */
-  private function lookupPgtByPgtIou($pgtIou) {
+  private function lookupPgtByPgtIou($pgt_iou) {
     return $this->connection->select('cas_pgt_storage', 'c')
       ->fields('c', array('pgt'))
+      ->condition('pgt_iou', $pgt_iou)
       ->execute()
       ->fetch();
   }
@@ -191,26 +193,26 @@ class CasHelper {
   /**
    * Store the PGT in the user session.
    *
-   * @param string $pgtIou
-   *  A pgtIou to identify the PGT.
+   * @param string $pgt_iou
+   *   A pgtIou to identify the PGT.
    */
-  public function storePGTSession($pgtIou) {
-    $pgt = $this->lookupPgtByPgtIou($pgtIou);
+  public function storePGTSession($pgt_iou) {
+    $pgt = $this->lookupPgtByPgtIou($pgt_iou);
     $_SESSION['cas_pgt'] = $pgt;
     // Now that we have the pgt in the session,
     // we can delete the database mapping.
-    $this->deletePgtMappingByPgtIou($pgtIou);
+    $this->deletePgtMappingByPgtIou($pgt_iou);
   }
 
   /**
    * Delete a PGT/PGTIOU mapping from the database.
    *
-   * @param string $pgtIou
+   * @param string $pgt_iou
    *   A pgtIou string to use as the deletion key.
    */
-  private function deletePgtMappingByPgtIou($pgtIou) {
+  private function deletePgtMappingByPgtIou($pgt_iou) {
     $this->connection->delete('cas_pgt_storage')
-      ->condition('pgt_iou', $pgtIou)
+      ->condition('pgt_iou', $pgt_iou)
       ->execute();
   }
 

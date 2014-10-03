@@ -38,6 +38,7 @@ class CasProxyHelper {
    *
    * @param string $target_service
    *   The service to be proxied.
+   *
    * @return string
    *   The fully formatted URL.
    */
@@ -52,11 +53,12 @@ class CasProxyHelper {
   /**
    * Proxy authenticates to a target service.
    *
-   * Returns cookies from the proxied service in a 
+   * Returns cookies from the proxied service in a
    * CookieJar object for use when later accessing resources.
    *
    * @param string $target_service
    *   The service to be proxied.
+   *
    * @return mixed
    *   \GuzzleHttp\Cookie\CookieJar if proxy auth success, FALSE otherwise.
    */
@@ -80,14 +82,14 @@ class CasProxyHelper {
       }
       $params['ticket'] = $proxy_ticket;
       $service_url = $target_service . "?" . UrlHelper::buildQuery($params);
-      $cookieJar = new CookieJar();
+      $cookie_jar = new CookieJar();
       try {
-        $data = $this->httpClient->get($service_url, ['cookies' => $cookieJar]);
+        $data = $this->httpClient->get($service_url, ['cookies' => $cookie_jar]);
       }
       catch (ClientException $e) {
         return FALSE;
       }
-      return $cookieJar;
+      return $cookie_jar;
     }
   }
 
@@ -96,6 +98,7 @@ class CasProxyHelper {
    *
    * @param string $xml
    *   XML response from CAS Server.
+   *
    * @return mixed
    *   A proxy ticket to be used with the target service, FALSE on failure.
    */
