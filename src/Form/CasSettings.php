@@ -172,6 +172,23 @@ class CasSettings extends ConfigFormBase {
         'configured to accept it as a proxy.'),
       '#default_value' => $config->get('proxy.initialize'),
     );
+
+    $form['user_accounts'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('User Account Handling'),
+      '#open' => TRUE,
+      '#tree' => TRUE,
+    );
+    $form['user_accounts']['auto_register'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Auto Register Users'),
+      '#description' => $this->t(
+        'Enable to automatically create local Drupal accounts for first-time CAS logins. ' .
+        'If disabled, users must be pre-registered before being allowed to log in.'
+      ),
+      '#default_value' => $config->get('user_accounts.auto_register'),
+    );
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -217,9 +234,11 @@ class CasSettings extends ConfigFormBase {
       ->set('forced_login.enabled', $form_state->getValue(['forced_login', 'enabled']))
       ->set('forced_login.paths', $this->forcedLoginPaths->getConfiguration());
 
-    $proxy_data = $form_state->getValue('proxy');
     $config
-      ->set('proxy.initialize', $proxy_data['initialize']);
+      ->set('proxy.initialize', $form_state->getValue(['proxy', 'initialize']));
+
+    $config
+      ->set('user_accounts.auto_register', $form_state->getValue(['user_accounts', 'auto_register']));
 
     $config->save();
     parent::submitForm($form, $form_state);

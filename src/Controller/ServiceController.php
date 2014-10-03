@@ -2,6 +2,7 @@
 
 namespace Drupal\cas\Controller;
 
+use Drupal\cas\Exception\CasLoginException;
 use Drupal\cas\Service\CasHelper;
 use Drupal\cas\Service\CasLogin;
 use Drupal\cas\Exception\CasValidateException;
@@ -121,20 +122,21 @@ class ServiceController implements ContainerInjectionInterface {
       return new RedirectResponse($this->urlGenerator->generate('<front>'));
     }
 
-    if ($this->casLogin->loginToDrupal($info['username'], $ticket)) {
+    try {
+      $this->casLogin->loginToDrupal($info['username'], $ticket);
       if ($this->casHelper->isProxy() && isset($info['pgt'])) {
         $this->casHelper->storePGTSession($info['pgt']);
       }
-      $this->handleReturnToParameter($request);
-      return new RedirectResponse($this->urlGenerator->generate('<front>'));
+      drupal_set_message(t('You have been logged in.'));
     }
-    else {
-      // TODO: Cas Login failed. Redirect somewhere and set a message maybe?
-      // Maybe the CasLogin service should throw exceptions instead, and
-      // we use that to set the message to the user and redirect back to
-      // the homepage.
-      return new RedirectResponse($this->urlGenerator->generate('<front>'));
+    catch (CasLoginException $e) {
+      drupal_set_message(t('There was a problem logging in, please contact a site administrator.'), 'error');
     }
+
+    // Convert returnto parameter to proper destination parameter
+    // before redirecting.
+    $this->handleReturnToParameter($request);
+    return new RedirectResponse($this->urlGenerator->generate('<front>'));
   }
 
   /**

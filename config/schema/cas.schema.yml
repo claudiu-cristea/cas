@@ -43,3 +43,10 @@ cas.settings:
         paths:
           type: condition.plugin.request_path
           label: 'Paths'
+    user_accounts:
+      type: mapping
+      label: 'User Accounts'
+      mapping:
+        auto_register:
+          type: boolean
+          label: 'Auto Register Users'

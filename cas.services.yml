@@ -12,6 +12,7 @@ services:
     arguments: ['@http_client', '@cas.helper']
   cas.login:
     class: Drupal\cas\Service\CasLogin
+    arguments: ['@config.factory', '@entity.manager']
   cas.logout:
     class: Drupal\cas\Service\CasLogout
   cas.proxy_helper:
