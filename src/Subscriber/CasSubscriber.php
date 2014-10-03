@@ -1,13 +1,14 @@
 <?php
 /**
  * @file
- * Contains Drupal\cas\Subscriber\GatewayModeSubscriber.
+ * Contains Drupal\cas\Subscriber\CasSubscriber.
  */
 
 namespace Drupal\cas\Subscriber;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Session\AccountInterface;
+use Symfony\Cmf\Component\Routing\RouteObjectInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
@@ -18,9 +19,9 @@ use Drupal\Core\Condition\ConditionManager;
 use Drupal\cas\Service\CasHelper;
 
 /**
- * Provides a GatewayModeSubscriber.
+ * Provides a CasSubscriber.
  */
-class GatewayModeSubscriber implements EventSubscriberInterface {
+class CasSubscriber implements EventSubscriberInterface {
 
   /**
    * The request.
@@ -63,7 +64,7 @@ class GatewayModeSubscriber implements EventSubscriberInterface {
   protected $casHelper;
 
   /**
-   * Constructs a new GatewayModeSusbcriber.
+   * Constructs a new CasSubscriber.
    *
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The request.
@@ -91,38 +92,103 @@ class GatewayModeSubscriber implements EventSubscriberInterface {
    * {@inheritdoc}
    */
   public static function getSubscribedEvents() {
-    $events[KernelEvents::REQUEST][] = array('gatewayDetect', 20);
+    $events[KernelEvents::REQUEST][] = array('handle', 20);
     return $events;
   }
 
   /**
-   * The entry point for our subscriber to implement the gateway feature of CAS.
+   * The entry point for our subscriber.
    *
    * @param GetResponseEvent $event
    *   The response event from the kernel.
    */
-  public function gatewayDetect(GetResponseEvent $event) {
+  public function handle(GetResponseEvent $event) {
     // Nothing to do if the user is already logged in.
-    if ($this->currentUser->id() != 0) {
-      return NULL;
+    if ($this->currentUser->isAuthenticated()) {
+      return;
+    }
+
+    // Don't do anything if the current route is the service route.
+    if ($this->isIgnoreableRoute()) {
+      return;
     }
 
     // Don't do anything if this is a request from cron, drush, crawler, etc.
     if ($this->isNotNormalRequest()) {
-      return NULL;
+      return;
     }
 
-    $gateway_options = array(
+    // Check to see if we should require a forced login. It will set a response
+    // on the event if so.
+    if ($this->handleForcedPath($event)) {
+      return;
+    }
+
+    // Check to see if we should intitiate a gateway auth check. It will set a
+    // response on the event if so.
+    $this->handleGateway($event);
+  }
+
+  /**
+   * Check if a forced login path is configured, and force login if so.
+   *
+   * @return bool
+   *   TRUE if we are forcing the login, FALSE otherwise
+   */
+  private function handleForcedPath(GetResponseEvent $event) {
+    $config = $this->configFactory->get('cas.settings');
+    if ($config->get('forced_login.enabled') != TRUE) {
+      return FALSE;
+    }
+
+    // Check if user provided specific paths to force/not force a login.
+    $condition = $this->conditionManager->createInstance('request_path');
+    $condition->setConfiguration($config->get('forced_login.paths'));
+
+    if ($this->conditionManager->execute($condition)) {
+      $cas_login_url = $this->casHelper->getServerLoginUrl(array(
+        'returnto' => $this->requestStack->getCurrentRequest()->attributes->get('_system_path'),
+      ));
+      $event->setResponse(new RedirectResponse($cas_login_url));
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Check if we should implement the CAS gateway feature.
+   *
+   * @return bool
+   *   TRUE if gateway mode was implemented, FALSE otherwise.
+   *
+   * @TODO We need to handle the "check once" vs "check always".
+   */
+  private function handleGateway(GetResponseEvent $event) {
+    // These options enable gateway mode.
+    $gateway_enabled_options = array(
       CAS_CHECK_ONCE,
       CAS_CHECK_ALWAYS,
     );
 
-    // @TODO, incorporate the paths from settings as well.
     $config = $this->configFactory->get('cas.settings');
-    if (in_array($config->get('gateway.check_frequency'), $gateway_options)) {
-      $cas_login_url = $this->casHelper->getServerLoginUrl(array(), TRUE);
-      return new RedirectResponse($cas_login_url, 302);
+    $check_frequency = $config->get('gateway.check_frequency');
+    if (!in_array($check_frequency, $gateway_enabled_options)) {
+      return FALSE;
     }
+
+    // User can indicate specific paths to enable (or disable) gateway mode.
+    $condition = $this->conditionManager->createInstance('request_path');
+    $condition->setConfiguration($config->get('gateway.paths'));
+
+    if ($this->conditionManager->execute($condition)) {
+      $cas_login_url = $this->casHelper->getServerLoginUrl(array(
+        'returnto' => $this->requestStack->getCurrentRequest()->attributes->get('_system_path'),
+      ), TRUE);
+      $event->setResponse(new RedirectResponse($cas_login_url));
+      return TRUE;
+    }
+
+    return FALSE;
   }
 
   /**
@@ -134,7 +200,7 @@ class GatewayModeSubscriber implements EventSubscriberInterface {
    * @return bool
    *   Whether or not this is a normal request.
    */
-  public function isNotNormalRequest() {
+  private function isNotNormalRequest() {
     $current_request = $this->requestStack->getCurrentRequest();
     if (stristr($current_request->server->get('SCRIPT_FILENAME'), 'xmlrpc.php')) {
       return TRUE;
@@ -176,6 +242,25 @@ class GatewayModeSubscriber implements EventSubscriberInterface {
           return TRUE;
         }
       }
+    }
+
+    return FALSE;
+  }
+
+  /**
+   * Checks current request route against a list of routes we want to ignore.
+   *
+   * @return bool
+   *   TRUE if we should ignore this request, FALSE otherwise.
+   */
+  private function isIgnoreableRoute() {
+    $routes_to_ignore = array(
+      'cas.service',
+    );
+
+    $current_route = $this->requestStack->getCurrentRequest()->get(RouteObjectInterface::ROUTE_NAME);
+    if (in_array($current_route, $routes_to_ignore)) {
+      return TRUE;
     }
 
     return FALSE;
