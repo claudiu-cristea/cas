@@ -113,19 +113,18 @@ class ServiceController implements ContainerInjectionInterface {
     unset($service_params['ticket']);
     $cas_version = $this->casHelper->getCasProtocolVersion();
     try {
-      $info = $this->casValidator->validateTicket(
-        $cas_version, $ticket, $service_params);
+      $cas_validation_info = $this->casValidator->validateTicket($cas_version, $ticket, $service_params);
     }
     catch (CasValidateException $e) {
       // Validation failed, redirect to homepage and set message.
-      drupal_set_message(t('Error validating user.'), 'error');
+      drupal_set_message(t('There was a problem validating your login, please contact a site administrator.'), 'error');
       return new RedirectResponse($this->urlGenerator->generate('<front>'));
     }
 
     try {
-      $this->casLogin->loginToDrupal($info['username'], $ticket);
-      if ($this->casHelper->isProxy() && isset($info['pgt'])) {
-        $this->casHelper->storePGTSession($info['pgt']);
+      $this->casLogin->loginToDrupal($cas_validation_info['username'], $ticket);
+      if ($this->casHelper->isProxy() && isset($cas_validation_info['pgt'])) {
+        $this->casHelper->storePGTSession($cas_validation_info['pgt']);
       }
       drupal_set_message(t('You have been logged in.'));
     }

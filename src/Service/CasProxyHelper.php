@@ -5,7 +5,6 @@ namespace Drupal\cas\Service;
 use Drupal\Core\Http\Client;
 use GuzzleHttp\Exception\ClientException;
 use Drupal\Component\Utility\Urlhelper;
-use Drupal\cas\Exception\CasValidateException;
 use GuzzleHttp\Cookie\CookieJar;
 
 class CasProxyHelper {

@@ -5,7 +5,6 @@ namespace Drupal\cas\Controller;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Database\Connection;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -61,7 +60,7 @@ class ProxyCallbackController implements ContainerInjectionInterface {
       // Store the pgtIou and pgtId in the database for later use.
       $pgt_id = $request->query->get('pgtId');
       $pgt_iou = $request->query->get('pgtIou');
-      $result = $this->connection->insert('cas_pgt_storage')
+      $this->connection->insert('cas_pgt_storage')
         ->fields(array('pgt_iou', 'pgt'), array($pgt_iou, $pgt_id))
         ->execute();
       // PGT stored properly, tell CAS Server to proceed.
