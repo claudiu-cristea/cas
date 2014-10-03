@@ -161,14 +161,12 @@ class CasSettings extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
-    $condition_values = new FormState(array(
-      'values' => &$form_state['values']['gateway']['paths'],
-    ));
+    $condition_values = (new FormState())
+      ->setValues($form_state->getValue(['gateway', 'paths']));
     $this->gatewayPaths->validateConfigurationForm($form, $condition_values);
 
-    $condition_values = new FormState(array(
-      'values' => &$form_state['values']['forced_login']['paths'],
-    ));
+    $condition_values = (new FormState())
+      ->setValues($form_state->getValue(['forced_login', 'paths']));
     $this->forcedLoginPaths->validateConfigurationForm($form, $condition_values);
     return parent::validateForm($form, $form_state);
   }
@@ -187,22 +185,18 @@ class CasSettings extends ConfigFormBase {
       ->set('server.path', $server_data['path'])
       ->set('server.cert', $server_data['cert']);
 
-    $gateway_data = $form_state->getValue('gateway');
-    $condition_values = new FormState(array(
-      'values' => &$gateway_data['paths'],
-    ));
+    $condition_values = (new FormState())
+      ->setValues($form_state->getValue(['gateway', 'paths']));
     $this->gatewayPaths->submitConfigurationForm($form, $condition_values);
     $config
-      ->set('gateway.check_frequency', $gateway_data['check_frequency'])
+      ->set('gateway.check_frequency', $form_state->getValue(['gateway', 'check_frequency']))
       ->set('gateway.paths', $this->gatewayPaths->getConfiguration());
 
-    $forced_login_data = $form_state->getValue('forced_login');
-    $condition_values = new FormState(array(
-      'values' => &$forced_login_data['paths'],
-    ));
+    $condition_values = (new FormState())
+      ->setValues($form_state->getValue(['forced_login', 'paths']));
     $this->forcedLoginPaths->submitConfigurationForm($form, $condition_values);
     $config
-      ->set('forced_login.enabled', $forced_login_data['enabled'])
+      ->set('forced_login.enabled', $form_state->getValue(['forced_login', 'enabled']))
       ->set('forced_login.paths', $this->forcedLoginPaths->getConfiguration());
 
     $config->save();
