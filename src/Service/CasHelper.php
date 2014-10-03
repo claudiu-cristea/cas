@@ -5,8 +5,14 @@ namespace Drupal\cas\Service;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Drupal\Component\Utility\UrlHelper;
+use Drupal\Core\Database\Connection;
 
 class CasHelper {
+
+  /**
+   * @var \Drupal\Core\Database\Connection
+   */
+  protected $connection;
 
   /**
    * @var \Drupal\Core\Config\Config
@@ -25,10 +31,13 @@ class CasHelper {
    *   The configuration factory.
    * @param UrlGeneratorInterface $url_generator
    *   The URL generator.
+   * @param Connection $database_connection
+   *   The database service.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator) {
+  public function __construct(ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator, Connection $database_connection) {
     $this->configFactory = $config_factory;
     $this->urlGenerator = $url_generator;
+    $this->connection = $database_connection;
 
     $this->settings = $config_factory->get('cas.settings');
   }
@@ -84,7 +93,9 @@ class CasHelper {
     $params = array();
     $params['service'] = $this->getCasServiceUrl($service_params);
     $params['ticket'] = $ticket;
-
+    if ($this->isProxy()) {
+      $params['pgtUrl'] = $this->formatProxyCallbackURL();
+    }
     return $validate_url . '?' . UrlHelper::buildQuery($params);
   }
 
@@ -127,7 +138,7 @@ class CasHelper {
    * @return string
    *   The base URL.
    */
-  private function getServerBaseUrl() {
+  public function getServerBaseUrl() {
     $url = 'https://' . $this->settings->get('server.hostname');
     $port = $this->settings->get('server.port');
     if (!empty($port)) {
@@ -138,4 +149,71 @@ class CasHelper {
 
     return $url;
   }
+
+  /**
+   * Determine whether this client is configured to act as a proxy.
+   *
+   * @return bool
+   *   TRUE if proxy, FALSE otherwise.
+   */
+  public function isProxy() {
+    return $this->settings->get('proxy.initialize') == TRUE;
+  }
+
+  /**
+   * Format the pgtCallbackURL parameter for use with proxying.
+   *
+   * @return string
+   *   The pgtCallbackURL, fully formatted.
+   */
+  private function formatProxyCallbackURL() {
+    return $this->urlGenerator->generateFromPath('casproxycallback', array(
+      'absolute' => TRUE,
+      'https' => TRUE,
+    ));
+  }
+
+  /**
+   * Lookup a PGT by PGTIOU.
+   *
+   * @param string $pgt_iou
+   *   A pgtIou to use a key for the lookup.
+   *
+   * @return string
+   *   The PGT value.
+   */
+  private function lookupPgtByPgtIou($pgt_iou) {
+    return $this->connection->select('cas_pgt_storage', 'c')
+      ->fields('c', array('pgt'))
+      ->condition('pgt_iou', $pgt_iou)
+      ->execute()
+      ->fetch();
+  }
+
+  /**
+   * Store the PGT in the user session.
+   *
+   * @param string $pgt_iou
+   *   A pgtIou to identify the PGT.
+   */
+  public function storePGTSession($pgt_iou) {
+    $pgt = $this->lookupPgtByPgtIou($pgt_iou);
+    $_SESSION['cas_pgt'] = $pgt;
+    // Now that we have the pgt in the session,
+    // we can delete the database mapping.
+    $this->deletePgtMappingByPgtIou($pgt_iou);
+  }
+
+  /**
+   * Delete a PGT/PGTIOU mapping from the database.
+   *
+   * @param string $pgt_iou
+   *   A pgtIou string to use as the deletion key.
+   */
+  private function deletePgtMappingByPgtIou($pgt_iou) {
+    $this->connection->delete('cas_pgt_storage')
+      ->condition('pgt_iou', $pgt_iou)
+      ->execute();
+  }
+
 }
