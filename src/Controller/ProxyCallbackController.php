@@ -61,7 +61,7 @@ class ProxyCallbackController implements ContainerInjectionInterface {
       $pgt_id = $request->query->get('pgtId');
       $pgt_iou = $request->query->get('pgtIou');
       $this->connection->insert('cas_pgt_storage')
-        ->fields(array('pgt_iou', 'pgt'), array($pgt_iou, $pgt_id))
+        ->fields(array('pgt_iou', 'pgt', 'timestamp'), array($pgt_iou, $pgt_id, time()))
         ->execute();
       // PGT stored properly, tell CAS Server to proceed.
       return new Response('OK', 200);

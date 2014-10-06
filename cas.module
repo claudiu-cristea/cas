@@ -13,3 +13,15 @@ const CAS_CHECK_ONCE = -1;
 const CAS_CHECK_ALWAYS = 0;
 const CAS_REQUIRE_SPECIFIC = 0;
 const CAS_REQUIRE_ALL_EXCEPT = 1;
+
+/**
+ * Implements hook_cron().
+ *
+ * Delete stale, unused PGTs.
+ */
+function cas_cron() {
+  // PGTs older than one hour get discarded.
+  db_delete('cas_pgt_storage')
+    ->condition('timestamp', time() - 3600, '<=')
+    ->execute();
+}
