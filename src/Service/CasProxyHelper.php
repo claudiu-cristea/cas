@@ -64,6 +64,17 @@ class CasProxyHelper {
    *   proxied service.
    */
   public function proxyAuthenticate($target_service) {
+    // Check to see if we have proxied this application already.
+    if (isset($_SESSION['cas_proxy_helper'][$target_service])) {
+      $cookies = array();
+      foreach($_SESSION['cas_proxy_helper'][$target_service] as $cookie) {
+        $cookies[$cookie['Name']] = $cookie['Value'];
+      }
+      $domain = $cookie['Domain'];
+      $jar = CookieJar::fromArray($cookies, $domain);
+      return $jar;
+    }
+
     if (!($this->casHelper->isProxy() && isset($_SESSION['cas_pgt']))) {
       // We can't perform proxy authentication in this state.
       throw new CasProxyException("Session state not sufficient for proxying.");
@@ -87,6 +98,8 @@ class CasProxyHelper {
       catch (ClientException $e) {
         throw new CasProxyException($e->getMessage());
       }
+      // Set the jar in session storage for later reuse.
+      $_SESSION['cas_proxy_helper'][$target_service] = $cookie_jar->toArray();
       return $cookie_jar;
     }
   }
