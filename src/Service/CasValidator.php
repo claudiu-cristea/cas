@@ -128,6 +128,12 @@ class CasValidator {
       throw new CasValidateException("No user found in ticket validation response.");
     }
 
+    // Look for a proxy chain, and if it exists, validate it against config.
+    $proxy_chain = $success_element->getElementsByTagName("proxies");
+    if ($this->casHelper->canBeProxied() && $proxy_chain->length > 0) {
+      $this->verifyProxyChain($proxy_chain);
+    }
+
     $info = array();
     if ($this->casHelper->isProxy()) {
       // Extract the PGTIOU from the XML. Place it into $info['proxy'].
@@ -142,5 +148,85 @@ class CasValidator {
     }
     $info['username'] = $user_element->item(0)->nodeValue;
     return $info;
+  }
+
+  /**
+   * Verify a proxy chain from the CAS Server.
+   *
+   * Proxy chains from CAS Server responses are compared against the config
+   * to ensure only allowed proxy chains are validated.
+   */
+  private function verifyProxyChain($proxy_chain) {
+    $proxy_chains = $this->casHelper->getProxyChains();
+    $chains = $this->parseProxyChains($proxy_chains);
+    $server_chain = $this->parseServerProxyChain($proxy_chain);
+    // Loop through the allowed chains, checking the supplied chain for match.
+    foreach ($chains as $chain) {
+      // If the lengths mismatch, cannot be a match.
+      if (count($chain) != count($server_chain)) {
+        continue;
+      }
+
+      // Loop through regex in the chain, matching against supplied URL.
+      $flag = TRUE;
+      foreach ($chain as $index => $regex) {
+        if(!(preg_match("/$regex/", $server_chain[$index]))) {
+          $flag = FALSE;
+          break;
+        }
+      }
+
+      // If we have a match, return.
+      if ($flag == TRUE) {
+        return;
+      }
+    }
+
+    // If we've reached this point, no chain was validated, so throw exception.
+    throw new CasValidateException("Proxy chain did not match allowed list.");
+  }
+
+  /**
+   * Parse the proxy chain config into a usable data structure.
+   *
+   * @param string $proxy_chains
+   *   A newline-delimited list of allowed proxy chains.
+   *
+   * @return array
+   *   An array of allowed proxy chains, each containing an array of regular
+   *   expressions for a URL in the chain.
+   */
+  private function parseProxyChains($proxy_chains) {
+    $chain_list = array();
+
+    // Split configuration string on vertical whitespace.
+    $chains = preg_split('/\v/', $proxy_chains, NULL, PREG_SPLIT_NO_EMPTY);
+    
+    // Loop through chains, splitting out each URL.
+    foreach ($chains as $chain) {
+      // Split chain string on any whitespace character.
+      $list = preg_split('/\s/', $chain, NULL, PREG_SPLIT_NO_EMPTY);
+
+      $chain_list[] = $list;
+    }
+    return $chain_list;
+  }
+
+  /**
+   * Parse the XML proxy list from the CAS Server.
+   *
+   * @param DOMNodeList $xml_list
+   *   An XML element containing proxy values, from most recent to first.
+   *
+   * @return array
+   *   An array of proxy values, from first to last.
+   */
+  private function parseServerProxyChain($xml_list) {
+    $proxies = array();
+    // Loop through the DOMNodeList, prepending each proxy to the list.
+    foreach ($xml_list as $node) {
+      array_unshift($proxies, $node->nodeValue);
+    }
+    return $proxies;
   }
 }

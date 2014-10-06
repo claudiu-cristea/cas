@@ -50,3 +50,16 @@ cas.settings:
         auto_register:
           type: boolean
           label: 'Auto Register Users'
+    proxy:
+      type: mapping
+      label: 'Proxy'
+      mapping:
+        initialize:
+          type: boolean
+          label: 'Enable'
+        can_be_proxied:
+          type: boolean
+          label: 'Enable'
+        proxy_chains:
+          type: string
+          label: 'Proxy Chains'

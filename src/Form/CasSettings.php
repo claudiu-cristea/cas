@@ -108,7 +108,7 @@ class CasSettings extends ConfigFormBase {
 
     $form['gateway'] = array(
       '#type' => 'details',
-      '#title' => $this->t('Gateweay Feature (Auto Login)'),
+      '#title' => $this->t('Gateway Feature (Auto Login)'),
       '#open' => FALSE,
       '#tree' => TRUE,
       '#description' => $this->t(
@@ -188,7 +188,27 @@ class CasSettings extends ConfigFormBase {
         'configured to accept it as a proxy.'),
       '#default_value' => $config->get('proxy.initialize'),
     );
-
+    $form['proxy']['can_be_proxied'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Allow this client to be proxied?'),
+      '#description' => $this->t(
+        'Allow other CAS clients to access this site\'s resources via the ' .
+        'CAS proxy protocol. You will need to configure a list of allowed ' .
+        'proxies below.'),
+      '#default_value' => $config->get('proxy.can_be_proxied'),
+    );
+    $form['proxy']['proxy_chains'] = array(
+      '#type' => 'textarea',
+      '#title' => $this->t('Allowed proxy chains'),
+      '#description' => $this->t(
+        'A list of proxy chains to allow proxy connections from. Each line ' .
+        'is a chain, and each chain is a whitespace delimited list of ' .
+        'URL-matching regular expressions for an allowed proxy in the chain ' .
+        ', listed from first (left) to last (right). Only if the proxy list ' .
+        'returned by the CAS Server exactly matches a chain in this list ' .
+        'will a proxy connection be allowed.'),
+      '#default_value' => $config->get('proxy.proxy_chains'),
+    );
     return parent::buildForm($form, $form_state);
   }
 
@@ -235,8 +255,9 @@ class CasSettings extends ConfigFormBase {
       ->set('forced_login.paths', $this->forcedLoginPaths->getConfiguration());
 
     $config
-      ->set('proxy.initialize', $form_state->getValue(['proxy', 'initialize']));
-
+      ->set('proxy.initialize', $form_state->getValue(['proxy', 'initialize']))
+      ->set('proxy.can_be_proxied', $form_state->getValue(['proxy', 'can_be_proxied']))
+      ->set('proxy.proxy_chains', $form_state->getValue(['proxy', 'proxy_chains']));
     $config
       ->set('user_accounts.auto_register', $form_state->getValue(['user_accounts', 'auto_register']));
 

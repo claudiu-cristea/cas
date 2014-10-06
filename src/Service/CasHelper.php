@@ -85,7 +85,12 @@ class CasHelper {
         break;
 
       case "2.0":
-        $path = 'serviceValidate';
+        if ($this->canBeProxied()) {
+          $path = 'proxyValidate';
+        }
+        else {
+          $path = 'serviceValidate';
+        }
         break;
     }
     $validate_url .= $path;
@@ -216,4 +221,23 @@ class CasHelper {
       ->execute();
   }
 
+  /**
+   * Determine whether this client is allowed to be proxied.
+   *
+   * @return bool
+   *   TRUE if it can be proxied, FALSE otherwise.
+   */
+  public function canBeProxied() {
+    return $this->settings->get('proxy.can_be_proxied') == TRUE;
+  }
+
+  /**
+   * Return the allowed proxy chains list.
+   *
+   * @return string
+   *   A newline delimited list of proxy chains.
+   */
+  public function getProxyChains() {
+    return $this->settings->get('proxy.proxy_chains');
+  }
 }
