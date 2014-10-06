@@ -75,7 +75,7 @@ class CasProxyHelper {
         $response = $this->httpClient->get($cas_url);
       }
       catch (ClientException $e) {
-        throw new CasProxyException($e->message);
+        throw new CasProxyException($e->getMessage());
       }
       $proxy_ticket = $this->parseProxyTicket($response->getBody());
       $params['ticket'] = $proxy_ticket;
@@ -85,7 +85,7 @@ class CasProxyHelper {
         $data = $this->httpClient->get($service_url, ['cookies' => $cookie_jar]);
       }
       catch (ClientException $e) {
-        throw new CasProxyException($e->message);
+        throw new CasProxyException($e->getMessage());
       }
       return $cookie_jar;
     }
