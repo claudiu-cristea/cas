@@ -6,6 +6,7 @@ use Drupal\Core\Http\Client;
 use GuzzleHttp\Exception\ClientException;
 use Drupal\Component\Utility\Urlhelper;
 use GuzzleHttp\Cookie\CookieJar;
+use Drupal\cas\Exception\CasProxyException;
 
 class CasProxyHelper {
 
@@ -58,13 +59,14 @@ class CasProxyHelper {
    * @param string $target_service
    *   The service to be proxied.
    *
-   * @return mixed
-   *   \GuzzleHttp\Cookie\CookieJar if proxy auth success, FALSE otherwise.
+   * @return \GuzzleHttp\Cookie\CookieJar
+   *   A CookieJar object (array storage) containing cookies from the
+   *   proxied service.
    */
   public function proxyAuthenticate($target_service) {
     if (!($this->casHelper->isProxy() && isset($_SESSION['cas_pgt']))) {
       // We can't perform proxy authentication in this state.
-      return FALSE;
+      throw new CasProxyException("Session state not sufficient for proxying.");
     }
     else {
       $cas_url = $this->getServerProxyURL($target_service);
@@ -73,12 +75,9 @@ class CasProxyHelper {
         $response = $this->httpClient->get($cas_url);
       }
       catch (ClientException $e) {
-        return FALSE;
+        throw new CasProxyException($e->message);
       }
       $proxy_ticket = $this->parseProxyTicket($response->getBody());
-      if (!$proxy_ticket) {
-        return FALSE;
-      }
       $params['ticket'] = $proxy_ticket;
       $service_url = $target_service . "?" . UrlHelper::buildQuery($params);
       $cookie_jar = new CookieJar();
@@ -86,7 +85,7 @@ class CasProxyHelper {
         $data = $this->httpClient->get($service_url, ['cookies' => $cookie_jar]);
       }
       catch (ClientException $e) {
-        return FALSE;
+        throw new CasProxyException($e->message);
       }
       return $cookie_jar;
     }
@@ -106,23 +105,23 @@ class CasProxyHelper {
     $dom->preserveWhiteSpace = FALSE;
     $dom->encoding = "utf-8";
     if ($dom->loadXML($xml) === FALSE) {
-      return FALSE;
+      throw new CasProxyException("CAS Server returned non-XML response.");
     }
     $failure_elements = $dom->getElementsByTagName("proxyFailure");
     if ($failure_elements->length > 0) {
       // Something went wrong with proxy ticket validation.
-      return FALSE;
+      throw new CasProxyException("CAS Server rejected proxy request.");
     }
     $success_elements = $dom->getElementsByTagName("proxySuccess");
     if ($success_elements->length === 0) {
       // Malformed response from CAS Server.
-      return FALSE;
+      throw new CasProxyException("CAS Server returned malformed response.");
     }
     $success_element = $success_elements->item(0);
     $proxy_ticket = $success_element->getElementsByTagName("proxyTicket");
     if ($proxy_ticket->length === 0) {
       // Malformed ticket.
-      return FALSE;
+      throw new CasProxyException("CAS Server provided invalid or malformed ticket.");
     }
     return $proxy_ticket->item(0)->nodeValue;
   }
