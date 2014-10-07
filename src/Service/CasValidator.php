@@ -219,13 +219,13 @@ class CasValidator {
    *   An XML element containing proxy values, from most recent to first.
    *
    * @return array
-   *   An array of proxy values, from first to last.
+   *   An array of proxy values, from most recent to first.
    */
   private function parseServerProxyChain($xml_list) {
     $proxies = array();
-    // Loop through the DOMNodeList, prepending each proxy to the list.
+    // Loop through the DOMNodeList, adding each proxy to the list.
     foreach ($xml_list as $node) {
-      array_unshift($proxies, $node->nodeValue);
+      $proxies[] = $node->nodeValue;
     }
     return $proxies;
   }

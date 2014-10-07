@@ -204,9 +204,9 @@ class CasSettings extends ConfigFormBase {
         'A list of proxy chains to allow proxy connections from. Each line ' .
         'is a chain, and each chain is a whitespace delimited list of ' .
         'URL-matching regular expressions for an allowed proxy in the chain ' .
-        ', listed from first (left) to last (right). Only if the proxy list ' .
-        'returned by the CAS Server exactly matches a chain in this list ' .
-        'will a proxy connection be allowed.'),
+        ', listed from most recent (left) to first (right). Only if the ' . 
+        'proxy list returned by the CAS Server exactly matches a chain in ' .
+        'this list will a proxy connection be allowed.'),
       '#default_value' => $config->get('proxy.proxy_chains'),
     );
     return parent::buildForm($form, $form_state);
