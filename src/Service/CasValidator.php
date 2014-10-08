@@ -170,7 +170,7 @@ class CasValidator {
       // Loop through regex in the chain, matching against supplied URL.
       $flag = TRUE;
       foreach ($chain as $index => $regex) {
-        if (preg_match('/^\/.*\/[ixASUXu]*$/s', $regex) {
+        if (preg_match('/^\/.*\/[ixASUXu]*$/s', $regex)) {
           if (!(preg_match("/$regex/", $server_chain[$index]))) {
             $flag = FALSE;
             break;
