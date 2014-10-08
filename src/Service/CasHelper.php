@@ -3,7 +3,7 @@
 namespace Drupal\cas\Service;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Database\Connection;
 
@@ -172,7 +172,7 @@ class CasHelper {
    *   The pgtCallbackURL, fully formatted.
    */
   private function formatProxyCallbackURL() {
-    return $this->urlGenerator->generateFromPath('casproxycallback', array(
+    return $this->urlGenerator->generateFromRoute('cas.proxyCallback', array(
       'absolute' => TRUE,
       'https' => TRUE,
     ));
@@ -187,7 +187,7 @@ class CasHelper {
    * @return string
    *   The PGT value.
    */
-  private function lookupPgtByPgtIou($pgt_iou) {
+  protected function lookupPgtByPgtIou($pgt_iou) {
     return $this->connection->select('cas_pgt_storage', 'c')
       ->fields('c', array('pgt'))
       ->condition('pgt_iou', $pgt_iou)
@@ -215,7 +215,7 @@ class CasHelper {
    * @param string $pgt_iou
    *   A pgtIou string to use as the deletion key.
    */
-  private function deletePgtMappingByPgtIou($pgt_iou) {
+  protected function deletePgtMappingByPgtIou($pgt_iou) {
     $this->connection->delete('cas_pgt_storage')
       ->condition('pgt_iou', $pgt_iou)
       ->execute();
