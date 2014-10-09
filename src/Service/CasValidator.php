@@ -129,7 +129,7 @@ class CasValidator {
     }
 
     // Look for a proxy chain, and if it exists, validate it against config.
-    $proxy_chain = $success_element->getElementsByTagName("proxies");
+    $proxy_chain = $success_element->getElementsByTagName("proxy");
     if ($this->casHelper->canBeProxied() && $proxy_chain->length > 0) {
       $this->verifyProxyChain($proxy_chain);
     }
@@ -171,7 +171,7 @@ class CasValidator {
       $flag = TRUE;
       foreach ($chain as $index => $regex) {
         if (preg_match('/^\/.*\/[ixASUXu]*$/s', $regex)) {
-          if (!(preg_match("/$regex/", $server_chain[$index]))) {
+          if (!(preg_match($regex, $server_chain[$index]))) {
             $flag = FALSE;
             break;
           }
