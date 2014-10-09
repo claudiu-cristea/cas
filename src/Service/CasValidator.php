@@ -101,7 +101,9 @@ class CasValidator {
     $dom->preserveWhiteSpace = FALSE;
     $dom->encoding = "utf-8";
 
-    if ($dom->loadXML($data) === FALSE) {
+    // Suppress errors from this function, as we intend to throw our own
+    // exception.
+    if (@$dom->loadXML($data) === FALSE) {
       throw new CasValidateException("XML from CAS server is not valid.");
     }
 
@@ -111,7 +113,7 @@ class CasValidator {
       $failure_element = $failure_elements->item(0);
       $error_code = $failure_element->getAttribute('code');
       $error_msg = $failure_element->nodeValue;
-      throw new CasValidateException("Error Code " . $error_code . ": " . $error_msg);
+      throw new CasValidateException("Error Code " . trim($error_code) . ": " . trim($error_msg));
     }
 
     $success_elements = $dom->getElementsByTagName("authenticationSuccess");
@@ -139,7 +141,7 @@ class CasValidator {
       // Extract the PGTIOU from the XML. Place it into $info['proxy'].
       $pgt_element = $success_element->getElementsByTagName("proxyGrantingTicket");
       if ($pgt_element->length == 0) {
-        throw new CasValidateException("Proxy intialized, but no PGTIOU provided in response.");
+        throw new CasValidateException("Proxy initialized, but no PGTIOU provided in response.");
       }
       $info['pgt'] = $pgt_element->item(0)->nodeValue;
     }
