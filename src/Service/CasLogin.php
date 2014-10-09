@@ -47,7 +47,7 @@ class CasLogin {
    * See https://www.drupal.org/node/2348249
    */
   public function loginToDrupal($username) {
-    $account = user_load_by_name($username);
+    $account = $this->userLoadByName($username);
     if (!$account) {
       $config = $this->settings->get('cas.settings');
       if ($config->get('user_accounts.auto_register') === TRUE) {
@@ -58,7 +58,7 @@ class CasLogin {
       }
     }
 
-    user_login_finalize($account);
+    $this->userLoginFinalize($account);
   }
 
   /**
@@ -81,5 +81,26 @@ class CasLogin {
     catch (EntityStorageException $e) {
       throw new CasLoginException("Error registering user: " . $e->getMessage());
     }
+  }
+
+  /**
+   * Encapsulate user_load_by_name. 
+   *
+   * See https://www.drupal.org/node/2157657
+   *
+   * @return object|bool
+   *   A loaded $user object or FALSE on failure.
+   */
+  protected function userLoadByName($username) {
+    return user_load_by_name($username);
+  }
+
+  /**
+   * Encapsulate user_login_finalize.
+   *
+   * See https://www.drupal.org/node/2157657
+   */
+  protected function userLoginFinalize($account) {
+    user_login_finalize($account);
   }
 }
