@@ -40,8 +40,6 @@ class CasHelperTest extends UnitTestCase {
 
   /**
    * {@inheritdoc}
-   *
-   * @covers ::__construct()
    */
   protected function setUp() {
     parent::setUp();
