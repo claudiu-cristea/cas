@@ -117,7 +117,7 @@ class CasProxyHelper {
     $dom = new \DomDocument();
     $dom->preserveWhiteSpace = FALSE;
     $dom->encoding = "utf-8";
-    if ($dom->loadXML($xml) === FALSE) {
+    if (@$dom->loadXML($xml) === FALSE) {
       throw new CasProxyException("CAS Server returned non-XML response.");
     }
     $failure_elements = $dom->getElementsByTagName("proxyFailure");
