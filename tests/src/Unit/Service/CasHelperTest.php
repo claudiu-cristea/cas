@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\Tests\cas\Unit\Service\CasHelperTest
+ * Contains Drupal\Tests\cas\Unit\Service\CasHelperTest.
  */
 
  namespace Drupal\Tests\cas\Unit\Service;
@@ -44,7 +44,6 @@ class CasHelperTest extends UnitTestCase {
   protected function setUp() {
     parent::setUp();
 
-
     $this->urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
     $this->connection = $this->getMockBuilder('\Drupal\Core\Database\Connection')
                              ->disableOriginalConstructor()
@@ -60,11 +59,13 @@ class CasHelperTest extends UnitTestCase {
    */
   public function testGetServerLoginUrl($service_params, $gateway, $result) {
 
-    $config_factory = $this->getConfigFactoryStub(array('cas.settings' => array(
-      'server.hostname' => 'example.com',
-      'server.port' => 443,
-      'server.path' => '/cas',
-    )));
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example.com',
+        'server.port' => 443,
+        'server.path' => '/cas',
+      ),
+    ));
     $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
 
     if (!empty($service_params)) {
@@ -95,10 +96,26 @@ class CasHelperTest extends UnitTestCase {
    */
   public function getServerLoginUrlDataProvider() {
     return array(
-      array(array(), FALSE, 'https://example.com:443/cas/login?service=https%3A//example.com/client'),
-      array(array('returnto' => 'node/1'), FALSE, 'https://example.com:443/cas/login?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1'),
-      array(array(), TRUE, 'https://example.com:443/cas/login?gateway=1&service=https%3A//example.com/client'),
-      array(array('returnto' => 'node/1'), TRUE, 'https://example.com:443/cas/login?gateway=1&service=https%3A//example.com/client%3Freturnto%3Dnode%252F1'),
+      array(
+        array(),
+        FALSE,
+        'https://example.com:443/cas/login?service=https%3A//example.com/client',
+      ),
+      array(
+        array('returnto' => 'node/1'),
+        FALSE,
+        'https://example.com:443/cas/login?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1',
+      ),
+      array(
+        array(),
+        TRUE,
+        'https://example.com:443/cas/login?gateway=1&service=https%3A//example.com/client',
+      ),
+      array(
+        array('returnto' => 'node/1'),
+        TRUE,
+        'https://example.com:443/cas/login?gateway=1&service=https%3A//example.com/client%3Freturnto%3Dnode%252F1',
+      ),
     );
   }
 
@@ -108,13 +125,14 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::getServerBaseUrl()
    */
   public function testGetServerBaseUrl() {
-    $config_factory = $this->getConfigFactoryStub(array('cas.settings' => array(
-      'server.hostname' => 'example.com',
-      'server.port' => 443,
-      'server.path' => '/cas',
-    )));
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example.com',
+        'server.port' => 443,
+        'server.path' => '/cas',
+      ),
+    ));
     $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
-
 
     $this->assertEquals('https://example.com:443/cas/', $cas_helper->getServerBaseUrl());
   }
@@ -127,14 +145,16 @@ class CasHelperTest extends UnitTestCase {
    * @dataProvider getServerValidateUrlDataProvider
    */
   public function testGetServerValidateUrl($ticket, $service_params, $return, $is_proxy, $can_be_proxied, $protocol) {
-    $config_factory = $this->getConfigFactoryStub(array('cas.settings' => array(
-      'server.hostname' => 'example.com',
-      'server.port' => 443,
-      'server.path' => '/cas',
-      'server.version' => $protocol,
-      'proxy.initialize' => $is_proxy,
-      'proxy.can_be_proxied' => $can_be_proxied,
-    )));
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example.com',
+        'server.port' => 443,
+        'server.path' => '/cas',
+        'server.version' => $protocol,
+        'proxy.initialize' => $is_proxy,
+        'proxy.can_be_proxied' => $can_be_proxied,
+      ),
+    ));
     if (!empty($service_params)) {
       $params = '';
       foreach ($service_params as $key => $value) {
@@ -179,25 +199,94 @@ class CasHelperTest extends UnitTestCase {
       $ticket[$i] = $this->randomMachineName(24);
     }
     return array(
-      array($ticket[0], array(), 'https://example.com:443/cas/validate?service=https%3A//example.com/client&ticket=' . $ticket[0], FALSE, FALSE, '1.0'),
+      array(
+        $ticket[0],
+        array(),
+        'https://example.com:443/cas/validate?service=https%3A//example.com/client&ticket=' . $ticket[0],
+        FALSE,
+        FALSE,
+        '1.0',
+      ),
 
-      array($ticket[1], array('returnto' => 'node/1'), 'https://example.com:443/cas/validate?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1&ticket=' . $ticket[1], FALSE, FALSE, '1.0'),
+      array(
+        $ticket[1],
+        array('returnto' => 'node/1'),
+        'https://example.com:443/cas/validate?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1&ticket=' . $ticket[1],
+        FALSE,
+        FALSE,
+        '1.0',
+      ),
 
-      array($ticket[2], array(), 'https://example.com:443/cas/serviceValidate?service=https%3A//example.com/client&ticket=' . $ticket[2], FALSE, FALSE, '2.0'),
+      array(
+        $ticket[2],
+        array(),
+        'https://example.com:443/cas/serviceValidate?service=https%3A//example.com/client&ticket=' . $ticket[2],
+        FALSE,
+        FALSE,
+        '2.0',
+      ),
 
-      array($ticket[3], array('returnto' => 'node/1'), 'https://example.com:443/cas/serviceValidate?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1&ticket=' . $ticket[3], FALSE, FALSE, '2.0'),
+      array(
+        $ticket[3],
+        array('returnto' => 'node/1'),
+        'https://example.com:443/cas/serviceValidate?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1&ticket=' . $ticket[3],
+        FALSE,
+        FALSE,
+        '2.0',
+      ),
 
-      array($ticket[4], array(), 'https://example.com:443/cas/proxyValidate?service=https%3A//example.com/client&ticket=' . $ticket[4], FALSE, TRUE, '2.0'),
+      array(
+        $ticket[4],
+        array(),
+        'https://example.com:443/cas/proxyValidate?service=https%3A//example.com/client&ticket=' . $ticket[4],
+        FALSE,
+        TRUE,
+        '2.0',
+      ),
 
-      array($ticket[5], array('returnto' => 'node/1'), 'https://example.com:443/cas/proxyValidate?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1&ticket=' . $ticket[5], FALSE, TRUE, '2.0'),
+      array(
+        $ticket[5],
+        array('returnto' => 'node/1'),
+        'https://example.com:443/cas/proxyValidate?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1&ticket=' . $ticket[5],
+        FALSE,
+        TRUE,
+        '2.0',
+      ),
 
-      array($ticket[6], array(), 'https://example.com:443/cas/serviceValidate?service=https%3A//example.com/client&ticket=' . $ticket[6] . '&pgtUrl=https%3A//example.com/casproxycallback', TRUE, FALSE, '2.0'),
+      array(
+        $ticket[6],
+        array(),
+        'https://example.com:443/cas/serviceValidate?service=https%3A//example.com/client&ticket=' . $ticket[6] . '&pgtUrl=https%3A//example.com/casproxycallback',
+        TRUE,
+        FALSE,
+        '2.0',
+      ),
 
-      array($ticket[7], array('returnto' => 'node/1'), 'https://example.com:443/cas/serviceValidate?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1&ticket=' . $ticket[7] . '&pgtUrl=https%3A//example.com/casproxycallback', TRUE, FALSE, '2.0'),
+      array(
+        $ticket[7],
+        array('returnto' => 'node/1'),
+        'https://example.com:443/cas/serviceValidate?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1&ticket=' . $ticket[7] . '&pgtUrl=https%3A//example.com/casproxycallback',
+        TRUE,
+        FALSE,
+        '2.0',
+      ),
 
-      array($ticket[8], array(), 'https://example.com:443/cas/proxyValidate?service=https%3A//example.com/client&ticket=' . $ticket[8] . '&pgtUrl=https%3A//example.com/casproxycallback', TRUE, TRUE, '2.0'),
+      array(
+        $ticket[8],
+        array(),
+        'https://example.com:443/cas/proxyValidate?service=https%3A//example.com/client&ticket=' . $ticket[8] . '&pgtUrl=https%3A//example.com/casproxycallback',
+        TRUE,
+        TRUE,
+        '2.0',
+      ),
 
-      array($ticket[9], array('returnto' => 'node/1'), 'https://example.com:443/cas/proxyValidate?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1&ticket=' . $ticket[9] . '&pgtUrl=https%3A//example.com/casproxycallback', TRUE, TRUE, '2.0'),
+      array(
+        $ticket[9],
+        array('returnto' => 'node/1'), 'https://example.com:443/cas/proxyValidate?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1&ticket=' . $ticket[9] . '&pgtUrl=https%3A//example.com/casproxycallback',
+        TRUE,
+        TRUE,
+        '2.0',
+      ),
     );
   }
 
@@ -223,7 +312,7 @@ class CasHelperTest extends UnitTestCase {
   }
 
   /**
-   * Provides parameters and return values for testStorePGTSession
+   * Provides parameters and return values for testStorePGTSession.
    *
    * @return array
    *   Parameters and return values.

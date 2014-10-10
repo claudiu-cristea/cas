@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\Tests\cas\Unit\Service\CasProxyHelperTest
+ * Contains Drupal\Tests\cas\Unit\Service\CasProxyHelperTest.
  */
 
 namespace Drupal\Tests\cas\Unit\Service;
@@ -58,7 +58,6 @@ class CasProxyHelperTest extends UnitTestCase {
   protected function setUp() {
     parent::setUp();
 
-
     $this->httpClient = new Client();
     $this->casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
                             ->disableOriginalConstructor()
@@ -76,8 +75,8 @@ class CasProxyHelperTest extends UnitTestCase {
    */
   public function testProxyAuthenticate($target_service, $cookie_domain, $already_proxied) {
     // Set up the fake pgt in the session.
-    $_SESSION['cas_pgt'] = (object)['pgt' => $this->randomMachineName(24)];
-    
+    $_SESSION['cas_pgt'] = (object) ['pgt' => $this->randomMachineName(24)];
+
     // Set up properties so the http client callback knows about them.
     $cookie_value = $this->randomMachineName(24);
 
@@ -104,8 +103,7 @@ class CasProxyHelperTest extends UnitTestCase {
                       ->method('isProxy')
                       ->will($this->returnValue(TRUE));
       $proxy_ticket = $this->randomMachineName(24);
-      $xml_response =
-        "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
+      $xml_response = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
            <cas:proxySuccess>
              <cas:proxyTicket>PT-$proxy_ticket</cas:proxyTicket>
             </cas:proxySuccess>
@@ -124,7 +122,6 @@ class CasProxyHelperTest extends UnitTestCase {
       $this->assertEquals('SESSION', $cookie_array[0]['Name']);
       $this->assertEquals($cookie_value, $cookie_array[0]['Value']);
       $this->assertEquals($cookie_domain, $cookie_array[0]['Domain']);
-  
     }
   }
 
@@ -137,8 +134,7 @@ class CasProxyHelperTest extends UnitTestCase {
    * @see \Drupal\Tests\cas\Unit\Service\CasProxyHelperTest::testProxyAuthenticate
    */
   public function proxyAuthenticateDataProvider() {
-    /**
-     * There are two scenarios that return successfully that we test here.
+    /* There are two scenarios that return successfully that we test here.
      * First, proxying a new service that was not previously proxied. Second,
      * a second request for a service that has already been proxied.
      */
@@ -158,7 +154,7 @@ class CasProxyHelperTest extends UnitTestCase {
   public function testProxyAuthenticateException($is_proxy, $pgt_set, $target_service, $response, $client_exception, $exception_type, $exception_message) {
     if ($pgt_set) {
       // Set up the fake pgt in the session.
-      $_SESSION['cas_pgt'] = (object)['pgt' => $this->randomMachineName(24)];
+      $_SESSION['cas_pgt'] = (object) ['pgt' => $this->randomMachineName(24)];
     }
     // Set up properties so the http client callback knows about them.
     $cookie_value = $this->randomMachineName(24);
@@ -169,7 +165,7 @@ class CasProxyHelperTest extends UnitTestCase {
     $this->casHelper->expects($this->any())
                     ->method('isProxy')
                     ->will($this->returnValue($is_proxy));
-      
+
     $stream = Stream::factory($response);
     if ($client_exception) {
       $text = "HTTP/1.0 404 Not Found";
@@ -187,7 +183,7 @@ class CasProxyHelperTest extends UnitTestCase {
   }
 
   /**
-   * Provides parameters and exceptions for testProxyAuthenticateException
+   * Provides parameters and exceptions for testProxyAuthenticateException.
    *
    * @return array
    *   Parameters and exceptions.
@@ -197,57 +193,89 @@ class CasProxyHelperTest extends UnitTestCase {
   public function proxyAuthenticateExceptionDataProvider() {
     $target_service = 'https://example.com';
     $exception_type = '\Drupal\cas\Exception\CasProxyException';
-    // Exception case 1: not configured as proxy
+    // Exception case 1: not configured as proxy.
     $params[] = array(FALSE, TRUE, $target_service, '', FALSE, $exception_type,
       'Session state not sufficient for proxying.');
 
-    // Exception case 2: session pgt not set
+    // Exception case 2: session pgt not set.
     $params[] = array(TRUE, FALSE, $target_service, '',  FALSE, $exception_type,
       'Session state not sufficient for proxying.');
 
-    // Exception case 3: http client exception
+    // Exception case 3: http client exception.
     $proxy_ticket = $this->randomMachineName(24);
-    $response =
-      "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
+    $response = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
         <cas:proxySuccess>
           <cas:proxyTicket>PT-$proxy_ticket</cas:proxyTicket>
         </cas:proxySuccess>
-       </cas:serviceResponse>";
+      </cas:serviceResponse>";
 
-    $params[] = array(TRUE, TRUE, $target_service, $response, TRUE, $exception_type, '');
-    
+    $params[] = array(
+      TRUE,
+      TRUE,
+      $target_service,
+      $response,
+      TRUE,
+      $exception_type,
+      '',
+    );
+
     // Exception case 4: non-XML response from CAS server.
     $response = "<> </> </ <..";
-    $params[] = array(TRUE, TRUE, $target_service, $response, FALSE, $exception_type,
-      'CAS Server returned non-XML response.');
+    $params[] = array(
+      TRUE,
+      TRUE,
+      $target_service,
+      $response,
+      FALSE,
+      $exception_type,
+      'CAS Server returned non-XML response.',
+    );
 
     // Exception case 5: CAS Server rejected ticket.
-    $response =
-      "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
+    $response = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
          <cas:proxyFailure code=\"INVALID_REQUEST\">
            'pgt' and 'targetService' parameters are both required
          </cas:proxyFailure>
        </cas:serviceResponse>";
-    $params[] = array(TRUE, TRUE, $target_service, $response, FALSE, $exception_type,
-      'CAS Server rejected proxy request.');
+    $params[] = array(
+      TRUE,
+      TRUE,
+      $target_service,
+      $response,
+      FALSE,
+      $exception_type,
+      'CAS Server rejected proxy request.',
+    );
 
     // Exception case 6: Neither proxyFailure nor proxySuccess specified.
-    $response =
-      "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
+    $response = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
          <cas:proxy code=\"INVALID_REQUEST\">
          </cas:proxy>
        </cas:serviceResponse>";
-    $params[] = array(TRUE, TRUE, $target_service, $response, FALSE, $exception_type,
-      'CAS Server returned malformed response.');
+    $params[] = array(
+      TRUE,
+      TRUE,
+      $target_service,
+      $response,
+      FALSE,
+      $exception_type,
+      'CAS Server returned malformed response.',
+    );
 
     // Exception case 7: Malformed ticket.
-    $response =
-      "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
+    $response = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
         <cas:proxySuccess>
         </cas:proxySuccess>
        </cas:serviceResponse>";
-    $params[] = array(TRUE, TRUE, $target_service, $response, FALSE, $exception_type,
-      'CAS Server provided invalid or malformed ticket.');
+    $params[] = array(
+      TRUE,
+      TRUE,
+      $target_service,
+      $response,
+      FALSE,
+      $exception_type,
+      'CAS Server provided invalid or malformed ticket.',
+    );
 
     return $params;
   }

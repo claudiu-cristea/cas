@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains Drupal\Tests\cas\Unit\Service\CasValidatorTest
+ * Contains Drupal\Tests\cas\Unit\Service\CasValidatorTest.
  */
 
 namespace Drupal\Tests\cas\Unit\Service;
@@ -52,7 +52,6 @@ class CasValidatorTest extends UnitTestCase {
    */
   protected function setUp() {
     parent::setUp();
-
 
     $this->httpClient = $this->getMockBuilder('\Drupal\Core\Http\Client')
                              ->disableOriginalConstructor()
@@ -111,40 +110,60 @@ class CasValidatorTest extends UnitTestCase {
    * @see \Drupal\Tests\cas\Service\CasValidatorTest::testValidateTicket
    */
   public function validateTicketDataProvider() {
-    // First test case: protocol version 1. 
+    // First test case: protocol version 1.
     $user1 = $this->randomMachineName(8);
     $response1 = "yes\n$user1\n";
-    $params[] = array('1.0', $this->randomMachineName(24), $user1, $response1, FALSE, FALSE, '');
-    
+    $params[] = array(
+      '1.0',
+      $this->randomMachineName(24),
+      $user1,
+      $response1,
+      FALSE,
+      FALSE,
+      '',
+    );
+
     // Second test case: protocol version 2, no proxies.
     $user2 = $this->randomMachineName(8);
-    $response2 = 
-      "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
+    $response2 = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
         <cas:authenticationSuccess>
           <cas:user>$user2</cas:user>
         </cas:authenticationSuccess>
        </cas:serviceResponse>";
-    $params[] = array('2.0', $this->randomMachineName(24), $user2, $response2, FALSE, FALSE, '');
+    $params[] = array(
+      '2.0',
+      $this->randomMachineName(24),
+      $user2,
+      $response2,
+      FALSE,
+      FALSE,
+      '',
+    );
 
     // Third test case: protocol version 2, initialize as proxy.
     $user3 = $this->randomMachineName(8);
-    $pgtIou3 = $this->randomMachineName(24);
-    $response3 =
-      "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
+    $pgt_iou3 = $this->randomMachineName(24);
+    $response3 = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
          <cas:authenticationSuccess>
            <cas:user>$user3</cas:user>
-             <cas:proxyGrantingTicket>PGTIOU-$pgtIou3
+             <cas:proxyGrantingTicket>PGTIOU-$pgt_iou3
            </cas:proxyGrantingTicket>
          </cas:authenticationSuccess>
        </cas:serviceResponse>";
-    $params[] = array('2.0', $this->randomMachineName(24), $user3, $response3, TRUE, FALSE, '');
+    $params[] = array(
+      '2.0',
+      $this->randomMachineName(24),
+      $user3,
+      $response3,
+      TRUE,
+      FALSE,
+      '',
+    );
 
     // Fourth test case: protocol version 2, can be proxied.
     $user4 = $this->randomMachineName(8);
-    $proxy_chains =
-      '/https:\/\/example\.com/ /https:\/\/foo\.com/' . PHP_EOL . '/https:\/\/bar\.com/';
-    $response4 = 
-      "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
+    $proxy_chains = '/https:\/\/example\.com/ /https:\/\/foo\.com/' . PHP_EOL . '/https:\/\/bar\.com/';
+    $response4 = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
          <cas:authenticationSuccess>
            <cas:user>$user4</cas:user>
              <cas:proxies>
@@ -153,24 +172,39 @@ class CasValidatorTest extends UnitTestCase {
              </cas:proxies>
          </cas:authenticationSuccess>
        </cas:serviceResponse>";
-    $params[] = array('2.0', $this->randomMachineName(24), $user4, $response4, FALSE, TRUE, $proxy_chains);
+    $params[] = array(
+      '2.0',
+      $this->randomMachineName(24),
+      $user4,
+      $response4,
+      FALSE,
+      TRUE,
+      $proxy_chains,
+    );
 
     // Fifth test case: protocol version 2, proxy in both directions.
     $user5 = $this->randomMachineName(8);
-    $pgtIou5 = $this->randomMachineName(24);
+    $pgt_iou5 = $this->randomMachineName(24);
     // Use the same proxy chains as the fourth test case.
-    $response5 =
-     "<cas:serviceResponse xmlns:cas='http://www.yale.edu/tp/cas'>
+    $response5 = "<cas:serviceResponse xmlns:cas='http://www.yale.edu/tp/cas'>
         <cas:authenticationSuccess>
           <cas:user>$user5</cas:user>
-          <cas:proxyGrantingTicket>PGTIOU-$pgtIou5</cas:proxyGrantingTicket>
+          <cas:proxyGrantingTicket>PGTIOU-$pgt_iou5</cas:proxyGrantingTicket>
           <cas:proxies>
             <cas:proxy>https://https://bar.com</cas:proxy>
           </cas:proxies>
          </cas:authenticationSuccess>
       </cas:serviceResponse>";
-    $params[] = array('2.0', $this->randomMachineName(24), $user5, $response5, TRUE, TRUE, $proxy_chains);
-    
+    $params[] = array(
+      '2.0',
+      $this->randomMachineName(24),
+      $user5,
+      $response5,
+      TRUE,
+      TRUE,
+      $proxy_chains,
+    );
+
     return $params;
   }
 
@@ -216,7 +250,7 @@ class CasValidatorTest extends UnitTestCase {
     $this->casHelper->expects($this->any())
                     ->method('getProxyChains')
                     ->will($this->returnValue($proxy_chains));
-    
+
     if (!empty($exception_message)) {
       $this->setExpectedException($exception, $exception_message);
     }
@@ -236,72 +270,110 @@ class CasValidatorTest extends UnitTestCase {
    * @see \Drupal\Tests\cas\Service\CasValidatorTest::testValidateTicketException
    */
   public function validateTicketExceptionDataProvider() {
-    /**
-     * There are nine different exception messages that can occur. We test for
+    /* There are nine different exception messages that can occur. We test for
      * each one. Currently, they are all of type 'CasValidateException', so we
      * set that up front. If that changes in the future, we can rework this bit
      * without changing the function signature.
      */
     $exception_type = '\Drupal\cas\Exception\CasValidateException';
 
-    /**
-     * The first exception is actually a 'recasting' of an http client
+    /* The first exception is actually a 'recasting' of an http client
      * exception. We're not in the business of checking their exception text,
      * so simply tell the client to throw an exception, and don't worry about
      * the message given.
      */
     $params[] = array('2.0', '', FALSE, FALSE, '', $exception_type, '', TRUE);
 
-    /**
-     * Protocol version 1 can throw two exceptions: 'no' text is found, or
-     * 'yes' text is not found (in that order). 
+    /* Protocol version 1 can throw two exceptions: 'no' text is found, or
+     * 'yes' text is not found (in that order).
      */
-    $params[] = array('1.0', "no\n\n", FALSE, FALSE, '', $exception_type,
-      'Ticket did not pass validation.', FALSE);
-    $params[] = array('1.0', "Foo\nBar?\n", FALSE, FALSE, '', $exception_type,
-      'Malformed response from CAS server.', FALSE);
+    $params[] = array(
+      '1.0',
+      "no\n\n",
+      FALSE,
+      FALSE,
+      '',
+      $exception_type,
+      'Ticket did not pass validation.',
+      FALSE,
+    );
+    $params[] = array(
+      '1.0',
+      "Foo\nBar?\n",
+      FALSE,
+      FALSE,
+      '',
+      $exception_type,
+      'Malformed response from CAS server.',
+      FALSE,
+    );
 
     // Protocol version 2: Malformed XML.
-    $params[] = array('2.0', "<> </ </> <<", FALSE, FALSE,
-      '', $exception_type, 'XML from CAS server is not valid.', FALSE);
+    $params[] = array(
+      '2.0',
+      "<> </ </> <<",
+      FALSE,
+      FALSE,
+      '',
+      $exception_type,
+      'XML from CAS server is not valid.',
+      FALSE,
+    );
 
     // Protocol version 2: Authentication failure.
     $ticket = $this->randomMachineName(24);
-    $params[] = array('2.0',
+    $params[] = array(
+      '2.0',
       "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
          <cas:authenticationFailure code=\"INVALID_TICKET\">
            Ticket $ticket not recognized
          </cas:authenticationFailure>
        </cas:serviceResponse>",
-      FALSE, FALSE, '', $exception_type,
+      FALSE,
+      FALSE,
+      '',
+      $exception_type,
       "Error Code INVALID_TICKET: Ticket $ticket not recognized",
-      FALSE);
+      FALSE,
+    );
 
     // Protocol version 2: Neither authentication failure nor authentication
     // succes found.
-    $params[] = array('2.0',
+    $params[] = array(
+      '2.0',
       "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
          <cas:authentication>
            Username
          </cas:authentication>
        </cas:serviceResponse>",
-      FALSE, FALSE, '', $exception_type,
-      "XML from CAS server is not valid.", FALSE);
+      FALSE,
+      FALSE,
+      '',
+      $exception_type,
+      "XML from CAS server is not valid.",
+      FALSE,
+    );
 
-    // Protocol version 2: No user specified in authenticationSuccess
-    $params[] = array('2.0',
+    // Protocol version 2: No user specified in authenticationSuccess.
+    $params[] = array(
+      '2.0',
       "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
          <cas:authenticationSuccess>
            Username
          </cas:authenticationSuccess>
        </cas:serviceResponse>",
-      FALSE, FALSE, '', $exception_type,
-      "No user found in ticket validation response.", FALSE);
+      FALSE,
+      FALSE,
+      '',
+      $exception_type,
+      "No user found in ticket validation response.",
+      FALSE,
+    );
 
     // Protocol version 2: Proxy chain mismatch.
-    $proxy_chains =
-      '/https:\/\/example\.com/ /https:\/\/foo\.com/' . PHP_EOL . '/https:\/\/bar\.com/';
-    $params[] = array('2.0',
+    $proxy_chains = '/https:\/\/example\.com/ /https:\/\/foo\.com/' . PHP_EOL . '/https:\/\/bar\.com/';
+    $params[] = array(
+      '2.0',
       "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
          <cas:authenticationSuccess>
            <cas:user>username</cas:user>
@@ -311,18 +383,29 @@ class CasValidatorTest extends UnitTestCase {
              </cas:proxies>
          </cas:authenticationSuccess>
        </cas:serviceResponse>",
-      FALSE, TRUE, $proxy_chains, $exception_type,
-      "Proxy chain did not match allowed list.", FALSE);
+      FALSE,
+      TRUE,
+      $proxy_chains,
+      $exception_type,
+      "Proxy chain did not match allowed list.",
+      FALSE,
+    );
 
     // Protocol version 2: No PGTIOU provided when initialized as proxy.
-    $params[] = array('2.0',
+    $params[] = array(
+      '2.0',
       "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
         <cas:authenticationSuccess>
           <cas:user>username</cas:user>
         </cas:authenticationSuccess>
        </cas:serviceResponse>",
-      TRUE, FALSE, '', $exception_type,
-      "Proxy initialized, but no PGTIOU provided in response.", FALSE);
+      TRUE,
+      FALSE,
+      '',
+      $exception_type,
+      "Proxy initialized, but no PGTIOU provided in response.",
+      FALSE,
+    );
 
     return $params;
   }
