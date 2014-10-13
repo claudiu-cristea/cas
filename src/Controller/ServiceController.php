@@ -117,7 +117,7 @@ class ServiceController implements ContainerInjectionInterface {
     }
     catch (CasValidateException $e) {
       // Validation failed, redirect to homepage and set message.
-      drupal_set_message(t('There was a problem validating your login, please contact a site administrator.'), 'error');
+      $this->setMessage(t('There was a problem validating your login, please contact a site administrator.'), 'error');
       return new RedirectResponse($this->urlGenerator->generate('<front>'));
     }
 
@@ -126,10 +126,10 @@ class ServiceController implements ContainerInjectionInterface {
       if ($this->casHelper->isProxy() && isset($cas_validation_info['pgt'])) {
         $this->casHelper->storePGTSession($cas_validation_info['pgt']);
       }
-      drupal_set_message(t('You have been logged in.'));
+      $this->setMessage(t('You have been logged in.'));
     }
     catch (CasLoginException $e) {
-      drupal_set_message(t('There was a problem logging in, please contact a site administrator.'), 'error');
+      $this->setMessage(t('There was a problem logging in, please contact a site administrator.'), 'error');
     }
 
     // Convert returnto parameter to proper destination parameter
@@ -166,5 +166,23 @@ class ServiceController implements ContainerInjectionInterface {
       $request->query->set('destination', $request->query->get('returnto'));
       $request->query->remove('returnto');
     }
+  }
+
+  /**
+   * Encapsulation of drupal_set_message.
+   *
+   * See https://www.drupal.org/node/2278383 for discussion about converting
+   * drupal_set_message to a service. In the meantime, in order to unit test
+   * the error handling here, we have to encapsulate the call in a method.
+   *
+   * @param string $message
+   *   The message text to set.
+   * @param string $type
+   *   The message type. 
+   * @param bool $repeat
+   *   Whether identical messages should all be shown.
+   */
+  public function setMessage($message, $type = 'status', $repeat = FALSE) {
+    drupal_set_message($message, $type, $repeat);
   }
 }
