@@ -405,6 +405,27 @@ class CasValidatorTest extends UnitTestCase {
       FALSE,
     );
 
+    // Protocol version 2: Proxy chain mismatch with non-regex proxy chain.
+    $proxy_chains = 'https://bar.com /https:\/\/foo\.com/' . PHP_EOL . '/https:\/\/bar\.com/';
+    $params[] = array(
+      '2.0',
+      "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
+         <cas:authenticationSuccess>
+           <cas:user>username</cas:user>
+             <cas:proxies>
+               <cas:proxy>https://example.com</cas:proxy>
+               <cas:proxy>https://bar.com</cas:proxy>
+             </cas:proxies>
+         </cas:authenticationSuccess>
+       </cas:serviceResponse>",
+      FALSE,
+      TRUE,
+      $proxy_chains,
+      $exception_type,
+      "Proxy chain did not match allowed list.",
+      FALSE,
+    );
+
     // Protocol version 2: No PGTIOU provided when initialized as proxy.
     $params[] = array(
       '2.0',
@@ -418,6 +439,18 @@ class CasValidatorTest extends UnitTestCase {
       '',
       $exception_type,
       "Proxy initialized, but no PGTIOU provided in response.",
+      FALSE,
+    );
+
+    // Unknown protocol version.
+    $params[] = array(
+      'foobarbaz',
+      "<text>",
+      FALSE,
+      FALSE,
+      '',
+      $exception_type,
+      "Unknown CAS protocol version specified.",
       FALSE,
     );
 

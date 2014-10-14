@@ -69,6 +69,9 @@ class CasValidator {
       case "2.0":
         return $this->validateVersion2($response_data);
     }
+
+    // If we get here, its because we had a bad CAS version specified.
+    throw new CasValidateException("Unknown CAS protocol version specified.");
   }
 
   /**
