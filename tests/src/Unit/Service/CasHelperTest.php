@@ -53,7 +53,9 @@ class CasHelperTest extends UnitTestCase {
   /**
    * Test constructing the login URL.
    *
-   * @covers ::getServerLoginUrl()
+   * @covers ::getServerLoginUrl
+   * @covers ::__construct
+   * @covers ::getCasServiceUrl
    *
    * @dataProvider getServerLoginUrlDataProvider
    */
@@ -122,7 +124,8 @@ class CasHelperTest extends UnitTestCase {
   /**
    * Test constructing the CAS Server base url.
    *
-   * @covers ::getServerBaseUrl()
+   * @covers ::getServerBaseUrl
+   * @covers ::__construct
    */
   public function testGetServerBaseUrl() {
     $config_factory = $this->getConfigFactoryStub(array(
@@ -140,7 +143,9 @@ class CasHelperTest extends UnitTestCase {
   /**
    * Test constructing the CAS Server validation url.
    *
-   * @covers ::getServerValidateUrl()
+   * @covers ::getServerValidateUrl
+   * @covers ::formatProxyCallbackURL
+   * @covers ::__construct
    *
    * @dataProvider getServerValidateUrlDataProvider
    */
@@ -293,7 +298,7 @@ class CasHelperTest extends UnitTestCase {
   /**
    * Test setting the PGT in the session.
    *
-   * @covers ::storePGTSession()
+   * @covers ::storePGTSession
    *
    * @dataProvider storePGTSessionDataProvider
    */

@@ -55,7 +55,8 @@ class ForceLoginControllerTest extends UnitTestCase {
   /**
    * Test the forcedLogin redirect.
    *
-   * @covers ::forceLogin()
+   * @covers ::forceLogin
+   * @covers ::__construct
    */
   public function testForceLogin() {
     $request = $this->getMock('\Symfony\Component\HttpFoundation\Request');

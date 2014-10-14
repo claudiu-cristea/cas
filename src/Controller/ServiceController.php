@@ -181,6 +181,8 @@ class ServiceController implements ContainerInjectionInterface {
    *   The message type. 
    * @param bool $repeat
    *   Whether identical messages should all be shown.
+   *
+   * @codeCoverageIgnore
    */
   public function setMessage($message, $type = 'status', $repeat = FALSE) {
     drupal_set_message($message, $type, $repeat);

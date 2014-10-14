@@ -90,6 +90,8 @@ class CasLogin {
    *
    * @return object|bool
    *   A loaded $user object or FALSE on failure.
+   *
+   * @codeCoverageIgnore
    */
   protected function userLoadByName($username) {
     return user_load_by_name($username);
@@ -99,6 +101,8 @@ class CasLogin {
    * Encapsulate user_login_finalize.
    *
    * See https://www.drupal.org/node/2157657
+   *
+   * @codeCoverageIgnore
    */
   protected function userLoginFinalize($account) {
     user_login_finalize($account);

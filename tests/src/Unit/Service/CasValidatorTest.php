@@ -48,7 +48,7 @@ class CasValidatorTest extends UnitTestCase {
   /**
    * {@inheritdoc}
    *
-   * @covers ::__construct()
+   * @covers ::__construct
    */
   protected function setUp() {
     parent::setUp();
@@ -66,7 +66,12 @@ class CasValidatorTest extends UnitTestCase {
   /**
    * Test validation of Cas tickets.
    *
-   * @covers ::validateTicket()
+   * @covers ::validateTicket
+   * @covers ::validateVersion1
+   * @covers ::validateVersion2
+   * @covers ::verifyProxyChain
+   * @covers ::parseProxyChains
+   * @covers ::parseServerProxyChain
    *
    * @dataProvider validateTicketDataProvider
    */
@@ -84,6 +89,10 @@ class CasValidatorTest extends UnitTestCase {
     $body_object->expects($this->once())
                 ->method('__toString')
                 ->will($this->returnValue($response));
+ 
+    $this->casHelper->expects($this->once())
+                    ->method('getCertificateAuthorityPem')
+                    ->will($this->returnValue('foo'));
 
     $this->casHelper->expects($this->any())
                     ->method('isProxy')
@@ -211,7 +220,12 @@ class CasValidatorTest extends UnitTestCase {
   /**
    * Test validation failure conditions for the correct exceptions.
    *
-   * @covers ::validateTicket()
+   * @covers ::validateTicket
+   * @covers ::validateVersion1
+   * @covers ::validateVersion2
+   * @covers ::verifyProxyChain
+   * @covers ::parseProxyChains
+   * @covers ::parseServerProxyChain
    *
    * @dataProvider validateTicketExceptionDataProvider
    */

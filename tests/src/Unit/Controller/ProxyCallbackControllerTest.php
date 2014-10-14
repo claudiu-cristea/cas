@@ -55,7 +55,8 @@ class ProxyCallbackControllerTest extends UnitTestCase {
   /**
    * Test the proxy callback.
    *
-   * @covers ::callback()
+   * @covers ::callback
+   * @covers ::__construct
    *
    * @dataProvider callbackDataProvider
    */

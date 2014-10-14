@@ -186,6 +186,8 @@ class CasHelper {
    *
    * @return string
    *   The PGT value.
+   *
+   * @codeCoverageIgnore
    */
   protected function lookupPgtByPgtIou($pgt_iou) {
     return $this->connection->select('cas_pgt_storage', 'c')
@@ -214,6 +216,8 @@ class CasHelper {
    *
    * @param string $pgt_iou
    *   A pgtIou string to use as the deletion key.
+   *
+   * @codeCoverageIgnore
    */
   protected function deletePgtMappingByPgtIou($pgt_iou) {
     $this->connection->delete('cas_pgt_storage')

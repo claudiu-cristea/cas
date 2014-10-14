@@ -101,7 +101,9 @@ class ServiceControllerTest extends UnitTestCase {
   /**
    * Test the handling of CAS-related requests.
    *
-   * @covers ::handle()
+   * @covers ::handle
+   * @covers ::handleReturnToParameter
+   * @covers ::__construct
    *
    * @dataProvider handleDataProvider
    */
@@ -293,7 +295,9 @@ class ServiceControllerTest extends UnitTestCase {
   /**
    * Tests the error handling of the ServiceController handle function.
    *
-   * @covers ::handle()
+   * @covers ::handle
+   * @covers ::handleReturnToParameter
+   * @covers ::__construct
    *
    * @dataProvider handleFailureDataProvider
    */

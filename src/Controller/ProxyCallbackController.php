@@ -68,6 +68,8 @@ class ProxyCallbackController implements ContainerInjectionInterface {
 
   /**
    * Store the pgtIou to pgtId mapping in the database.
+   *
+   * @codeCoverageIgnore
    */
   protected function storePgtMapping($pgt_iou, $pgt_id) {
     $this->connection->insert('cas_pgt_storage')

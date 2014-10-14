@@ -42,7 +42,9 @@ class CasLoginTest extends UnitTestCase {
   /**
    * Test logging a Cas user into Drupal.
    *
-   * @covers ::loginToDrupal()
+   * @covers ::loginToDrupal
+   * @covers ::__construct
+   * @covers ::registerUser
    *
    * @dataProvider loginToDrupalDataProvider
    */
@@ -102,7 +104,9 @@ class CasLoginTest extends UnitTestCase {
   /**
    * Test exceptions thrown by loginToDrupal().
    *
-   * @covers ::loginToDrupal()
+   * @covers ::loginToDrupal
+   * @covers ::__construct
+   * @covers ::registerUser
    *
    * @dataProvider loginToDrupalExceptionDataProvider
    */
