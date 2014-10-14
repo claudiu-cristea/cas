@@ -330,4 +330,98 @@ class CasHelperTest extends UnitTestCase {
     );
   }
 
+  /**
+   * Test getting the CAS protocol version.
+   *
+   * @covers ::getCasProtocolVersion
+   * @covers ::__construct
+   */
+  public function testGetCasProtocolVersion() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example.com',
+        'server.port' => 443,
+        'server.path' => '/cas',
+        'server.version' => '1.0',
+      ),
+    ));
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $this->assertEquals('1.0', $cas_helper->getCasProtocolVersion());
+  }
+
+  /**
+   * Test getting the CA PEM file.
+   *
+   * @covers ::getCertificateAuthorityPem
+   * @covers ::__construct
+   */
+  public function testGetCertificateAuthorityPem() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example.com',
+        'server.port' => 443,
+        'server.path' => '/cas',
+        'server.cert' => '/path/to/file/cert.pem',
+      ),
+    ));
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $this->assertEquals('/path/to/file/cert.pem', $cas_helper->getCertificateAuthorityPem());
+  }
+
+  /**
+   * Test getting the 'act as proxy' configuration.
+   *
+   * @covers ::isProxy
+   * @covers ::__construct
+   */
+  public function testIsProxy() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example.com',
+        'server.port' => 443,
+        'server.path' => '/cas',
+        'proxy.initialize' => TRUE,
+      ),
+    ));
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $this->assertEquals(TRUE, $cas_helper->isProxy());
+  }
+
+  /**
+   * Test getting the 'can be proxied' configuration.
+   *
+   * @covers ::canBeProxied
+   * @covers ::__construct
+   */
+  public function testCanBeProxied() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example.com',
+        'server.port' => 443,
+        'server.path' => '/cas',
+        'proxy.can_be_proxied' => TRUE,
+      ),
+    ));
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $this->assertEquals(TRUE, $cas_helper->canBeProxied());
+  }
+
+  /**
+   * Test getting the proxy chain configuration.
+   *
+   * @covers ::getProxyChains
+   * @covers ::__construct
+   */
+  public function testGetProxyChains() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example.com',
+        'server.port' => 443,
+        'server.path' => '/cas',
+        'proxy.proxy_chains' => 'https://example.com',
+      ),
+    ));
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $this->assertEquals('https://example.com', $cas_helper->getProxyChains());
+  }
 }
