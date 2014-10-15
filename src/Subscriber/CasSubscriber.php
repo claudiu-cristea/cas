@@ -148,7 +148,7 @@ class CasSubscriber implements EventSubscriberInterface {
       $cas_login_url = $this->casHelper->getServerLoginUrl(array(
         'returnto' => $this->requestStack->getCurrentRequest()->attributes->get('_system_path'),
       ));
-      $event->setResponse(new RedirectResponse($cas_login_url));
+      $event->setResponse(RedirectResponse::create($cas_login_url));
       return TRUE;
     }
     return FALSE;
@@ -183,7 +183,7 @@ class CasSubscriber implements EventSubscriberInterface {
       $cas_login_url = $this->casHelper->getServerLoginUrl(array(
         'returnto' => $this->requestStack->getCurrentRequest()->attributes->get('_system_path'),
       ), TRUE);
-      $event->setResponse(new RedirectResponse($cas_login_url));
+      $event->setResponse(RedirectResponse::create($cas_login_url));
       return TRUE;
     }
 

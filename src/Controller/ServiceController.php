@@ -92,7 +92,7 @@ class ServiceController implements ContainerInjectionInterface {
       $this->casLogout->handleSlo($request->request->get('logoutRequest'));
       // Always return a 200 code. CAS Server doens't care either way what
       // happens here, since it is a fire-and-forget approach taken.
-      return new Response('', 200);
+      return Response::create('', 200);
     }
 
     // Check if there is a ticket parameter. If there isn't, we could be
@@ -100,7 +100,7 @@ class ServiceController implements ContainerInjectionInterface {
     // Just redirect away from here.
     if (!$request->query->get('ticket')) {
       $this->handleReturnToParameter($request);
-      return new RedirectResponse($this->urlGenerator->generate('<front>'));
+      return RedirectResponse::create($this->urlGenerator->generate('<front>'));
     }
 
     // Our CAS service will need to reconstruct the original service URL
@@ -118,7 +118,7 @@ class ServiceController implements ContainerInjectionInterface {
     catch (CasValidateException $e) {
       // Validation failed, redirect to homepage and set message.
       $this->setMessage(t('There was a problem validating your login, please contact a site administrator.'), 'error');
-      return new RedirectResponse($this->urlGenerator->generate('<front>'));
+      return RedirectResponse::create($this->urlGenerator->generate('<front>'));
     }
 
     try {
@@ -135,7 +135,7 @@ class ServiceController implements ContainerInjectionInterface {
     // Convert returnto parameter to proper destination parameter
     // before redirecting.
     $this->handleReturnToParameter($request);
-    return new RedirectResponse($this->urlGenerator->generate('<front>'));
+    return RedirectResponse::create($this->urlGenerator->generate('<front>'));
   }
 
   /**
