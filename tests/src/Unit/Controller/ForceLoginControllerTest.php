@@ -81,4 +81,20 @@ class ForceLoginControllerTest extends UnitTestCase {
     $this->assertEquals($expected_response, $response);
   }
 
+  /**
+   * Test the static create method.
+   *
+   * @covers ::create
+   * @covers ::__construct
+   */
+  public function testCreate() {
+
+    $container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
+    $container->expects($this->any())
+      ->method('get')
+      ->will($this->onConsecutiveCalls($this->casHelper, $this->requestStack));
+
+    $this->assertInstanceOf('\Drupal\cas\Controller\ForceLoginController', ForceLoginController::create($container));
+  }
+
 }

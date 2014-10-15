@@ -432,4 +432,27 @@ class ServiceControllerTest extends UnitTestCase {
 
     return $params;
   }
+
+  /**
+   * Test the static create method.
+   *
+   * @covers ::create
+   * @covers ::__construct
+   */
+  public function testCreate() {
+
+    $container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
+    $container->expects($this->any())
+      ->method('get')
+      ->will($this->onConsecutiveCalls(
+        $this->casHelper,
+        $this->casValidator,
+        $this->casLogin,
+        $this->casLogout,
+        $this->requestStack,
+        $this->urlGenerator
+      ));
+
+    $this->assertInstanceOf('\Drupal\cas\Controller\ServiceController', ServiceController::create($container));
+  }
 }

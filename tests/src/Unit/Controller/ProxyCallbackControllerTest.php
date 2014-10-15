@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\ParameterBag;
+use Drupal\cas\Controller\ProxyCallbackController;
 
 /**
  * ProxyCallbackController unit tests.
@@ -105,4 +106,19 @@ class ProxyCallbackControllerTest extends UnitTestCase {
     );
   }
 
+  /**
+   * Test the static create method.
+   *
+   * @covers ::create
+   * @covers ::__construct
+   */
+  public function testCreate() {
+
+    $container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
+    $container->expects($this->any())
+      ->method('get')
+      ->will($this->onConsecutiveCalls($this->connection, $this->requestStack));
+
+    $this->assertInstanceOf('\Drupal\cas\Controller\ProxyCallbackController', ProxyCallbackController::create($container));
+  }
 }
