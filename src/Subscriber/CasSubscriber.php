@@ -67,7 +67,7 @@ class CasSubscriber implements EventSubscriberInterface {
    *
    * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The request.
-   * @param \Drupal\Core\Session\SessionManager $route_matcher
+   * @param \Drupal\Core\Routing\RouteMatchInterface $route_matcher
    *   The route matcher.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
@@ -131,6 +131,9 @@ class CasSubscriber implements EventSubscriberInterface {
   /**
    * Check if a forced login path is configured, and force login if so.
    *
+   * @param GetResponseEvent $event
+   *   The response event from the kernel.
+   *
    * @return bool
    *   TRUE if we are forcing the login, FALSE otherwise
    */
@@ -156,6 +159,9 @@ class CasSubscriber implements EventSubscriberInterface {
 
   /**
    * Check if we should implement the CAS gateway feature.
+   *
+   * @param GetResponseEvent $event
+   *   The response event from the kernel.
    *
    * @return bool
    *   TRUE if gateway mode was implemented, FALSE otherwise.

@@ -39,6 +39,8 @@ class CasLogin {
    * @param string $username
    *   The username of the account to log in.
    *
+   * @throws CasLoginException
+   *
    * @TODO We need the user's session ID to store along with the service
    * ticket for single-sign-out. But it doens't look like we can get
    * session until session managers's save method is called from the
@@ -66,6 +68,8 @@ class CasLogin {
    *
    * @param string $username
    *   Register a new account with the provided username.
+   *
+   * @throws CasLoginException
    */
   private function registerUser($username) {
     try {
@@ -87,6 +91,9 @@ class CasLogin {
    * Encapsulate user_load_by_name. 
    *
    * See https://www.drupal.org/node/2157657
+   *
+   * @param string $username
+   *   The username to lookup a User entity by.
    *
    * @return object|bool
    *   A loaded $user object or FALSE on failure.

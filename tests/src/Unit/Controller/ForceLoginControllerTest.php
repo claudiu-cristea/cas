@@ -8,12 +8,7 @@
 namespace Drupal\Tests\cas\Unit\Controller;
 
 use Drupal\Tests\UnitTestCase;
-use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\ParameterBag;
 use Drupal\cas\Controller\ForceLoginController;
 
 /**

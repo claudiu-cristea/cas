@@ -8,13 +8,8 @@
 namespace Drupal\Tests\cas\Unit\Service;
 
 use Drupal\Tests\UnitTestCase;
-use Drupal\cas\Service\CasHelper;
 use Drupal\cas\Service\CasProxyHelper;
-use Drupal\cas\Exception\CasProxyException;
 use Drupal\Core\Http\Client;
-use GuzzleHttp\Exception\ClientException;
-use GuzzleHttp\Cookie\CookieJar;
-use GuzzleHttp\Cookie\SetCookie;
 use GuzzleHttp\Subscriber\Mock;
 use GuzzleHttp\Message\Response;
 use GuzzleHttp\Stream\Stream;
@@ -94,7 +89,6 @@ class CasProxyHelperTest extends UnitTestCase {
       $this->assertEquals('SESSION', $cookie_array[0]['Name']);
       $this->assertEquals($cookie_value, $cookie_array[0]['Value']);
       $this->assertEquals($cookie_domain, $cookie_array[0]['Domain']);
-
     }
     else {
       // The casHelper expects to be called for a few things.

@@ -8,10 +8,7 @@
 namespace Drupal\Tests\cas\Unit\Service;
 
 use Drupal\Tests\UnitTestCase;
-use Drupal\cas\Service\CasHelper;
 use Drupal\cas\Service\CasValidator;
-use Drupal\cas\Exception\CasValidateException;
-use Drupal\Core\Http\Client;
 use GuzzleHttp\Exception\ClientException;
 
 /**
@@ -89,7 +86,7 @@ class CasValidatorTest extends UnitTestCase {
     $body_object->expects($this->once())
                 ->method('__toString')
                 ->will($this->returnValue($response));
- 
+
     $this->casHelper->expects($this->once())
                     ->method('getCertificateAuthorityPem')
                     ->will($this->returnValue('foo'));

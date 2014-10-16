@@ -43,6 +43,10 @@ class CasValidator {
    *   The CAS authentication ticket to validate.
    * @param array $service_params
    *   An array of query string parameters to add to the service URL.
+   *
+   * @return array
+   *   An array containing validation result data from the CAS server.
+   * @throws CasValidateException
    */
   public function validateTicket($version, $ticket, $service_params = array()) {
     try {
@@ -79,6 +83,10 @@ class CasValidator {
    *
    * @param string $data
    *   The raw validation response data from CAS server.
+   *
+   * @return array
+   *   An array containing validation result data from the CAS server.
+   * @throws CasValidateException
    */
   private function validateVersion1($data) {
     if (preg_match('/^no\n/', $data)) {
@@ -98,6 +106,10 @@ class CasValidator {
    *
    * @param string $data
    *   The raw validation response data from CAS server.
+   *
+   * @return array
+   *   An array containing validation result data from the CAS server.
+   * @throws CasValidateException
    */
   private function validateVersion2($data) {
     $dom = new \DOMDocument();
@@ -160,13 +172,19 @@ class CasValidator {
    *
    * Proxy chains from CAS Server responses are compared against the config
    * to ensure only allowed proxy chains are validated.
+   *
+   * @param \DOMNodeList $proxy_chain
+   *   An XML element containing proxy values, from most recent to first.
+   *
+   * @throws CasValidateException
    */
   private function verifyProxyChain($proxy_chain) {
-    $proxy_chains = $this->casHelper->getProxyChains();
-    $chains = $this->parseProxyChains($proxy_chains);
+    $allowed_proxy_chains_raw = $this->casHelper->getProxyChains();
+    $allowed_proxy_chains = $this->parseAllowedProxyChains($allowed_proxy_chains_raw);
     $server_chain = $this->parseServerProxyChain($proxy_chain);
+
     // Loop through the allowed chains, checking the supplied chain for match.
-    foreach ($chains as $chain) {
+    foreach ($allowed_proxy_chains as $chain) {
       // If the lengths mismatch, cannot be a match.
       if (count($chain) != count($server_chain)) {
         continue;
@@ -209,12 +227,12 @@ class CasValidator {
    *   An array of allowed proxy chains, each containing an array of regular
    *   expressions for a URL in the chain.
    */
-  private function parseProxyChains($proxy_chains) {
+  private function parseAllowedProxyChains($proxy_chains) {
     $chain_list = array();
 
     // Split configuration string on vertical whitespace.
     $chains = preg_split('/\v/', $proxy_chains, NULL, PREG_SPLIT_NO_EMPTY);
-    
+
     // Loop through chains, splitting out each URL.
     foreach ($chains as $chain) {
       // Split chain string on any whitespace character.
@@ -228,7 +246,7 @@ class CasValidator {
   /**
    * Parse the XML proxy list from the CAS Server.
    *
-   * @param DOMNodeList $xml_list
+   * @param \DOMNodeList $xml_list
    *   An XML element containing proxy values, from most recent to first.
    *
    * @return array

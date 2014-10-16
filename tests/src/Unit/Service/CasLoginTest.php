@@ -5,14 +5,10 @@
  * Contains Drupal\Tests\cas\Unit\Service\CasLoginTest.
  */
 
- namespace Drupal\Tests\cas\Unit\Service;
+namespace Drupal\Tests\cas\Unit\Service;
 
- use Drupal\Tests\UnitTestCase;
- use Drupal\cas\Service\CasLogin;
- use Drupal\Core\Config\ConfigFactoryInterface;
- use Drupal\cas\Exception\CasLoginException;
- use Drupal\Core\Entity\EntityManagerInterface;
- use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Tests\UnitTestCase;
+use Drupal\Core\Entity\EntityStorageException;
 
 /**
  * CasLogin unit tests.
@@ -124,7 +120,6 @@ class CasLoginTest extends UnitTestCase {
 
     if ($account_auto_create && !$account_exists) {
       $entity_storage = $this->getMock('Drupal\Core\Entity\EntityStorageInterface');
-      $entity_account = $this->getMock('Drupal\Core\Entity\EntityInterface');
       $this->entityManager->expects($this->once())
         ->method('getStorage')
         ->will($this->returnValue($entity_storage));

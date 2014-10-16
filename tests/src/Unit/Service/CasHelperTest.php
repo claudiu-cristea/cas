@@ -5,14 +5,10 @@
  * Contains Drupal\Tests\cas\Unit\Service\CasHelperTest.
  */
 
- namespace Drupal\Tests\cas\Unit\Service;
+namespace Drupal\Tests\cas\Unit\Service;
 
- use Drupal\Tests\UnitTestCase;
- use Drupal\cas\Service\CasHelper;
- use Drupal\Core\Routing\UrlGeneratorInterface;
- use Drupal\Component\Utility\UrlHelper;
- use Drupal\Core\Database\Connection;
- use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Tests\UnitTestCase;
+use Drupal\cas\Service\CasHelper;
 
 /**
  * CasHelper unit tests.

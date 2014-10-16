@@ -62,12 +62,14 @@ class CasProxyHelper {
    * @return \GuzzleHttp\Cookie\CookieJar
    *   A CookieJar object (array storage) containing cookies from the
    *   proxied service.
+   *
+   * @throws CasProxyException
    */
   public function proxyAuthenticate($target_service) {
     // Check to see if we have proxied this application already.
     if (isset($_SESSION['cas_proxy_helper'][$target_service])) {
       $cookies = array();
-      foreach($_SESSION['cas_proxy_helper'][$target_service] as $cookie) {
+      foreach ($_SESSION['cas_proxy_helper'][$target_service] as $cookie) {
         $cookies[$cookie['Name']] = $cookie['Value'];
       }
       $domain = $cookie['Domain'];
@@ -79,29 +81,32 @@ class CasProxyHelper {
       // We can't perform proxy authentication in this state.
       throw new CasProxyException("Session state not sufficient for proxying.");
     }
-    else {
-      $cas_url = $this->getServerProxyURL($target_service);
-      // Need to actually make the request and parse it.
-      try {
-        $response = $this->httpClient->get($cas_url);
-      }
-      catch (ClientException $e) {
-        throw new CasProxyException($e->getMessage());
-      }
-      $proxy_ticket = $this->parseProxyTicket($response->getBody());
-      $params['ticket'] = $proxy_ticket;
-      $service_url = $target_service . "?" . UrlHelper::buildQuery($params);
-      $cookie_jar = new CookieJar();
-      try {
-        $data = $this->httpClient->get($service_url, ['cookies' => $cookie_jar]);
-      }
-      catch (ClientException $e) {
-        throw new CasProxyException($e->getMessage());
-      }
-      // Set the jar in session storage for later reuse.
-      $_SESSION['cas_proxy_helper'][$target_service] = $cookie_jar->toArray();
-      return $cookie_jar;
+
+    // Make request to CAS server to retrieve a proxy ticket for this service.
+    $cas_url = $this->getServerProxyURL($target_service);
+    try {
+      $response = $this->httpClient->get($cas_url);
     }
+    catch (ClientException $e) {
+      throw new CasProxyException($e->getMessage());
+    }
+    $proxy_ticket = $this->parseProxyTicket($response->getBody());
+
+    // Make request to target service with our new proxy ticket.
+    // The target service will validate this ticket against the CAS server
+    // and set a cookie that grants authentication for further resource calls.
+    $params['ticket'] = $proxy_ticket;
+    $service_url = $target_service . "?" . UrlHelper::buildQuery($params);
+    $cookie_jar = new CookieJar();
+    try {
+      $this->httpClient->get($service_url, ['cookies' => $cookie_jar]);
+    }
+    catch (ClientException $e) {
+      throw new CasProxyException($e->getMessage());
+    }
+    // Store in session storage for later reuse.
+    $_SESSION['cas_proxy_helper'][$target_service] = $cookie_jar->toArray();
+    return $cookie_jar;
   }
 
   /**
@@ -112,6 +117,8 @@ class CasProxyHelper {
    *
    * @return mixed
    *   A proxy ticket to be used with the target service, FALSE on failure.
+   *
+   * @throws CasProxyException
    */
   private function parseProxyTicket($xml) {
     $dom = new \DomDocument();

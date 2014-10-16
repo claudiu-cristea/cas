@@ -69,11 +69,19 @@ class ProxyCallbackController implements ContainerInjectionInterface {
   /**
    * Store the pgtIou to pgtId mapping in the database.
    *
+   * @param string $pgt_iou
+   *   The pgtIou from CAS Server.
+   * @param string $pgt_id
+   *   The pgtId from the CAS server.
+   *
    * @codeCoverageIgnore
    */
   protected function storePgtMapping($pgt_iou, $pgt_id) {
     $this->connection->insert('cas_pgt_storage')
-         ->fields(array('pgt_iou', 'pgt', 'timestamp'), array($pgt_iou, $pgt_id, time()))
-         ->execute();
-    }
+      ->fields(
+        array('pgt_iou', 'pgt', 'timestamp'),
+        array($pgt_iou, $pgt_id, time())
+      )
+      ->execute();
+  }
 }

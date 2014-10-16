@@ -9,20 +9,10 @@ namespace Drupal\Tests\cas\Unit\Controller;
 
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Controller\ServiceController;
-use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Drupal\cas\Service\CasHelper;
-use Drupal\cas\Service\CasLogin;
 use Drupal\cas\Exception\CasValidateException;
 use Drupal\cas\Exception\CasLoginException;
-use Drupal\Core\Routing\UrlGeneratorInterface;
-use Drupal\cas\Service\CasValidator;
-use Drupal\cas\Service\CasLogout;
 
 /**
  * ServiceController unit tests.
