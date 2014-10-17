@@ -87,6 +87,10 @@ class ServiceController implements ContainerInjectionInterface {
   public function handle() {
     $request = $this->requestStack->getCurrentRequest();
 
+    // Convert returnto parameter to proper destination parameter, so any
+    // redirects below will return user to their previous page.
+    $this->handleReturnToParameter($request);
+
     // First, check if this is a single-log-out (SLO) request from the server.
     if ($request->request->has('logoutRequest')) {
       $this->casLogout->handleSlo($request->request->get('logoutRequest'));
@@ -99,7 +103,6 @@ class ServiceController implements ContainerInjectionInterface {
     // returning from a gateway request and the user may not be logged into CAS.
     // Just redirect away from here.
     if (!$request->query->get('ticket')) {
-      $this->handleReturnToParameter($request);
       return RedirectResponse::create($this->urlGenerator->generate('<front>'));
     }
 
@@ -132,9 +135,6 @@ class ServiceController implements ContainerInjectionInterface {
       $this->setMessage(t('There was a problem logging in, please contact a site administrator.'), 'error');
     }
 
-    // Convert returnto parameter to proper destination parameter
-    // before redirecting.
-    $this->handleReturnToParameter($request);
     return RedirectResponse::create($this->urlGenerator->generate('<front>'));
   }
 
