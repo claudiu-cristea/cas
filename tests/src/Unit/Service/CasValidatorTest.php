@@ -67,7 +67,7 @@ class CasValidatorTest extends UnitTestCase {
    * @covers ::validateVersion1
    * @covers ::validateVersion2
    * @covers ::verifyProxyChain
-   * @covers ::parseProxyChains
+   * @covers ::parseAllowedProxyChains
    * @covers ::parseServerProxyChain
    *
    * @dataProvider validateTicketDataProvider
@@ -221,7 +221,7 @@ class CasValidatorTest extends UnitTestCase {
    * @covers ::validateVersion1
    * @covers ::validateVersion2
    * @covers ::verifyProxyChain
-   * @covers ::parseProxyChains
+   * @covers ::parseAllowedProxyChains
    * @covers ::parseServerProxyChain
    *
    * @dataProvider validateTicketExceptionDataProvider
