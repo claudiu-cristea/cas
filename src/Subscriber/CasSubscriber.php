@@ -171,8 +171,8 @@ class CasSubscriber implements EventSubscriberInterface {
   private function handleGateway(GetResponseEvent $event) {
     // These options enable gateway mode.
     $gateway_enabled_options = array(
-      CAS_CHECK_ONCE,
-      CAS_CHECK_ALWAYS,
+      CasHelper::CHECK_ONCE,
+      CasHelper::CHECK_ALWAYS,
     );
 
     $config = $this->configFactory->get('cas.settings');

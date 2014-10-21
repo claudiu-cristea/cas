@@ -12,6 +12,7 @@ use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormState;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\cas\Service\CasHelper;
 
 class CasSettings extends ConfigFormBase {
 
@@ -125,9 +126,9 @@ class CasSettings extends ConfigFormBase {
       '#title' => $this->t('Check Frequency'),
       '#default_value' => $config->get('gateway.check_frequency'),
       '#options' => array(
-        CAS_CHECK_NEVER => 'Disable gateway feature',
-        CAS_CHECK_ONCE => 'Once per browser session',
-        CAS_CHECK_ALWAYS => 'Every page load (not recommended)',
+        CasHelper::CHECK_NEVER => 'Disable gateway feature',
+        CasHelper::CHECK_ONCE => 'Once per browser session',
+        CasHelper::CHECK_ALWAYS => 'Every page load (not recommended)',
       ),
     );
     $this->gatewayPaths->setConfiguration($config->get('gateway.paths'));

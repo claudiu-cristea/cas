@@ -10,6 +10,54 @@ use Drupal\Core\Database\Connection;
 class CasHelper {
 
   /**
+   * Gateway configuration to never check preemptively to see if the user is
+   * logged in.
+   *
+   * @var int
+   */
+  const CHECK_NEVER = -2;
+
+  /**
+   * Gateway configuration to check only once per session to see if the user is
+   * logged in.
+   *
+   * @var int
+   */
+  const CHECK_ONCE = -1;
+
+  /**
+   * Gateway configuration to check on every page load to see if the user is
+   * logged in.
+   *
+   * @var int
+   */
+  const CHECK_ALWAYS = 0;
+
+  /**
+   * User-defined paths in this configuration are to be included, and all
+   * others are to be excluded.
+   *
+   * @var int
+   */
+  const CAS_REQUIRE_SPECIFIC = 0;
+
+  /**
+   * User-defined paths in this configuration are to be excluded, and all
+   * others are to be included.
+   *
+   * @var int
+   */
+  const CAS_REQUIRE_ALL_EXCEPT = 1;
+
+  /**
+   * These constants govern the (@TODO: as-yet un-implemented) login form
+   * behavior.
+   */
+  const CAS_NO_LINK = 0;
+  const CAS_ADD_LINK = 1;
+  const CAS_MAKE_DEFAULT = 2;
+
+  /**
    * @var \Drupal\Core\Database\Connection
    */
   protected $connection;
