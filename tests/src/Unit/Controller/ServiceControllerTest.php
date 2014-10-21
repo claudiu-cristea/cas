@@ -132,7 +132,8 @@ class ServiceControllerTest extends UnitTestCase {
         $this->casLogout->expects($this->once())
           ->method('handleSlo')
           ->with($this->equalTo('foo'));
-        $expected_response = new Response('', 200);
+        $this->assertTrue($service_controller->handle()->isOk());
+        return;
         break;
 
       case 'no-ticket':
@@ -158,7 +159,7 @@ class ServiceControllerTest extends UnitTestCase {
             ->method('generate')
             ->with($this->equalTo('<front>'))
             ->will($this->returnValue('https://example.com/bar'));
-          $expected_response = new RedirectResponse('https://example.com/bar');
+          $expected_location = 'https://example.com/bar';
         }
         else {
           $query->expects($this->once())
@@ -169,7 +170,7 @@ class ServiceControllerTest extends UnitTestCase {
             ->method('generate')
             ->with($this->equalTo('<front>'))
             ->will($this->returnValue('https://example.com/front'));
-          $expected_response = new RedirectResponse('https://example.com/front');
+          $expected_location = 'https://example.com/front';
         }
         break;
 
@@ -228,7 +229,7 @@ class ServiceControllerTest extends UnitTestCase {
             ->method('generate')
             ->with($this->equalTo('<front>'))
             ->will($this->returnValue('https://example.com/bar'));
-          $expected_response = new RedirectResponse('https://example.com/bar');
+          $expected_location = 'https://example.com/bar';
         }
         else {
           $query->expects($this->once())
@@ -239,14 +240,13 @@ class ServiceControllerTest extends UnitTestCase {
             ->method('generate')
             ->with($this->equalTo('<front>'))
             ->will($this->returnValue('https://example.com/front'));
-          $expected_response = new RedirectResponse('https://example.com/front');
+          $expected_location = 'https://example.com/front';
         }
 
         break;
     }
 
-    $response = $service_controller->handle();
-    $this->assertEquals($expected_response, $response);
+    $this->assertTrue($service_controller->handle()->isRedirect($expected_location));
   }
 
   /**
