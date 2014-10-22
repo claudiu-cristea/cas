@@ -216,14 +216,18 @@ class CasHelper {
   /**
    * Format the pgtCallbackURL parameter for use with proxying.
    *
+   * We have to do a str_replace to force https for the proxy callback URL,
+   * because it must use https, and setting the option 'https => TRUE' in the
+   * options array won't force https if the user accessed the login route over
+   * http and mixed-mode sessions aren't allowed.
+   *
    * @return string
    *   The pgtCallbackURL, fully formatted.
    */
   private function formatProxyCallbackURL() {
-    return $this->urlGenerator->generateFromRoute('cas.proxyCallback', array(
+    return str_replace('http://', 'https://', $this->urlGenerator->generateFromRoute('cas.proxyCallback', array(), array(
       'absolute' => TRUE,
-      'https' => TRUE,
-    ));
+    )));
   }
 
   /**
