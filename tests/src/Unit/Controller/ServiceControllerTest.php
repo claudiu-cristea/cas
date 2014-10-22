@@ -341,7 +341,7 @@ class ServiceControllerTest extends UnitTestCase {
           ->method('generate')
           ->with($this->equalTo('<front>'))
           ->will($this->returnValue('https://example.com/front'));
-        $expected_response = new RedirectResponse('https://example.com/front');
+        $expected_location = 'https://example.com/front';
         break;
 
       case 'login':
@@ -378,7 +378,7 @@ class ServiceControllerTest extends UnitTestCase {
             ->method('generate')
             ->with($this->equalTo('<front>'))
             ->will($this->returnValue('https://example.com/bar'));
-          $expected_response = new RedirectResponse('https://example.com/bar');
+          $expected_location = 'https://example.com/bar';
         }
         else {
           $query->expects($this->once())
@@ -389,13 +389,12 @@ class ServiceControllerTest extends UnitTestCase {
             ->method('generate')
             ->with($this->equalTo('<front>'))
             ->will($this->returnValue('https://example.com/front'));
-          $expected_response = new RedirectResponse('https://example.com/front');
+          $expected_location = 'https://example.com/front';
         }
         break;
     }
 
-    $response = $service_controller->handle();
-    $this->assertEquals($expected_response, $response);
+    $this->assertTrue($service_controller->handle()->isRedirect($expected_location));
   }
 
   /**
