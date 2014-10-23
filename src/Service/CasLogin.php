@@ -6,6 +6,8 @@ use Drupal\cas\Exception\CasLoginException;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\EntityStorageException;
+use Drupal\Core\Session\SessionManagerInterface;
+use Drupal\Core\Database\Connection;
 
 class CasLogin {
 
@@ -20,14 +22,26 @@ class CasLogin {
   protected $entityManager;
 
   /**
+   * @var \Drupal\Core\Session\SessionManagerInterface
+   */
+  protected $sessionManager;
+
+  /**
+   * @var \Drupal\Core\Database\Connection
+   */
+  protected $connection;
+
+  /**
    * Constructs a CasLogin object.
    *
    * @param ConfigFactoryInterface $settings
    *   The config factory object
    */
-  public function __construct(ConfigFactoryInterface $settings, EntityManagerInterface $entity_manager) {
+  public function __construct(ConfigFactoryInterface $settings, EntityManagerInterface $entity_manager, SessionManagerInterface $session_manager, Connection $database_connection) {
     $this->settings = $settings;
     $this->entityManager = $entity_manager;
+    $this->sessionManager = $session_manager;
+    $this->connection = $database_connection;
   }
 
   /**
@@ -40,15 +54,8 @@ class CasLogin {
    *   The username of the account to log in.
    *
    * @throws CasLoginException
-   *
-   * @TODO We need the user's session ID to store along with the service
-   * ticket for single-sign-out. But it doens't look like we can get
-   * session until session managers's save method is called from the
-   * AuthenticationSubscriber which happens at the end of a request.
-   * See http://drupal.stackexchange.com/questions/131063
-   * See https://www.drupal.org/node/2348249
    */
-  public function loginToDrupal($username) {
+  public function loginToDrupal($username, $ticket) {
     $account = $this->userLoadByName($username);
     if (!$account) {
       $config = $this->settings->get('cas.settings');
@@ -61,6 +68,7 @@ class CasLogin {
     }
 
     $this->userLoginFinalize($account);
+    $this->storeLoginSessionData($this->sessionManager->getId(), $ticket);
   }
 
   /**
@@ -113,5 +121,24 @@ class CasLogin {
    */
   protected function userLoginFinalize($account) {
     user_login_finalize($account);
+  }
+
+  /**
+   * Store the Session ID and ticket for single-log-out purposes.
+   *
+   * @param string $session_id
+   *   The hashed session ID, to be used to kill the session later.
+   * @param string $ticket
+   *   The CAS service ticket to be used as the lookup key.
+   *
+   * @codeCoverageIgnore
+   */
+  protected function storeLoginSessionData($session_id, $ticket) {
+    $this->connection->insert('cas_login_data')
+      ->fields(
+        array('sid', 'ticket'),
+        array($session_id, $ticket)
+      )
+      ->execute();
   }
 }

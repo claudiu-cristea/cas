@@ -28,11 +28,31 @@ class CasLoginTest extends UnitTestCase {
   protected $entityManager;
 
   /**
+   * The mocked database connection.
+   *
+   * @var \Drupal\Core\Database\Connection|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $connection;
+
+  /**
+   * The mocked session manager.
+   *
+   * @var \Drupal\Core\Session\SessionManager|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $sessionManager;
+
+  /**
    * {@inheritdoc}
    */
   protected function setUp() {
     parent::setUp();
     $this->entityManager = $this->getMock('\Drupal\Core\Entity\EntityManagerInterface');
+    $this->connection = $this->getMockBuilder('\Drupal\Core\Database\Connection')
+                             ->disableOriginalConstructor()
+                             ->getMock();
+    $this->sessionManager = $this->getMockBuilder('\Drupal\Core\Session\SessionManager')
+                                 ->disableOriginalConstructor()
+                                 ->getMock();
   }
 
   /**
@@ -52,8 +72,13 @@ class CasLoginTest extends UnitTestCase {
     ));
 
     $cas_login = $this->getMockBuilder('Drupal\cas\Service\CasLogin')
-      ->setMethods(array('userLoadByName', 'userLoginFinalize'))
-      ->setConstructorArgs(array($config_factory, $this->entityManager))
+      ->setMethods(array('userLoadByName', 'userLoginFinalize', 'storeLoginSessionData'))
+      ->setConstructorArgs(array(
+        $config_factory,
+        $this->entityManager,
+        $this->sessionManager,
+        $this->connection,
+      ))
       ->getMock();
 
     if ($account_auto_create && !$account_exists) {
@@ -73,8 +98,10 @@ class CasLoginTest extends UnitTestCase {
       ->will($this->returnValue($account_exists ? new \StdClass() : FALSE));
     $cas_login->expects($this->once())
       ->method('userLoginFinalize');
+    $cas_login->expects($this->once())
+      ->method('storeLoginSessionData');
 
-    $cas_login->loginToDrupal($this->randomMachineName(8));
+    $cas_login->loginToDrupal($this->randomMachineName(8), $this->randomMachineName(24));
   }
 
   /**
@@ -114,8 +141,13 @@ class CasLoginTest extends UnitTestCase {
     ));
 
     $cas_login = $this->getMockBuilder('Drupal\cas\Service\CasLogin')
-      ->setMethods(array('userLoadByName', 'userLoginFinalize'))
-      ->setConstructorArgs(array($config_factory, $this->entityManager))
+      ->setMethods(array('userLoadByName', 'userLoginFinalize', 'storeLoginSessionData'))
+      ->setConstructorArgs(array(
+        $config_factory,
+        $this->entityManager,
+        $this->sessionManager,
+        $this->connection,
+      ))
       ->getMock();
 
     if ($account_auto_create && !$account_exists) {
@@ -134,7 +166,7 @@ class CasLoginTest extends UnitTestCase {
       ->will($this->returnValue($account_exists ? new \StdClass() : FALSE));
 
     $this->setExpectedException($exception_type, $exception_message);
-    $cas_login->loginToDrupal($this->randomMachineName(8));
+    $cas_login->loginToDrupal($this->randomMachineName(8), $this->randomMachineName(24));
   }
 
   /**
