@@ -117,6 +117,14 @@ class CasSubscriber implements EventSubscriberInterface {
       return;
     }
 
+    // The service controller may have indicated that this current request
+    // should not be automatically sent to CAS for authentication checking.
+    // This is to prevent infinite redirect loops.
+    if (isset($_SESSION['cas_temp_disable'])) {
+      unset($_SESSION['cas_temp_disable']);
+      return;
+    }
+
     // Check to see if we should require a forced login. It will set a response
     // on the event if so.
     if ($this->handleForcedPath($event)) {
@@ -150,6 +158,7 @@ class CasSubscriber implements EventSubscriberInterface {
     if ($this->conditionManager->execute($condition)) {
       $cas_login_url = $this->casHelper->getServerLoginUrl(array(
         'returnto' => $this->requestStack->getCurrentRequest()->attributes->get('_system_path'),
+        'cas_temp_disable' => TRUE,
       ));
       $event->setResponse(RedirectResponse::create($cas_login_url));
       return TRUE;
@@ -194,17 +203,6 @@ class CasSubscriber implements EventSubscriberInterface {
     // Only implement gateway feature for GET requests, to prevent users from
     // being redirected to CAS server for things like form submissions.
     if (!$this->requestStack->getCurrentRequest()->isMethod('GET')) {
-      return FALSE;
-    }
-
-    // Our "service" controller that CAS always returns the user to (even after
-    // a gateway redirect) will set this session variable to temporarily disable
-    // the gateway and forced redirect. This is necessary because the service
-    // controller always redirects the user somewhere else, and we don't want
-    // that page load to be caught by this subscriber and sent back to CAS
-    // again, resulting in an infite loop.
-    if (isset($_SESSION['cas_temp_disable'])) {
-      unset($_SESSION['cas_temp_disable']);
       return FALSE;
     }
 
