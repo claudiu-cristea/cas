@@ -11,6 +11,7 @@ use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Drupal\Core\Routing\RouteMatchInterface;
@@ -102,6 +103,11 @@ class CasSubscriber implements EventSubscriberInterface {
    *   The response event from the kernel.
    */
   public function handle(GetResponseEvent $event) {
+    // Don't do anything if this is a sub request and not a master request.
+    if ($event->getRequestType() != HttpKernelInterface::MASTER_REQUEST) {
+      return;
+    }
+
     // Nothing to do if the user is already logged in.
     if ($this->currentUser->isAuthenticated()) {
       return;
