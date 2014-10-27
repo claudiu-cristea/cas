@@ -70,6 +70,8 @@ class ServiceControllerTest extends UnitTestCase {
 
   protected $queryBag;
 
+  protected $requestObject;
+
   /**
    * {@inheritdoc}
    */
@@ -91,15 +93,13 @@ class ServiceControllerTest extends UnitTestCase {
     $this->requestStack = $this->getMock('\Symfony\Component\HttpFoundation\RequestStack');
     $this->urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
-    $request_object = $this->getMock('\Symfony\Component\HttpFoundation\Request');
+    $this->requestObject = $this->getMock('\Symfony\Component\HttpFoundation\Request');
     $request_bag = $this->getMock('\Symfony\Component\HttpFoundation\ParameterBag');
     $query_bag = $this->getMock('\Symfony\Component\HttpFoundation\ParameterBag');
-    $request_object->query = $query_bag;
-    $request_object->request = $request_bag;
+    $this->requestObject->query = $query_bag;
+    $this->requestObject->request = $request_bag;
 
-    $this->requestStack->expects($this->once())
-      ->method('getCurrentRequest')
-      ->will($this->returnValue($request_object));
+
 
     $this->serviceController = new ServiceController(
         $this->casHelper,
@@ -111,6 +111,24 @@ class ServiceControllerTest extends UnitTestCase {
     );
     $this->requestBag = $request_bag;
     $this->queryBag = $query_bag;
+  }
+
+  /**
+   * Tests the static create method.
+   */
+  public function testCreate() {
+    $container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
+    $container->expects($this->any())
+      ->method('get')
+      ->will($this->onConsecutiveCalls(
+        $this->casHelper,
+        $this->casValidator,
+        $this->casLogin,
+        $this->casLogout,
+        $this->requestStack,
+        $this->urlGenerator
+      ));
+    $this->assertInstanceOf('\Drupal\cas\Controller\ServiceController', ServiceController::create($container));
   }
 
   /**
@@ -129,6 +147,10 @@ class ServiceControllerTest extends UnitTestCase {
       // ticket.
       FALSE
     );
+
+    $this->requestStack->expects($this->once())
+      ->method('getCurrentRequest')
+      ->will($this->returnValue($this->requestObject));
 
     $this->casLogout->expects($this->once())
       ->method('handleSlo')
@@ -156,6 +178,10 @@ class ServiceControllerTest extends UnitTestCase {
       FALSE
     );
 
+    $this->requestStack->expects($this->once())
+      ->method('getCurrentRequest')
+      ->will($this->returnValue($this->requestObject));
+
     if ($returnto) {
       $this->assertDestinationSetFromReturnTo();
     }
@@ -182,6 +208,10 @@ class ServiceControllerTest extends UnitTestCase {
       // ticket.
       TRUE
     );
+
+    $this->requestStack->expects($this->once())
+      ->method('getCurrentRequest')
+      ->will($this->returnValue($this->requestObject));
 
     if ($returnto) {
       $this->assertDestinationSetFromReturnTo();
@@ -217,6 +247,10 @@ class ServiceControllerTest extends UnitTestCase {
       TRUE
     );
 
+    $this->requestStack->expects($this->once())
+      ->method('getCurrentRequest')
+      ->will($this->returnValue($this->requestObject));
+    
     if ($returnto) {
       $this->assertDestinationSetFromReturnTo();
     }
@@ -260,7 +294,11 @@ class ServiceControllerTest extends UnitTestCase {
       // ticket.
       TRUE
     );
-
+    
+    $this->requestStack->expects($this->once())
+      ->method('getCurrentRequest')
+      ->will($this->returnValue($this->requestObject));
+    
     if ($returnto) {
       $this->assertDestinationSetFromReturnTo();
     }
@@ -296,7 +334,11 @@ class ServiceControllerTest extends UnitTestCase {
       // ticket.
       TRUE
     );
-
+    
+    $this->requestStack->expects($this->once())
+      ->method('getCurrentRequest')
+      ->will($this->returnValue($this->requestObject));
+    
     if ($returnto) {
       $this->assertDestinationSetFromReturnTo();
     }
