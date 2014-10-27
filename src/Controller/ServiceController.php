@@ -152,7 +152,7 @@ class ServiceController implements ContainerInjectionInterface {
    * logging in with CAS.
    *
    * Drupal has a built in mechansim for doing this, by instead using a
-   * "desintation" parameter in the URL. Anytime there's a RedirectResponse
+   * "destination" parameter in the URL. Anytime there's a RedirectResponse
    * returned, RedirectResponseSubscriber looks for the destination param and
    * will redirect a user there instead.
    *
