@@ -176,6 +176,12 @@ class CasSubscriber implements EventSubscriberInterface {
    *   TRUE if gateway mode was implemented, FALSE otherwise.
    */
   private function handleGateway(GetResponseEvent $event) {
+    // Only implement gateway feature for GET requests, to prevent users from
+    // being redirected to CAS server for things like form submissions.
+    if (!$this->requestStack->getCurrentRequest()->isMethod('GET')) {
+      return FALSE;
+    }
+
     $config = $this->configFactory->get('cas.settings');
     $check_frequency = $config->get('gateway.check_frequency');
     if ($check_frequency === CasHelper::CHECK_NEVER) {
@@ -198,12 +204,6 @@ class CasSubscriber implements EventSubscriberInterface {
         return FALSE;
       }
       $_SESSION['cas_gateway_checked'] = TRUE;
-    }
-
-    // Only implement gateway feature for GET requests, to prevent users from
-    // being redirected to CAS server for things like form submissions.
-    if (!$this->requestStack->getCurrentRequest()->isMethod('GET')) {
-      return FALSE;
     }
 
     $cas_login_url = $this->casHelper->getServerLoginUrl(array(
