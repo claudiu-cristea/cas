@@ -165,35 +165,56 @@ class CasSubscriber implements EventSubscriberInterface {
    *
    * @return bool
    *   TRUE if gateway mode was implemented, FALSE otherwise.
-   *
-   * @TODO We need to handle the "check once" vs "check always".
    */
   private function handleGateway(GetResponseEvent $event) {
-    // These options enable gateway mode.
-    $gateway_enabled_options = array(
-      CasHelper::CHECK_ONCE,
-      CasHelper::CHECK_ALWAYS,
-    );
-
     $config = $this->configFactory->get('cas.settings');
     $check_frequency = $config->get('gateway.check_frequency');
-    if (!in_array($check_frequency, $gateway_enabled_options)) {
+    if ($check_frequency === CasHelper::CHECK_NEVER) {
       return FALSE;
     }
 
     // User can indicate specific paths to enable (or disable) gateway mode.
     $condition = $this->conditionManager->createInstance('request_path');
     $condition->setConfiguration($config->get('gateway.paths'));
-
-    if ($this->conditionManager->execute($condition)) {
-      $cas_login_url = $this->casHelper->getServerLoginUrl(array(
-        'returnto' => $this->requestStack->getCurrentRequest()->attributes->get('_system_path'),
-      ), TRUE);
-      $event->setResponse(RedirectResponse::create($cas_login_url));
-      return TRUE;
+    if (!$this->conditionManager->execute($condition)) {
+      return FALSE;
     }
 
-    return FALSE;
+    // If set to only implement gateway once per session, we use a session
+    // variable to store the fact that we've already done the gateway check
+    // so we don't keep doing it.
+    if ($check_frequency === CasHelper::CHECK_ONCE) {
+      // If the session var is already set, we know to back out.
+      if (isset($_SESSION['cas_gateway_checked'])) {
+        return FALSE;
+      }
+      $_SESSION['cas_gateway_checked'] = TRUE;
+    }
+
+    // Only implement gateway feature for GET requests, to prevent users from
+    // being redirected to CAS server for things like form submissions.
+    if (!$this->requestStack->getCurrentRequest()->isMethod('GET')) {
+      return FALSE;
+    }
+
+    // Our "service" controller that CAS always returns the user to (even after
+    // a gateway redirect) will set this session variable to temporarily disable
+    // the gateway and forced redirect. This is necessary because the service
+    // controller always redirects the user somewhere else, and we don't want
+    // that page load to be caught by this subscriber and sent back to CAS
+    // again, resulting in an infite loop.
+    if (isset($_SESSION['cas_temp_disable'])) {
+      unset($_SESSION['cas_temp_disable']);
+      return FALSE;
+    }
+
+    $cas_login_url = $this->casHelper->getServerLoginUrl(array(
+      'returnto' => $this->requestStack->getCurrentRequest()->attributes->get('_system_path'),
+      'cas_temp_disable' => TRUE,
+    ), TRUE);
+    $event->setResponse(RedirectResponse::create($cas_login_url));
+
+    return TRUE;
   }
 
   /**

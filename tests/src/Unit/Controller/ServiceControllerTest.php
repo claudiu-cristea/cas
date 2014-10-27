@@ -9,8 +9,6 @@ namespace Drupal\Tests\cas\Unit\Controller;
 
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Controller\ServiceController;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\cas\Exception\CasValidateException;
 use Drupal\cas\Exception\CasLoginException;
 
@@ -66,6 +64,12 @@ class ServiceControllerTest extends UnitTestCase {
    */
   protected $urlGenerator;
 
+  protected $serviceController;
+
+  protected $requestBag;
+
+  protected $queryBag;
+
   /**
    * {@inheritdoc}
    */
@@ -86,362 +90,368 @@ class ServiceControllerTest extends UnitTestCase {
       ->getMock();
     $this->requestStack = $this->getMock('\Symfony\Component\HttpFoundation\RequestStack');
     $this->urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
-  }
 
-  /**
-   * Test the handling of CAS-related requests.
-   *
-   * @covers ::handle
-   * @covers ::handleReturnToParameter
-   * @covers ::__construct
-   *
-   * @dataProvider handleDataProvider
-   */
-  public function testHandle($handler, $is_proxy, $return_to) {
     $request_object = $this->getMock('\Symfony\Component\HttpFoundation\Request');
     $request_bag = $this->getMock('\Symfony\Component\HttpFoundation\ParameterBag');
-    $query = $this->getMock('\Symfony\Component\HttpFoundation\ParameterBag');
-    $request_object->query = $query;
+    $query_bag = $this->getMock('\Symfony\Component\HttpFoundation\ParameterBag');
+    $request_object->query = $query_bag;
     $request_object->request = $request_bag;
+
     $this->requestStack->expects($this->once())
       ->method('getCurrentRequest')
       ->will($this->returnValue($request_object));
-    $service_controller = $this->getMockBuilder('\Drupal\cas\Controller\ServiceController')
-      ->setConstructorArgs(array(
-        $this->casHelper,
-        $this->casValidator,
-        $this->casLogin,
-        $this->casLogout,
-        $this->requestStack,
-        $this->urlGenerator,
-      ))
-      ->setMethods(array('setMessage'))
-      ->getMock();
 
-    switch ($handler) {
-      case 'single-log-out':
-        $request_bag->expects($this->once())
-          ->method('has')
-          ->with($this->equalTo('logoutRequest'))
-          ->will($this->returnValue(TRUE));
-        $request_bag->expects($this->once())
-          ->method('get')
-          ->with($this->equalTo('logoutRequest'))
-          ->will($this->returnValue('foo'));
-
-        $this->casLogout->expects($this->once())
-          ->method('handleSlo')
-          ->with($this->equalTo('foo'));
-        $this->assertTrue($service_controller->handle()->isOk());
-        return;
-        break;
-
-      case 'no-ticket':
-        if ($return_to) {
-          $get_query_map = array(
-            array('ticket', NULL, FALSE, FALSE),
-            array('returnto', NULL, FALSE, 'bar'),
-          );
-          $query->expects($this->any())
-            ->method('get')
-            ->will($this->returnValueMap($get_query_map));
-          $query->expects($this->once())
-            ->method('has')
-            ->with($this->equalTo('returnto'))
-            ->will($this->returnValue(TRUE));
-          $query->expects($this->once())
-            ->method('set')
-            ->with($this->equalTo('destination'), $this->equalTo('bar'));
-          $query->expects($this->once())
-            ->method('remove')
-            ->with($this->equalTo('returnto'));
-          $this->urlGenerator->expects($this->once())
-            ->method('generate')
-            ->with($this->equalTo('<front>'))
-            ->will($this->returnValue('https://example.com/bar'));
-          $expected_location = 'https://example.com/bar';
-        }
-        else {
-          $query->expects($this->once())
-            ->method('has')
-            ->with($this->equalTo('returnto'))
-            ->will($this->returnValue(FALSE));
-          $this->urlGenerator->expects($this->once())
-            ->method('generate')
-            ->with($this->equalTo('<front>'))
-            ->will($this->returnValue('https://example.com/front'));
-          $expected_location = 'https://example.com/front';
-        }
-        break;
-
-      case 'login':
-        $get_query_map = array(
-          array('ticket', NULL, FALSE, TRUE),
-          array('returnto', NULL, FALSE, 'bar'),
-        );
-        $query->expects($this->any())
-          ->method('get')
-          ->will($this->returnValueMap($get_query_map));
-        $this->casHelper->expects($this->once())
-          ->method('getCasProtocolVersion')
-          ->will($this->returnValue('2.0'));
-        $ticket = $this->randomMachineName(24);
-        $query->expects($this->once())
-          ->method('all')
-          ->will($this->returnValue(array(
-            'ticket' => $ticket,
-          )));
-        $pgt = $this->randomMachineName(24);
-        $user = $this->randomMachineName(8);
-        $this->casValidator->expects($this->once())
-          ->method('validateTicket')
-          ->with($this->equalTo('2.0'), $this->equalTo($ticket), $this->equalTo(array()))
-          ->will($this->returnValue(array(
-            'username' => $user,
-            'pgt' => $pgt,
-          )));
-        $this->casLogin->expects($this->once())
-          ->method('loginToDrupal')
-          ->with($this->equalTo($user), $this->equalTo($ticket));
-        $this->casHelper->expects($this->once())
-          ->method('isProxy')
-          ->will($this->returnValue($is_proxy));
-        $service_controller->expects($this->once())
-          ->method('setMessage')
-          ->with($this->equalTo('You have been logged in.'));
-        if ($is_proxy) {
-          $this->casHelper->expects($this->once())
-            ->method('storePGTSession')
-            ->with($this->equalTo($pgt));
-        }
-        if ($return_to) {
-          $query->expects($this->once())
-            ->method('has')
-            ->with($this->equalTo('returnto'))
-            ->will($this->returnValue(TRUE));
-          $query->expects($this->once())
-            ->method('set')
-            ->with($this->equalTo('destination'), $this->equalTo('bar'));
-          $query->expects($this->once())
-            ->method('remove')
-            ->with($this->equalTo('returnto'));
-          $this->urlGenerator->expects($this->once())
-            ->method('generate')
-            ->with($this->equalTo('<front>'))
-            ->will($this->returnValue('https://example.com/bar'));
-          $expected_location = 'https://example.com/bar';
-        }
-        else {
-          $query->expects($this->once())
-            ->method('has')
-            ->with($this->equalTo('returnto'))
-            ->will($this->returnValue(FALSE));
-          $this->urlGenerator->expects($this->once())
-            ->method('generate')
-            ->with($this->equalTo('<front>'))
-            ->will($this->returnValue('https://example.com/front'));
-          $expected_location = 'https://example.com/front';
-        }
-
-        break;
-    }
-
-    $this->assertTrue($service_controller->handle()->isRedirect($expected_location));
-  }
-
-  /**
-   * Provides parameters and return values for testHandle().
-   *
-   * @return array
-   *   Parameters and return values.
-   *
-   * @see \Drupal\Tests\cas\Unit\Controller\ServiceControllerTest\testHandle
-   */
-  public function handleDataProvider() {
-    // Test case 1: handle a single-log-out request.
-    $params[] = array('single-log-out', FALSE, FALSE);
-
-    // Test case 2: No ticket provided, no returnto parameter.
-    $params[] = array('no-ticket', FALSE, FALSE);
-
-    // Test case 3: No ticket provided, returnto parameter present.
-    $params[] = array('no-ticket', FALSE, TRUE);
-
-    // Test case 4: Ticket provided, no proxy, no returnto parameter.
-    $params[] = array('login', FALSE, FALSE);
-
-    // Test case 5: Ticket provided, proxy, no returnto parameter.
-    $params[] = array('login', TRUE, FALSE);
-
-    // Test case 6: Ticket provided, no proxy, returnto parameter present.
-    $params[] = array('login', FALSE, TRUE);
-
-    // Test case 7: Ticket provided, proxy, returnto parameter present.
-    $params[] = array('login', TRUE, TRUE);
-
-    return $params;
-  }
-
-  /**
-   * Tests the error handling of the ServiceController handle function.
-   *
-   * @covers ::handle
-   * @covers ::handleReturnToParameter
-   * @covers ::__construct
-   *
-   * @dataProvider handleFailureDataProvider
-   */
-  public function testHandleFailure($handler, $return_to) {
-    $request_object = $this->getMock('\Symfony\Component\HttpFoundation\Request');
-    $request_bag = $this->getMock('\Symfony\Component\HttpFoundation\ParameterBag');
-    $query = $this->getMock('\Symfony\Component\HttpFoundation\ParameterBag');
-    $request_object->query = $query;
-    $request_object->request = $request_bag;
-    $this->requestStack->expects($this->once())
-      ->method('getCurrentRequest')
-      ->will($this->returnValue($request_object));
-    $service_controller = $this->getMockBuilder('\Drupal\cas\Controller\ServiceController')
-      ->setConstructorArgs(array(
-        $this->casHelper,
-        $this->casValidator,
-        $this->casLogin,
-        $this->casLogout,
-        $this->requestStack,
-        $this->urlGenerator,
-      ))
-      ->setMethods(array('setMessage'))
-      ->getMock();
-    $get_query_map = array(
-      array('ticket', NULL, FALSE, TRUE),
-      array('returnto', NULL, FALSE, 'bar'),
-    );
-    $query->expects($this->any())
-      ->method('get')
-      ->will($this->returnValueMap($get_query_map));
-    $this->casHelper->expects($this->once())
-      ->method('getCasProtocolVersion')
-      ->will($this->returnValue('2.0'));
-    $ticket = $this->randomMachineName(24);
-    $query->expects($this->once())
-      ->method('all')
-      ->will($this->returnValue(array(
-        'ticket' => $ticket,
-      )));
-    switch ($handler) {
-      case 'validation':
-        $this->casValidator->expects($this->once())
-          ->method('validateTicket')
-          ->will($this->throwException(new CasValidateException()));
-        $service_controller->expects($this->once())
-          ->method('setMessage')
-          ->with(
-            $this->equalTo('There was a problem validating your login, please contact a site administrator.'),
-            $this->equalTo('error'));
-        $this->urlGenerator->expects($this->once())
-          ->method('generate')
-          ->with($this->equalTo('<front>'))
-          ->will($this->returnValue('https://example.com/front'));
-        $expected_location = 'https://example.com/front';
-        break;
-
-      case 'login':
-        $pgt = $this->randomMachineName(24);
-        $user = $this->randomMachineName(8);
-        $this->casValidator->expects($this->once())
-          ->method('validateTicket')
-          ->with($this->equalTo('2.0'), $this->equalTo($ticket), $this->equalTo(array()))
-          ->will($this->returnValue(array(
-            'username' => $user,
-            'pgt' => $pgt,
-          )));
-        $this->casLogin->expects($this->once())
-          ->method('loginToDrupal')
-          ->with($this->equalTo($user), $this->equalTo($ticket))
-          ->will($this->throwException(new CasLoginException()));
-        $service_controller->expects($this->once())
-          ->method('setMessage')
-          ->with(
-            $this->equalTo('There was a problem logging in, please contact a site administrator.'),
-            $this->equalTo('error'));
-        if ($return_to) {
-          $query->expects($this->once())
-            ->method('has')
-            ->with($this->equalTo('returnto'))
-            ->will($this->returnValue(TRUE));
-          $query->expects($this->once())
-            ->method('set')
-            ->with($this->equalTo('destination'), $this->equalTo('bar'));
-          $query->expects($this->once())
-            ->method('remove')
-            ->with($this->equalTo('returnto'));
-          $this->urlGenerator->expects($this->once())
-            ->method('generate')
-            ->with($this->equalTo('<front>'))
-            ->will($this->returnValue('https://example.com/bar'));
-          $expected_location = 'https://example.com/bar';
-        }
-        else {
-          $query->expects($this->once())
-            ->method('has')
-            ->with($this->equalTo('returnto'))
-            ->will($this->returnValue(FALSE));
-          $this->urlGenerator->expects($this->once())
-            ->method('generate')
-            ->with($this->equalTo('<front>'))
-            ->will($this->returnValue('https://example.com/front'));
-          $expected_location = 'https://example.com/front';
-        }
-        break;
-    }
-
-    $this->assertTrue($service_controller->handle()->isRedirect($expected_location));
-  }
-
-  /**
-   * Provides parameters and failures to testHandleFailure().
-   *
-   * @return array
-   *   Parameters and failure expectations.
-   *
-   * @see \Drupal\Tests\cas\Unit\Controller\ServiceControllerTest\testHandleFailure
-   */
-  public function handleFailureDataProvider() {
-    // Error case 1: Ticket validation error, no returnto parameter.
-    $params[] = array('validation', FALSE);
-
-    // Error case 2: Ticket validation error, returnto parameter.
-    // Currently, this error behaves the same way as case 1.
-    $params[] = array('validation', TRUE);
-
-    // Error case 3: User login error, no returnto parameter.
-    $params[] = array('login', FALSE);
-
-    // Error case 4: User login error, returnto parameter.
-    $params[] = array('login', TRUE);
-
-    return $params;
-  }
-
-  /**
-   * Test the static create method.
-   *
-   * @covers ::create
-   * @covers ::__construct
-   */
-  public function testCreate() {
-
-    $container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
-    $container->expects($this->any())
-      ->method('get')
-      ->will($this->onConsecutiveCalls(
+    $this->serviceController = new ServiceController(
         $this->casHelper,
         $this->casValidator,
         $this->casLogin,
         $this->casLogout,
         $this->requestStack,
         $this->urlGenerator
-      ));
+    );
+    $this->requestBag = $request_bag;
+    $this->queryBag = $query_bag;
+  }
 
-    $this->assertInstanceOf('\Drupal\cas\Controller\ServiceController', ServiceController::create($container));
+  /**
+   * Tests a single logout request.
+   *
+   * @dataProvider parameterDataProvider
+   */
+  public function testSingleLogout($returnto, $cas_temp_disable) {
+    $this->setupRequestParameters(
+      // returnto.
+      $returnto,
+      // cas_temp_disable.
+      $cas_temp_disable,
+      // logoutRequest.
+      TRUE,
+      // ticket.
+      FALSE
+    );
+
+    $this->casLogout->expects($this->once())
+      ->method('handleSlo')
+      ->with($this->equalTo('<foobar/>'));
+
+    $response = $this->serviceController->handle();
+    $this->assertEquals(200, $response->getStatusCode());
+    $this->assertEquals('', $response->getContent());
+  }
+
+  /**
+   * Tests that we redirect to the homepage when no service ticket is present.
+   *
+   * @dataProvider parameterDataProvider
+   */
+  public function testMissingTicketRedirectsHome($returnto, $cas_temp_disable) {
+    $this->setupRequestParameters(
+      // returnto.
+      $returnto,
+      // cas_temp_disable.
+      $cas_temp_disable,
+      // logoutRequest.
+      FALSE,
+      // ticket.
+      FALSE
+    );
+
+    if ($returnto) {
+      $this->assertDestinationSetFromReturnTo();
+    }
+
+    $this->assertRedirectedToFrontPageOnHandle();
+    if ($cas_temp_disable) {
+      $this->assertEquals(TRUE, $_SESSION['cas_temp_disable']);
+    }
+  }
+
+  /**
+   * Tests that validation and logging in occurs when a ticket is present.
+   *
+   * @dataProvider parameterDataProvider
+   */
+  public function testSuccessfulLogin($returnto, $cas_temp_disable) {
+    $this->setupRequestParameters(
+      // returnto.
+      $returnto,
+      // cas_temp_disable.
+      $cas_temp_disable,
+      // logoutRequest.
+      FALSE,
+      // ticket.
+      TRUE
+    );
+
+    if ($returnto) {
+      $this->assertDestinationSetFromReturnTo();
+    }
+
+    $this->assertSuccessfulValidation($returnto, $cas_temp_disable);
+
+    // Login should be called.
+    $this->casLogin->expects($this->once())
+      ->method('loginToDrupal')
+      ->with($this->equalTo('testuser'), $this->equalTo('ST-foobar'));
+
+    $this->assertRedirectedToFrontPageOnHandle();
+    if ($cas_temp_disable) {
+      $this->assertEquals(TRUE, $_SESSION['cas_temp_disable']);
+    }
+  }
+
+  /**
+   * Tests that a user is validated and logged in with Drupal acting as proxy.
+   *
+   * @dataProvider parameterDataProvider
+   */
+  public function testSuccessfulLoginProxyEnabled($returnto, $cas_temp_disable) {
+    $this->setupRequestParameters(
+      // returnto.
+      $returnto,
+      // cas_temp_disable.
+      $cas_temp_disable,
+      // logoutRequest.
+      FALSE,
+      // ticket.
+      TRUE
+    );
+
+    if ($returnto) {
+      $this->assertDestinationSetFromReturnTo();
+    }
+
+    // Cas Helper should indicate Drupal is a proxy.
+    $this->casHelper->expects($this->once())
+      ->method('isProxy')
+      ->will($this->returnValue(TRUE));
+
+    $this->assertSuccessfulValidation($returnto, $cas_temp_disable, TRUE);
+
+    // Login should be called.
+    $this->casLogin->expects($this->once())
+      ->method('loginToDrupal')
+      ->with($this->equalTo('testuser'), $this->equalTo('ST-foobar'));
+
+    // PGT should be saved.
+    $this->casHelper->expects($this->once())
+      ->method('storePGTSession')
+      ->with($this->equalTo('testpgt'));
+
+    $this->assertRedirectedToFrontPageOnHandle();
+    if ($cas_temp_disable) {
+      $this->assertEquals(TRUE, $_SESSION['cas_temp_disable']);
+    }
+  }
+
+  /**
+   * Tests for a potential validation error.
+   *
+   * @dataProvider parameterDataProvider
+   */
+  public function testTicketValidationError($returnto, $cas_temp_disable) {
+    $this->setupRequestParameters(
+      // returnto.
+      $returnto,
+      // cas_temp_disable.
+      $cas_temp_disable,
+      // logoutRequest.
+      FALSE,
+      // ticket.
+      TRUE
+    );
+
+    if ($returnto) {
+      $this->assertDestinationSetFromReturnTo();
+    }
+
+    // Validation should throw an exception.
+    $this->casValidator->expects($this->once())
+      ->method('validateTicket')
+      ->will($this->throwException(new CasValidateException()));
+
+    // Login should not be called.
+    $this->casLogin->expects($this->never())
+      ->method('loginToDrupal');
+
+    $this->assertRedirectedToFrontPageOnHandle();
+    if ($cas_temp_disable) {
+      $this->assertEquals(TRUE, $_SESSION['cas_temp_disable']);
+    }
+  }
+
+  /**
+   * Tests for a potential login error.
+   *
+   * @dataProvider parameterDataProvider
+   */
+  public function testLoginError($returnto, $cas_temp_disable) {
+    $this->setupRequestParameters(
+      // returnto.
+      $returnto,
+      // cas_temp_disable.
+      $cas_temp_disable,
+      // logoutRequest.
+      FALSE,
+      // ticket.
+      TRUE
+    );
+
+    if ($returnto) {
+      $this->assertDestinationSetFromReturnTo();
+    }
+
+    $this->assertSuccessfulValidation($returnto, $cas_temp_disable);
+
+    // Login should throw an exception.
+    $this->casLogin->expects($this->once())
+      ->method('loginToDrupal')
+      ->will($this->throwException(new CasLoginException()));
+
+    $this->assertRedirectedToFrontPageOnHandle();
+    if ($cas_temp_disable) {
+      $this->assertEquals(TRUE, $_SESSION['cas_temp_disable']);
+    }
+  }
+
+  /**
+   * Provides different query string params for tests.
+   *
+   * We want most test cases to behave accordingly for the matrix of
+   * query string parameters that may be present on the request. This provider
+   * will turn those params on or off.
+   */
+  public function parameterDataProvider() {
+    return array(
+      // "returnto" not set, "cas_temp_disable" not set.
+      array(FALSE, FALSE),
+      // "returnto" set, "cas_temp_disable" not set.
+      array(TRUE, FALSE),
+      // "returnto" not set, "cas_temp_disable" set.
+      array(FALSE, TRUE),
+      // "returnto" set, "cas_temp_disable" set.
+      array(TRUE, TRUE),
+    );
+  }
+
+  /**
+   * Assert user redirected to homepage when controller invoked.
+   */
+  private function assertRedirectedToFrontPageOnHandle() {
+    // URL Generator will generate a path to the homepage.
+    $this->urlGenerator->expects($this->once())
+      ->method('generate')
+      ->with('<front>')
+      ->will($this->returnValue('http://example.com/front'));
+    $response = $this->serviceController->handle();
+    $this->assertTrue($response->isRedirect('http://example.com/front'));
+  }
+
+  /**
+   * Assert that the destination query param is set when returnto is present.
+   */
+  private function assertDestinationSetFromReturnTo() {
+    $this->queryBag->expects($this->once())
+      ->method('set')
+      ->with('destination')
+      ->will($this->returnValue('node/1'));
+  }
+
+  /**
+   * Asserts that validation is executed.
+   */
+  private function assertSuccessfulValidation($returnto, $cas_temp_disable, $for_proxy = FALSE) {
+    $service_params = array();
+    if ($returnto) {
+      $service_params['returnto'] = 'node/1';
+    }
+    if ($cas_temp_disable) {
+      $service_params['cas_temp_disable'] = TRUE;
+    }
+
+    $validation_data = array('username' => 'testuser');
+    if ($for_proxy) {
+      $validation_data['pgt'] = 'testpgt';
+    }
+
+    // Validation service should be called for that ticket.
+    $this->casValidator->expects($this->once())
+      ->method('validateTicket')
+      ->with(NULL, $this->equalTo('ST-foobar'), $this->equalTo($service_params))
+      ->will($this->returnValue($validation_data));
+  }
+
+  /**
+   * Mock our request and query bags for the provided parameters.
+   *
+   * This method accepts each possible parameter that the Sevice Controller
+   * may need to deal with. Each parameter passed in should just be TRUE or
+   * FALSE. If it's TRUE, we also mock the "get" method for the appropriate
+   * parameter bag to return some predefined value.
+   *
+   * @param bool $returnto
+   *   If returnto param should be set.
+   * @param bool $cas_temp_disable
+   *   If cas_temp_disable param should be set.
+   * @param bool $logout_request
+   *   If logoutRequest param should be set.
+   * @param bool $ticket
+   *   If ticket param should be set.
+   */
+  private function setupRequestParameters($returnto, $cas_temp_disable, $logout_request, $ticket) {
+    // Request params.
+    $map = array(
+      array('logoutRequest', $logout_request),
+    );
+    $this->requestBag->expects($this->any())
+      ->method('has')
+      ->will($this->returnValueMap($map));
+
+    $map = array();
+    if ($logout_request === TRUE) {
+      $map[] = array('logoutRequest', NULL, FALSE, '<foobar/>');
+    }
+    if (!empty($map)) {
+      $this->requestBag->expects($this->any())
+        ->method('get')
+        ->will($this->returnValueMap($map));
+    }
+
+    // Query string params.
+    $map = array(
+      array('returnto', $returnto),
+      array('cas_temp_disable', $cas_temp_disable),
+      array('ticket', $ticket),
+    );
+    $this->queryBag->expects($this->any())
+      ->method('has')
+      ->will($this->returnValueMap($map));
+
+    $map = array();
+    if ($returnto === TRUE) {
+      $map[] = array('returnto', NULL, FALSE, 'node/1');
+    }
+    if ($ticket === TRUE) {
+      $map[] = array('ticket', NULL, FALSE, 'ST-foobar');
+    }
+    if (!empty($map)) {
+      $this->queryBag->expects($this->any())
+        ->method('get')
+        ->will($this->returnValueMap($map));
+    }
+
+    // Query string "all" method should include all params.
+    $all = array();
+    if ($returnto) {
+      $all['returnto'] = 'node/1';
+    }
+    if ($cas_temp_disable) {
+      $all['cas_temp_disable'] = TRUE;
+    }
+    if ($ticket) {
+      $all['ticket'] = 'ST-foobar';
+    }
+    $this->queryBag->method('all')
+      ->will($this->returnValue($all));
   }
 }

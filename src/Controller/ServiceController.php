@@ -87,10 +87,6 @@ class ServiceController implements ContainerInjectionInterface {
   public function handle() {
     $request = $this->requestStack->getCurrentRequest();
 
-    // Convert returnto parameter to proper destination parameter, so any
-    // redirects below will return user to their previous page.
-    $this->handleReturnToParameter($request);
-
     // First, check if this is a single-log-out (SLO) request from the server.
     if ($request->request->has('logoutRequest')) {
       $this->casLogout->handleSlo($request->request->get('logoutRequest'));
@@ -99,12 +95,21 @@ class ServiceController implements ContainerInjectionInterface {
       return Response::create('', 200);
     }
 
+    // Our CAS Subscriber, which implements forced redirect and gateway, will
+    // set this query string param which indicates we should disable the
+    // subscriber on the next redirect. This prevents an infite redirect loop.
+    if ($request->query->has('cas_temp_disable')) {
+      $_SESSION['cas_temp_disable'] = TRUE;
+    }
+
     // Check if there is a ticket parameter. If there isn't, we could be
     // returning from a gateway request and the user may not be logged into CAS.
     // Just redirect away from here.
-    if (!$request->query->get('ticket')) {
+    if (!$request->query->has('ticket')) {
+      $this->handleReturnToParameter($request);
       return RedirectResponse::create($this->urlGenerator->generate('<front>'));
     }
+    $ticket = $request->query->get('ticket');
 
     // Our CAS service will need to reconstruct the original service URL
     // when validating the ticket. We always know what the base URL for
@@ -112,7 +117,6 @@ class ServiceController implements ContainerInjectionInterface {
     // attached as well (like a destination param) that we need to pass in
     // as well. So, detach the ticket param, and pass the rest off.
     $service_params = $request->query->all();
-    $ticket = $service_params['ticket'];
     unset($service_params['ticket']);
     $cas_version = $this->casHelper->getCasProtocolVersion();
     try {
@@ -121,6 +125,7 @@ class ServiceController implements ContainerInjectionInterface {
     catch (CasValidateException $e) {
       // Validation failed, redirect to homepage and set message.
       $this->setMessage(t('There was a problem validating your login, please contact a site administrator.'), 'error');
+      $this->handleReturnToParameter($request);
       return RedirectResponse::create($this->urlGenerator->generate('<front>'));
     }
 
@@ -135,6 +140,7 @@ class ServiceController implements ContainerInjectionInterface {
       $this->setMessage(t('There was a problem logging in, please contact a site administrator.'), 'error');
     }
 
+    $this->handleReturnToParameter($request);
     return RedirectResponse::create($this->urlGenerator->generate('<front>'));
   }
 
@@ -164,7 +170,6 @@ class ServiceController implements ContainerInjectionInterface {
   private function handleReturnToParameter(Request $request) {
     if ($request->query->has('returnto')) {
       $request->query->set('destination', $request->query->get('returnto'));
-      $request->query->remove('returnto');
     }
   }
 
