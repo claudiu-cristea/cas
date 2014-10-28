@@ -14,6 +14,9 @@ use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\cas\Service\CasHelper;
 
+/**
+ * @codeCoverageIgnore
+ */
 class CasSettings extends ConfigFormBase {
 
   /**
