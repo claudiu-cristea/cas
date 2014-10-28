@@ -238,10 +238,6 @@ class CasSubscriber implements EventSubscriberInterface {
     if (stristr($current_request->server->get('SCRIPT_FILENAME'), 'cron.php')) {
       return TRUE;
     }
-    if (function_exists('drush_verify_cli') && drush_verify_cli()) {
-      return TRUE;
-    }
-
     if ($current_request->server->get('HTTP_USER_AGENT')) {
       $crawlers = array(
         'Google',
