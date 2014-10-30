@@ -35,6 +35,20 @@ class CasHelperTest extends UnitTestCase {
   protected $urlGenerator;
 
   /**
+   * The mocked logger factory.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactory|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $loggerFactory;
+
+  /**
+   * The mocked log channel.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannel|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $loggerChannel;
+
+  /**
    * {@inheritdoc}
    */
   protected function setUp() {
@@ -44,6 +58,14 @@ class CasHelperTest extends UnitTestCase {
     $this->connection = $this->getMockBuilder('\Drupal\Core\Database\Connection')
                              ->disableOriginalConstructor()
                              ->getMock();
+    $this->loggerFactory = $this->getMock('\Drupal\Core\Logger\LoggerChannelFactory');
+    $this->loggerChannel = $this->getMockBuilder('\Drupal\Core\Logger\LoggerChannel')
+                                ->disableOriginalConstructor()
+                                ->getMock();
+    $this->loggerFactory->expects($this->any())
+      ->method('get')
+      ->with('cas')
+      ->will($this->returnValue($this->loggerChannel));
   }
 
   /**
@@ -64,7 +86,7 @@ class CasHelperTest extends UnitTestCase {
         'server.path' => '/cas',
       ),
     ));
-    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory);
 
     if (!empty($service_params)) {
       $params = '';
@@ -131,7 +153,7 @@ class CasHelperTest extends UnitTestCase {
         'server.path' => '/cas',
       ),
     ));
-    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory);
 
     $this->assertEquals('https://example.com:443/cas/', $cas_helper->getServerBaseUrl());
   }
@@ -174,7 +196,7 @@ class CasHelperTest extends UnitTestCase {
     $this->urlGenerator->expects($this->any())
       ->method('generateFromRoute')
       ->will($this->returnValue('https://example.com/casproxycallback'));
-    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory);
     $this->assertEquals($return, $cas_helper->getServerValidateUrl($ticket, $service_params));
 
   }
@@ -341,7 +363,7 @@ class CasHelperTest extends UnitTestCase {
         'server.version' => '1.0',
       ),
     ));
-    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory);
     $this->assertEquals('1.0', $cas_helper->getCasProtocolVersion());
   }
 
@@ -360,7 +382,7 @@ class CasHelperTest extends UnitTestCase {
         'server.cert' => '/path/to/file/cert.pem',
       ),
     ));
-    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory);
     $this->assertEquals('/path/to/file/cert.pem', $cas_helper->getCertificateAuthorityPem());
   }
 
@@ -379,7 +401,7 @@ class CasHelperTest extends UnitTestCase {
         'proxy.initialize' => TRUE,
       ),
     ));
-    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory);
     $this->assertEquals(TRUE, $cas_helper->isProxy());
   }
 
@@ -398,7 +420,7 @@ class CasHelperTest extends UnitTestCase {
         'proxy.can_be_proxied' => TRUE,
       ),
     ));
-    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory);
     $this->assertEquals(TRUE, $cas_helper->canBeProxied());
   }
 
@@ -417,7 +439,44 @@ class CasHelperTest extends UnitTestCase {
         'proxy.proxy_chains' => 'https://example.com',
       ),
     ));
-    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection);
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory);
     $this->assertEquals('https://example.com', $cas_helper->getProxyChains());
   }
+
+  /**
+   * Test the logging capability.
+   *
+   * @covers ::log
+   * @covers ::__construct
+   */
+  public function testLoggingOn() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'debugging.log' => TRUE,
+      )
+    ));
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory);
+    $this->loggerChannel->expects($this->once())
+      ->method('log');
+    $cas_helper->log('This is a test.');
+  }
+
+  /**
+   * Test to make sure we don't log when we're not configured to.
+   *
+   * @covers ::log
+   * @covers ::__construct
+   */
+  public function testLoggingOff() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'debugging.log' => FALSE,
+      )
+    ));
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory);
+    $this->loggerChannel->expects($this->never())
+      ->method('log');
+    $cas_helper->log('This is a test, but should not be logged as such.');
+  }
+
 }

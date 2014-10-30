@@ -6,6 +6,9 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Database\Connection;
+use Drupal\Core\Logger\LoggerChannelFactory;
+use Drupal\Core\Logger\LoggerChannel;
+use Drupal\Core\Logger\RfcLogLevel;
 
 class CasHelper {
 
@@ -73,6 +76,11 @@ class CasHelper {
   protected $urlGenerator;
 
   /**
+   * @var \Drupal\Core\Logger\LoggerChannel
+   */
+  protected $loggerChannel;
+
+  /**
    * Constructor.
    *
    * @param ConfigFactoryInterface $config_factory
@@ -81,13 +89,16 @@ class CasHelper {
    *   The URL generator.
    * @param Connection $database_connection
    *   The database service.
+   * @param LoggerChannelFactory $logger_factory
+   *   The logger channel factory.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator, Connection $database_connection) {
+  public function __construct(ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator, Connection $database_connection, LoggerChannelFactory $logger_factory) {
     $this->configFactory = $config_factory;
     $this->urlGenerator = $url_generator;
     $this->connection = $database_connection;
 
     $this->settings = $config_factory->get('cas.settings');
+    $this->loggerChannel = $logger_factory->get('cas');
   }
 
   /**
@@ -295,5 +306,20 @@ class CasHelper {
    */
   public function getProxyChains() {
     return $this->settings->get('proxy.proxy_chains');
+  }
+
+  /**
+   * Log information to the logger.
+   *
+   * Only log supplied information to the logger if module is configured to do
+   * so, otherwise do nothing.
+   *
+   * @param string message
+   *   The message to log.
+   */
+  public function log($message) {
+    if ($this->settings->get('debugging.log') == TRUE) {
+      $this->loggerChannel->log(RfcLogLevel::DEBUG, $message);
+    }
   }
 }

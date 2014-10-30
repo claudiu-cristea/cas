@@ -214,6 +214,26 @@ class CasSettings extends ConfigFormBase {
         'matches a chain in this list will a proxy connection be allowed.'),
       '#default_value' => $config->get('proxy.proxy_chains'),
     );
+
+    $form['debugging'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Debugging'),
+      '#open' => FALSE,
+      '#tree' => TRUE,
+      '#description' => $this->t(
+        'These options are for debugging only, and are not meant to be used ' .
+        'in normal production usage.'),
+    );
+    $form['debugging']['log'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Log debug information?'),
+      '#description' => $this->t(
+        'This is not meant for production sites! Enable this to log debug ' .
+        'information about the interactions with the CAS Server to the ' .
+        'Drupal log.'),
+      '#default_value' => $config->get('debugging.log'),
+    );
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -265,6 +285,9 @@ class CasSettings extends ConfigFormBase {
       ->set('proxy.proxy_chains', $form_state->getValue(['proxy', 'proxy_chains']));
     $config
       ->set('user_accounts.auto_register', $form_state->getValue(['user_accounts', 'auto_register']));
+
+    $config
+      ->set('debugging.log', $form_state->getValue(['debugging', 'log']));
 
     $config->save();
     parent::submitForm($form, $form_state);

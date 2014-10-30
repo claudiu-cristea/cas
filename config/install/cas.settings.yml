@@ -20,3 +20,6 @@ proxy:
 
 user_accounts:
   auto_register: false
+
+debugging:
+  log: false
