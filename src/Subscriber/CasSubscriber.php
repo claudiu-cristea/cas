@@ -163,7 +163,7 @@ class CasSubscriber implements EventSubscriberInterface {
 
     if ($this->conditionManager->execute($condition)) {
       $cas_login_url = $this->casHelper->getServerLoginUrl(array(
-        'returnto' => $this->requestStack->getCurrentRequest()->attributes->get('_system_path'),
+        'returnto' => $this->requestStack->getCurrentRequest()->getUri(),
         'cas_temp_disable' => TRUE,
       ));
       $event->setResponse(RedirectResponse::create($cas_login_url));
@@ -213,7 +213,7 @@ class CasSubscriber implements EventSubscriberInterface {
     }
 
     $cas_login_url = $this->casHelper->getServerLoginUrl(array(
-      'returnto' => $this->requestStack->getCurrentRequest()->attributes->get('_system_path'),
+      'returnto' => $this->requestStack->getCurrentRequest()->getUri(),
       'cas_temp_disable' => TRUE,
     ), TRUE);
     $event->setResponse(RedirectResponse::create($cas_login_url));
