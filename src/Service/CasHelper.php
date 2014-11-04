@@ -93,7 +93,6 @@ class CasHelper {
    *   The logger channel factory.
    */
   public function __construct(ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator, Connection $database_connection, LoggerChannelFactory $logger_factory) {
-    $this->configFactory = $config_factory;
     $this->urlGenerator = $url_generator;
     $this->connection = $database_connection;
 
@@ -314,12 +313,59 @@ class CasHelper {
    * Only log supplied information to the logger if module is configured to do
    * so, otherwise do nothing.
    *
-   * @param string message
+   * @param string $message
    *   The message to log.
    */
   public function log($message) {
     if ($this->settings->get('debugging.log') == TRUE) {
       $this->loggerChannel->log(RfcLogLevel::DEBUG, $message);
     }
+  }
+
+  /**
+   * Return the logout URL for the CAS server.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *  The current request, to provide base url context.
+   *
+   * @return string
+   *   The fully constructed server logout URL.
+   */
+  public function getServerLogoutUrl($request) {
+    $base_url = $this->getServerBaseUrl() . 'logout';
+    if ($this->settings->get('redirection.logout_destination') != '') {
+      $destination = $this->settings->get('redirection.logout_destination');
+      if ($destination == '<front>') {
+        // If we have '<front>', resolve the path.
+        $params['service'] = $this->urlGenerator->generate($destination, array(), TRUE);
+      }
+      elseif ($this->isExternal($destination)) {
+        // If we have an absolute URL, use that.
+        $params['service'] = $destination;
+      }
+      else {
+        // This is a regular Drupal path.
+        $params['service'] = $request->getSchemeAndHttpHost() . '/' . ltrim($destination, '/');
+      }
+      return $base_url . '?' . UrlHelper::buildQuery($params);
+    }
+    else {
+      return $base_url;
+    }
+  }
+
+  /**
+   * Encapsulate UrlHelper::isExternal.
+   *
+   * @param string $url
+   *   The url to evaluate.
+   *
+   * @return bool
+   *   Whether or not the url points to an external location.
+   *
+   * @codeCoverageIgnore
+   */
+  protected function isExternal($url) {
+    return UrlHelper::isExternal($url);
   }
 }

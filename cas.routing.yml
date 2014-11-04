@@ -23,3 +23,9 @@ cas.proxyCallback:
       _controller: '\Drupal\cas\Controller\ProxyCallbackController::callback'
     requirements:
         _access: 'TRUE'
+cas.logout:
+  path: '/caslogout'
+  defaults:
+    _controller: '\Drupal\cas\Controller\LogoutController::logout'
+  requirements:
+    _access: 'TRUE'

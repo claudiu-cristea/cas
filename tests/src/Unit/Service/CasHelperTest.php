@@ -479,4 +479,111 @@ class CasHelperTest extends UnitTestCase {
     $cas_helper->log('This is a test, but should not be logged as such.');
   }
 
+  /**
+   * Test generating the server logout url with no service parameter.
+   *
+   * @covers ::getServerLogoutUrl
+   */
+  public function testGetServerLogoutUrlNoRedirect() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'redirection.logout_destination' => '',
+      )
+    ));
+    $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+      ->setConstructorArgs(array($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory))
+      ->setMethods(array('getServerBaseUrl'))
+      ->getMock();
+    $cas_helper->expects($this->once())
+      ->method('getServerBaseUrl')
+      ->will($this->returnValue('https://example.com/'));
+    $request = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Request')
+                    ->disableOriginalConstructor()
+                    ->getMock();
+    $this->assertEquals('https://example.com/logout', $cas_helper->getServerLogoutUrl($request));
+  }
+
+  /**
+   * Test generating the logout url with front page specified.
+   *
+   * @covers ::getServerLogoutUrl
+   */
+  public function testGetServerLogoutUrlFrontPage() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'redirection.logout_destination' => '<front>',
+      )
+    ));
+    $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+      ->setConstructorArgs(array($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory))
+      ->setMethods(array('getServerBaseUrl'))
+      ->getMock();
+    $cas_helper->expects($this->once())
+      ->method('getServerBaseUrl')
+      ->will($this->returnValue('https://example.com/'));
+    $request = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Request')
+                    ->disableOriginalConstructor()
+                    ->getMock();
+    $this->urlGenerator->expects($this->once())
+      ->method('generate')
+      ->will($this->returnValue('https://example.com/frontpage'));
+    $this->assertEquals('https://example.com/logout?service=https%3A//example.com/frontpage', $cas_helper->getServerLogoutUrl($request));
+  }
+
+  /**
+   * Test generating the logout url with external url specified.
+   *
+   * @covers ::getServerLogoutUrl
+   */
+  public function testGetServerLogoutUrlExternalUrl() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'redirection.logout_destination' => 'https://foo.example.com',
+      )
+    ));
+    $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+      ->setConstructorArgs(array($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory))
+      ->setMethods(array('getServerBaseUrl', 'isExternal'))
+      ->getMock();
+    $cas_helper->expects($this->once())
+      ->method('getServerBaseUrl')
+      ->will($this->returnValue('https://example.com/'));
+    $request = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Request')
+                    ->disableOriginalConstructor()
+                    ->getMock();
+    $cas_helper->expects($this->once())
+      ->method('isExternal')
+      ->will($this->returnValue(TRUE));
+    $this->assertEquals('https://example.com/logout?service=https%3A//foo.example.com', $cas_helper->getServerLogoutUrl($request));
+  }
+
+  /**
+   * Test generating the logout url with an internal Drupal path specified.
+   *
+   * @covers ::getServerLogoutUrl
+   */
+  public function testGetServerLogoutUrlInternalPath() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'redirection.logout_destination' => 'node/1',
+      )
+    ));
+    $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+      ->setConstructorArgs(array($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory))
+      ->setMethods(array('getServerBaseUrl', 'isExternal'))
+      ->getMock();
+    $cas_helper->expects($this->once())
+      ->method('getServerBaseUrl')
+      ->will($this->returnValue('https://example.com/'));
+    $request = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Request')
+                    ->disableOriginalConstructor()
+                    ->getMock();
+    $request->expects($this->once())
+      ->method('getSchemeAndHttpHost')
+      ->will($this->returnValue('https://bar.example.com'));
+    $cas_helper->expects($this->once())
+      ->method('isExternal')
+      ->will($this->returnValue(FALSE));
+    $this->assertEquals('https://example.com/logout?service=https%3A//bar.example.com/node/1', $cas_helper->getServerLogoutUrl($request));
+  }
 }

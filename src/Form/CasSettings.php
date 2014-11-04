@@ -173,6 +173,22 @@ class CasSettings extends ConfigFormBase {
       '#default_value' => $config->get('user_accounts.auto_register'),
     );
 
+    $form['redirection'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Redirection'),
+      '#open' => FALSE,
+      '#tree' => TRUE,
+    );
+    $form['redirection']['logout_destination'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Logout destination'),
+      '#description' => $this->t(
+        'Drupal path or URL. Enter a destination if you want the CAS Server to ' .
+        'redirect the user after logging out of CAS.'
+      ),
+      '#default_value' => $config->get('redirection.logout_destination'),
+    );
+
     $form['proxy'] = array(
       '#type' => 'details',
       '#title' => $this->t('Proxy'),
@@ -278,6 +294,9 @@ class CasSettings extends ConfigFormBase {
     $config
       ->set('forced_login.enabled', $form_state->getValue(['forced_login', 'enabled']))
       ->set('forced_login.paths', $this->forcedLoginPaths->getConfiguration());
+
+    $config
+      ->set('redirection.logout_destination', $form_state->getValue(['redirection', 'logout_destination']));
 
     $config
       ->set('proxy.initialize', $form_state->getValue(['proxy', 'initialize']))
