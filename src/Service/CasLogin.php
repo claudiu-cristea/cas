@@ -8,6 +8,7 @@ use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Session\SessionManagerInterface;
 use Drupal\Core\Database\Connection;
+use Drupal\Component\Utility\Crypt;
 
 class CasLogin {
 
@@ -137,7 +138,7 @@ class CasLogin {
     $this->connection->insert('cas_login_data')
       ->fields(
         array('sid', 'ticket'),
-        array($session_id, $ticket)
+        array(Crypt::hashBase64($session_id), $ticket)
       )
       ->execute();
   }
