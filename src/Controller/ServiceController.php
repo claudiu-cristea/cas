@@ -89,6 +89,7 @@ class ServiceController implements ContainerInjectionInterface {
 
     // First, check if this is a single-log-out (SLO) request from the server.
     if ($request->request->has('logoutRequest')) {
+      $this->casHelper->log("Logout request: passing to casLogout::handleSlo");
       $this->casLogout->handleSlo($request->request->get('logoutRequest'));
       // Always return a 200 code. CAS Server doens't care either way what
       // happens here, since it is a fire-and-forget approach taken.
@@ -99,6 +100,7 @@ class ServiceController implements ContainerInjectionInterface {
     // set this query string param which indicates we should disable the
     // subscriber on the next redirect. This prevents an infite redirect loop.
     if ($request->query->has('cas_temp_disable')) {
+      $this->casHelper->log("Temp disable flag set, set session flag.");
       $_SESSION['cas_temp_disable'] = TRUE;
     }
 
@@ -106,6 +108,7 @@ class ServiceController implements ContainerInjectionInterface {
     // returning from a gateway request and the user may not be logged into CAS.
     // Just redirect away from here.
     if (!$request->query->has('ticket')) {
+      $this->casHelper->log("No ticket detected, move along.");
       $this->handleReturnToParameter($request);
       return RedirectResponse::create($this->urlGenerator->generate('<front>'));
     }
@@ -119,6 +122,7 @@ class ServiceController implements ContainerInjectionInterface {
     $service_params = $request->query->all();
     unset($service_params['ticket']);
     $cas_version = $this->casHelper->getCasProtocolVersion();
+    $this->casHelper->log("Configured to use CAS protocol version: $cas_version");
     try {
       $cas_validation_info = $this->casValidator->validateTicket($cas_version, $ticket, $service_params);
     }
@@ -132,6 +136,7 @@ class ServiceController implements ContainerInjectionInterface {
     try {
       $this->casLogin->loginToDrupal($cas_validation_info['username'], $ticket);
       if ($this->casHelper->isProxy() && isset($cas_validation_info['pgt'])) {
+        $this->casHelper->log("Storing PGT information for this session.");
         $this->casHelper->storePGTSession($cas_validation_info['pgt']);
       }
       $this->setMessage(t('You have been logged in.'));
@@ -169,6 +174,7 @@ class ServiceController implements ContainerInjectionInterface {
    */
   private function handleReturnToParameter(Request $request) {
     if ($request->query->has('returnto')) {
+      $this->casHelper->log("Converting returnto parameter to destination.");
       $request->query->set('destination', $request->query->get('returnto'));
     }
   }

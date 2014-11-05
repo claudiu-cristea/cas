@@ -128,6 +128,7 @@ class CasSubscriber implements EventSubscriberInterface {
     // This is to prevent infinite redirect loops.
     if (isset($_SESSION['cas_temp_disable'])) {
       unset($_SESSION['cas_temp_disable']);
+      $this->casHelper->log("Temp disable flag set. Skip processing this request.");
       return;
     }
 
@@ -166,6 +167,7 @@ class CasSubscriber implements EventSubscriberInterface {
         'returnto' => $this->requestStack->getCurrentRequest()->getUri(),
         'cas_temp_disable' => TRUE,
       ));
+      $this->casHelper->log("Protected Url detected, redirecting to: $cas_login_url");
       $event->setResponse(RedirectResponse::create($cas_login_url));
       return TRUE;
     }
@@ -207,6 +209,7 @@ class CasSubscriber implements EventSubscriberInterface {
     if ($check_frequency === CasHelper::CHECK_ONCE) {
       // If the session var is already set, we know to back out.
       if (isset($_SESSION['cas_gateway_checked'])) {
+        $this->casHelper->log("Gateway already checked, will not check again.");
         return FALSE;
       }
       $_SESSION['cas_gateway_checked'] = TRUE;
@@ -216,6 +219,7 @@ class CasSubscriber implements EventSubscriberInterface {
       'returnto' => $this->requestStack->getCurrentRequest()->getUri(),
       'cas_temp_disable' => TRUE,
     ), TRUE);
+    $this->casHelper->log("Gateway activated, redirecting to $cas_login_url");
     $event->setResponse(RedirectResponse::create($cas_login_url));
 
     return TRUE;
@@ -236,6 +240,7 @@ class CasSubscriber implements EventSubscriberInterface {
       return TRUE;
     }
     if (stristr($current_request->server->get('SCRIPT_FILENAME'), 'cron.php')) {
+      $this->casHelper->log("Skip processing requests for cron.");
       return TRUE;
     }
     if ($current_request->server->get('HTTP_USER_AGENT')) {
@@ -265,6 +270,7 @@ class CasSubscriber implements EventSubscriberInterface {
       // Return on the first find.
       foreach ($crawlers as $c) {
         if (stripos($current_request->server->get('HTTP_USER_AGENT'), $c) !== FALSE) {
+          $this->casHelper->log("Ignoring request from $c");
           return TRUE;
         }
       }

@@ -52,6 +52,7 @@ class ForceLoginController implements ContainerInjectionInterface {
 
     $query_params = $this->requestStack->getCurrentRequest()->query->all();
     $cas_login_url = $this->casHelper->getServerLoginUrl($query_params);
+    $this->casHelper->log("Cas forced login route, redirecting to: $cas_login_url");
 
     return RedirectResponse::create($cas_login_url, 302);
   }

@@ -52,6 +52,8 @@ class LogoutController implements ContainerInjectionInterface {
     // session.
     $this->userLogout();
 
+    $this->casHelper->log("Drupal session terminated; redirecting to CAS logout at: $logout_url");
+
     // Redirect the user to the CAS logout screen.
     return new RedirectResponse($logout_url, 302);
   }

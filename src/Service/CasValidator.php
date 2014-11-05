@@ -51,6 +51,7 @@ class CasValidator {
   public function validateTicket($version, $ticket, $service_params = array()) {
     try {
       $validate_url = $this->casHelper->getServerValidateUrl($ticket, $service_params);
+      $this->casHelper->log("Trying to validate against $validate_url");
       $options = array();
       $cert = $this->casHelper->getCertificateAuthorityPem();
       if (!empty($cert)) {
@@ -60,12 +61,13 @@ class CasValidator {
         $options['verify'] = FALSE;
       }
       $response = $this->httpClient->get($validate_url, $options);
+      $response_data = $response->getBody()->__toString();
+      $this->casHelper->log("Received " . htmlspecialchars($response_data));
     }
     catch (ClientException $e) {
       throw new CasValidateException("Error with request to validate ticket: " . $e->getMessage());
     }
 
-    $response_data = $response->getBody()->__toString();
     switch ($version) {
       case "1.0":
         return $this->validateVersion1($response_data);
@@ -98,7 +100,9 @@ class CasValidator {
 
     // Ticket is valid, need to extract the username.
     $arr = preg_split('/\n/', $data);
-    return array('username' => trim($arr[1]));
+    $user = trim($arr[1]);
+    $this->casHelper->log("Extracted user: $user");
+    return array('username' => $user);
   }
 
   /**
@@ -144,6 +148,8 @@ class CasValidator {
     if ($user_element->length == 0) {
       throw new CasValidateException("No user found in ticket validation response.");
     }
+    $username = $user_element->item(0)->nodeValue;
+    $this->casHelper->log("Extracted user: $username");
 
     // Look for a proxy chain, and if it exists, validate it against config.
     $proxy_chain = $success_element->getElementsByTagName("proxy");
@@ -158,12 +164,14 @@ class CasValidator {
       if ($pgt_element->length == 0) {
         throw new CasValidateException("Proxy initialized, but no PGTIOU provided in response.");
       }
-      $info['pgt'] = $pgt_element->item(0)->nodeValue;
+      $pgt = $pgt_element->item(0)->nodeValue;
+      $this->casHelper->log("Extracted PGT: $pgt");
+      $info['pgt'] = $pgt;
     }
     else {
       $info['pgt'] = NULL;
     }
-    $info['username'] = $user_element->item(0)->nodeValue;
+    $info['username'] = $username;
     return $info;
   }
 
@@ -182,6 +190,7 @@ class CasValidator {
     $allowed_proxy_chains_raw = $this->casHelper->getProxyChains();
     $allowed_proxy_chains = $this->parseAllowedProxyChains($allowed_proxy_chains_raw);
     $server_chain = $this->parseServerProxyChain($proxy_chain);
+    $this->casHelper->log("Attempting to verify supplied proxy chain: " . print_r($server_chain, TRUE));
 
     // Loop through the allowed chains, checking the supplied chain for match.
     foreach ($allowed_proxy_chains as $chain) {
@@ -196,12 +205,14 @@ class CasValidator {
         if (preg_match('/^\/.*\/[ixASUXu]*$/s', $regex)) {
           if (!(preg_match($regex, $server_chain[$index]))) {
             $flag = FALSE;
+            $this->casHelper->log("Failed to match $regex with supplied " . $server_chain[$index]);
             break;
           }
         }
         else {
           if (!(strncasecmp($regex, $server_chain[$index], strlen($regex)) == 0)) {
             $flag = FALSE;
+            $this->casHelper->log("Failed to match $regex with supplied " . $server_chain[$index]);
             break;
           }
         }
@@ -209,11 +220,13 @@ class CasValidator {
 
       // If we have a match, return.
       if ($flag == TRUE) {
+        $this->casHelper->log("Matched allowed chain: " . print_r($chain, TRUE));
         return;
       }
     }
 
     // If we've reached this point, no chain was validated, so throw exception.
+    $this->casHelper->log("Proxy chain did not match allowed list.");
     throw new CasValidateException("Proxy chain did not match allowed list.");
   }
 
