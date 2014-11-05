@@ -45,7 +45,7 @@ class CasProxyHelper {
   private function getServerProxyURL($target_service) {
     $url = $this->casHelper->getServerBaseUrl() . 'proxy';
     $params = array();
-    $params['pgt'] = $_SESSION['cas_pgt']->pgt;
+    $params['pgt'] = $_SESSION['cas_pgt'];
     $params['targetService'] = $target_service;
     return $url . '?' . UrlHelper::buildQuery($params);
   }

@@ -267,7 +267,7 @@ class CasHelper {
    */
   public function storePGTSession($pgt_iou) {
     $pgt = $this->lookupPgtByPgtIou($pgt_iou);
-    $_SESSION['cas_pgt'] = $pgt;
+    $_SESSION['cas_pgt'] = $pgt->pgt;
     // Now that we have the pgt in the session,
     // we can delete the database mapping.
     $this->deletePgtMappingByPgtIou($pgt_iou);
