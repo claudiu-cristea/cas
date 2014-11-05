@@ -283,6 +283,7 @@ class CasSubscriber implements EventSubscriberInterface {
     $routes_to_ignore = array(
       'cas.service',
       'cas.proxyCallback',
+      'cas.login',
     );
 
     $current_route = $this->routeMatcher->getRouteName();
