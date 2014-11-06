@@ -113,7 +113,7 @@ class CasSubscriber implements EventSubscriberInterface {
       return;
     }
 
-    // Don't do anything if the current route is the service route.
+    // Some routes we don't want to run on.
     if ($this->isIgnoreableRoute()) {
       return;
     }
@@ -290,6 +290,7 @@ class CasSubscriber implements EventSubscriberInterface {
       'cas.service',
       'cas.proxyCallback',
       'cas.login',
+      'cas.logout',
     );
 
     $current_route = $this->routeMatcher->getRouteName();
