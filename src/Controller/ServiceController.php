@@ -91,14 +91,14 @@ class ServiceController implements ContainerInjectionInterface {
     if ($request->request->has('logoutRequest')) {
       $this->casHelper->log("Logout request: passing to casLogout::handleSlo");
       $this->casLogout->handleSlo($request->request->get('logoutRequest'));
-      // Always return a 200 code. CAS Server doens't care either way what
+      // Always return a 200 code. CAS Server doesn’t care either way what
       // happens here, since it is a fire-and-forget approach taken.
       return Response::create('', 200);
     }
 
     // Our CAS Subscriber, which implements forced redirect and gateway, will
     // set this query string param which indicates we should disable the
-    // subscriber on the next redirect. This prevents an infite redirect loop.
+    // subscriber on the next redirect. This prevents an infinite redirect loop.
     if ($request->query->has('cas_temp_disable')) {
       $this->casHelper->log("Temp disable flag set, set session flag.");
       $_SESSION['cas_temp_disable'] = TRUE;
@@ -156,7 +156,7 @@ class ServiceController implements ContainerInjectionInterface {
    * parameter that was placed there to redirect a user to specific page after
    * logging in with CAS.
    *
-   * Drupal has a built in mechansim for doing this, by instead using a
+   * Drupal has a built in mechanism for doing this, by instead using a
    * "destination" parameter in the URL. Anytime there's a RedirectResponse
    * returned, RedirectResponseSubscriber looks for the destination param and
    * will redirect a user there instead.

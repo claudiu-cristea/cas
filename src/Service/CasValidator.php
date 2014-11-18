@@ -81,7 +81,7 @@ class CasValidator {
   }
 
   /**
-   * Validation of a service ticket for Verison 1 of the CAS protocol.
+   * Validation of a service ticket for Version 1 of the CAS protocol.
    *
    * @param string $data
    *   The raw validation response data from CAS server.
@@ -106,7 +106,7 @@ class CasValidator {
   }
 
   /**
-   * Validation of a service ticket for Verison 2 of the CAS protocol.
+   * Validation of a service ticket for Version 2 of the CAS protocol.
    *
    * @param string $data
    *   The raw validation response data from CAS server.
@@ -137,7 +137,7 @@ class CasValidator {
 
     $success_elements = $dom->getElementsByTagName("authenticationSuccess");
     if ($success_elements->length === 0) {
-      // All reponses should have either an authenticationFailure
+      // All responses should have either an authenticationFailure
       // or authenticationSuccess node.
       throw new CasValidateException("XML from CAS server is not valid.");
     }

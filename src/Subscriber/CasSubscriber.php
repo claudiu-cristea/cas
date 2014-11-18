@@ -138,7 +138,7 @@ class CasSubscriber implements EventSubscriberInterface {
       return;
     }
 
-    // Check to see if we should intitiate a gateway auth check. It will set a
+    // Check to see if we should initiate a gateway auth check. It will set a
     // response on the event if so.
     $this->handleGateway($event);
   }
