@@ -9,6 +9,10 @@ use Drupal\Core\Entity\EntityStorageException;
 use Drupal\Core\Session\SessionManagerInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Component\Utility\Crypt;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Drupal\cas\Event\CasUserEvent;
+use Drupal\cas\CasPropertyBag;
+use Drupal\cas\Event\CasPropertyEvent;
 
 class CasLogin {
 
@@ -33,16 +37,22 @@ class CasLogin {
   protected $connection;
 
   /**
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
+   */
+  protected $eventDispatcher;
+
+  /**
    * Constructs a CasLogin object.
    *
    * @param ConfigFactoryInterface $settings
    *   The config factory object
    */
-  public function __construct(ConfigFactoryInterface $settings, EntityManagerInterface $entity_manager, SessionManagerInterface $session_manager, Connection $database_connection) {
+  public function __construct(ConfigFactoryInterface $settings, EntityManagerInterface $entity_manager, SessionManagerInterface $session_manager, Connection $database_connection, EventDispatcherInterface $event_dispatcher) {
     $this->settings = $settings;
     $this->entityManager = $entity_manager;
     $this->sessionManager = $session_manager;
     $this->connection = $database_connection;
+    $this->eventDispatcher = $event_dispatcher;
   }
 
   /**
@@ -51,23 +61,32 @@ class CasLogin {
    * This method should be used to login a user after they have successfully
    * authenticated with the CAS server.
    *
-   * @param string $username
-   *   The username of the account to log in.
+   * @param CasPropertyBag $property_bag
+   *   CasPropertyBag containing username and attributes from CAS.
    *
    * @throws CasLoginException
    */
-  public function loginToDrupal($username, $ticket) {
-    $account = $this->userLoadByName($username);
+  public function loginToDrupal(CasPropertyBag $property_bag, $ticket) {
+    $this->eventDispatcher->dispatch(CasHelper::CAS_PROPERTY_ALTER, new CasPropertyEvent($property_bag));
+    if (!$property_bag->getLoginStatus()) {
+      $_SESSION['cas_temp_disable'] = TRUE;
+      throw new CasLoginException("Cannot login, an event listener denied access.");
+    }
+    $account = $this->userLoadByName($property_bag->getUsername());
     if (!$account) {
       $config = $this->settings->get('cas.settings');
       if ($config->get('user_accounts.auto_register') === TRUE) {
-        $account = $this->registerUser($username);
+        if (!$property_bag->getRegisterStatus()) {
+          $_SESSION['cas_temp_disable'] = TRUE;
+          throw new CasLoginException("Cannot register user, an event listener denied access.");
+        }
+        $account = $this->registerUser($property_bag->getUsername());
       }
       else {
         throw new CasLoginException("Cannot login, local Drupal user account does not exist.");
       }
     }
-
+    $this->eventDispatcher->dispatch(CasHelper::CAS_USER_ALTER, new CasUserEvent($account, $property_bag));
     $this->userLoginFinalize($account);
     $this->storeLoginSessionData($this->sessionManager->getId(), $ticket);
   }

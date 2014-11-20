@@ -9,6 +9,7 @@ namespace Drupal\Tests\cas\Unit\Service;
 
 use Drupal\Tests\UnitTestCase;
 use Drupal\Core\Entity\EntityStorageException;
+use Drupal\cas\CasPropertyBag;
 
 /**
  * CasLogin unit tests.
@@ -42,6 +43,13 @@ class CasLoginTest extends UnitTestCase {
   protected $sessionManager;
 
   /**
+   * The mocked event dispatcher.
+   *
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $eventDispatcher;
+
+  /**
    * {@inheritdoc}
    */
   protected function setUp() {
@@ -53,6 +61,9 @@ class CasLoginTest extends UnitTestCase {
     $this->sessionManager = $this->getMockBuilder('\Drupal\Core\Session\SessionManager')
                                  ->disableOriginalConstructor()
                                  ->getMock();
+    $this->eventDispatcher = $this->getMockBuilder('\Symfony\Component\EventDispatcher\EventDispatcherInterface')
+                                  ->disableOriginalConstructor()
+                                  ->getMock();
   }
 
   /**
@@ -78,12 +89,13 @@ class CasLoginTest extends UnitTestCase {
         $this->entityManager,
         $this->sessionManager,
         $this->connection,
+        $this->eventDispatcher,
       ))
       ->getMock();
 
     if ($account_auto_create && !$account_exists) {
       $entity_storage = $this->getMock('Drupal\Core\Entity\EntityStorageInterface');
-      $entity_account = $this->getMock('Drupal\Core\Entity\EntityInterface');
+      $entity_account = $this->getMock('Drupal\user\UserInterface');
       $this->entityManager->expects($this->once())
         ->method('getStorage')
         ->will($this->returnValue($entity_storage));
@@ -93,15 +105,20 @@ class CasLoginTest extends UnitTestCase {
     }
 
     // We cannot test actual login, so we just check if functions were called.
+    $account = $this->getMockBuilder('\Drupal\user\UserInterface')
+                    ->disableOriginalConstructor()
+                    ->getMock();
     $cas_login->expects($this->once())
       ->method('userLoadByName')
-      ->will($this->returnValue($account_exists ? new \StdClass() : FALSE));
+      ->will($this->returnValue($account_exists ? $account : FALSE));
     $cas_login->expects($this->once())
       ->method('userLoginFinalize');
     $cas_login->expects($this->once())
       ->method('storeLoginSessionData');
 
-    $cas_login->loginToDrupal($this->randomMachineName(8), $this->randomMachineName(24));
+    $property_bag = new CasPropertyBag($this->randomMachineName(8));
+
+    $cas_login->loginToDrupal($property_bag, $this->randomMachineName(24));
   }
 
   /**
@@ -147,6 +164,7 @@ class CasLoginTest extends UnitTestCase {
         $this->entityManager,
         $this->sessionManager,
         $this->connection,
+        $this->eventDispatcher,
       ))
       ->getMock();
 
@@ -160,13 +178,17 @@ class CasLoginTest extends UnitTestCase {
         ->will($this->throwException(new EntityStorageException()));
     }
 
+    $account = $this->getMockBuilder('Drupal\user\UserInterface')
+                    ->disableOriginalConstructor()
+                    ->getMock();
     // We cannot test actual login, so we just check if functions were called.
     $cas_login->expects($this->once())
       ->method('userLoadByName')
-      ->will($this->returnValue($account_exists ? new \StdClass() : FALSE));
+      ->will($this->returnValue($account_exists ? $account : FALSE));
 
     $this->setExpectedException($exception_type, $exception_message);
-    $cas_login->loginToDrupal($this->randomMachineName(8), $this->randomMachineName(24));
+    $property_bag = new CasPropertyBag($this->randomMachineName(8));
+    $cas_login->loginToDrupal($property_bag, $this->randomMachineName(24));
   }
 
   /**
@@ -199,4 +221,66 @@ class CasLoginTest extends UnitTestCase {
     );
   }
 
+  /**
+   * Test generating exception when listeners deny access.
+   *
+   * @covers ::loginToDrupal
+   * @covers ::__construct
+   *
+   * @dataProvider loginToDrupalListenerDeniedDataProvider
+   */
+  public function testLoginToDrupalListenerDenied(CasPropertyBag $property_bag, $exception_message) {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'user_accounts.auto_register' => TRUE,
+      ),
+    ));
+
+    $cas_login = $this->getMockBuilder('Drupal\cas\Service\CasLogin')
+      ->setMethods(array('userLoadByName', 'userLoginFinalize', 'storeLoginSessionData'))
+      ->setConstructorArgs(array(
+        $config_factory,
+        $this->entityManager,
+        $this->sessionManager,
+        $this->connection,
+        $this->eventDispatcher,
+      ))
+      ->getMock();
+
+    $cas_login->expects($this->any())
+      ->method('userLoadByName')
+      ->will($this->returnValue(FALSE));
+
+    $_SESSION['cas_temp_disable'] = FALSE;
+    $ticket = $this->randomMachineName(24);
+    $this->setExpectedException('\Drupal\cas\Exception\CasLoginException', $exception_message);
+    
+    $cas_login->loginToDrupal($property_bag, $ticket);
+    $this->assertEquals('TRUE', $_SESSION['cas_temp_disable']);
+  }
+
+  /**
+   * Provides parameters and exceptions for testLoginToDrupalListenerDenied
+   *
+   * @return array
+   *   Parameters and exceptions
+   *
+   * @see \Drupal\Tests\cas\Unit\Service\CasLoginTest::testLoginToDrupalListenerDenied
+   */
+  public function loginToDrupalListenerDeniedDataProvider() {
+    // Test denying login access.
+    $bag1 = new CasPropertyBag($this->randomMachineName(8));
+    $bag1->setLoginStatus(FALSE);
+    $message1 = 'Cannot login, an event listener denied access.';
+
+    // Test denying register access.
+    $bag2 = new CasPropertyBag($this->randomMachineName(8));
+    $bag2->setRegisterStatus(FALSE);
+    $message2 = 'Cannot register user, an event listener denied access.';
+
+    return array(
+      array($bag1, $message1),
+      array($bag2, $message2),
+    );
+  }
 }

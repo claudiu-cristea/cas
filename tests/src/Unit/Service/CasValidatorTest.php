@@ -10,6 +10,7 @@ namespace Drupal\Tests\cas\Unit\Service;
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Service\CasValidator;
 use GuzzleHttp\Exception\ClientException;
+use Drupal\cas\CasPropertyBag;
 
 /**
  * CasHelper unit tests.
@@ -103,8 +104,8 @@ class CasValidatorTest extends UnitTestCase {
                     ->method('getProxyChains')
                     ->will($this->returnValue($proxy_chains));
 
-    $user = $this->casValidator->validateTicket($version, $ticket, array());
-    $this->assertEquals($username, $user['username']);
+    $property_bag = $this->casValidator->validateTicket($version, $ticket, array());
+    $this->assertEquals($username, $property_bag->getUsername());
   }
 
   /**
@@ -453,4 +454,47 @@ class CasValidatorTest extends UnitTestCase {
 
     return $params;
   }
+
+  /**
+   * Test parsing out CAS attributes from response.
+   *
+   * @covers ::validateVersion2
+   * @covers ::parseAttributes
+   */
+  public function testParseAttributes() {
+    $ticket = $this->randomMachineName(8);
+    $version = '2.0';
+    $service_params = array();
+    $response = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
+        <cas:authenticationSuccess>
+          <cas:user>username</cas:user>
+          <cas:attributes>
+            <cas:email>foo@example.com</cas:email>
+            <cas:memberof>cn=foo,o=example</cas:memberof>
+            <cas:memberof>cn=bar,o=example</cas:memberof>
+          </cas:attributes>
+        </cas:authenticationSuccess>
+       </cas:serviceResponse>";
+    $response_object = $this->getMock('\GuzzleHttp\Message\ResponseInterface');
+    $body_object = $this->getMock('\GuzzleHttp\Stream\StreamInterface');
+    $this->httpClient->expects($this->once())
+                     ->method('get')
+                     ->will($this->returnValue($response_object));
+
+    $response_object->expects($this->once())
+                    ->method('getBody')
+                    ->will($this->returnValue($body_object));
+
+    $body_object->expects($this->once())
+                ->method('__toString')
+                ->will($this->returnValue($response));
+    $expected_bag = new CasPropertyBag('username');
+    $expected_bag->setAttributes(array(
+      'email' => array('foo@example.com'),
+      'memberof' => array('cn=foo,o=example', 'cn=bar,o=example'),
+    ));
+    $actual_bag = $this->casValidator->validateTicket($version, $ticket, $service_params);
+    $this->assertEquals($expected_bag, $actual_bag);
+  }
+
 }

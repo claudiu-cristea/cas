@@ -5,6 +5,7 @@ namespace Drupal\cas\Service;
 use Drupal\cas\Exception\CasValidateException;
 use Drupal\Core\Http\Client;
 use GuzzleHttp\Exception\ClientException;
+use Drupal\cas\CasPropertyBag;
 
 class CasValidator {
 
@@ -102,7 +103,7 @@ class CasValidator {
     $arr = preg_split('/\n/', $data);
     $user = trim($arr[1]);
     $this->casHelper->log("Extracted user: $user");
-    return array('username' => $user);
+    return new CasPropertyBag($user);
   }
 
   /**
@@ -150,6 +151,14 @@ class CasValidator {
     }
     $username = $user_element->item(0)->nodeValue;
     $this->casHelper->log("Extracted user: $username");
+    $property_bag = new CasPropertyBag($username);
+
+    // If the server provided any attributes, parse them out into the property
+    // bag.
+    $attribute_elements = $dom->getElementsByTagName("attributes");
+    if ($attribute_elements->length > 0) {
+      $property_bag->setAttributes($this->parseAttributes($attribute_elements));
+    }
 
     // Look for a proxy chain, and if it exists, validate it against config.
     $proxy_chain = $success_element->getElementsByTagName("proxy");
@@ -157,22 +166,17 @@ class CasValidator {
       $this->verifyProxyChain($proxy_chain);
     }
 
-    $info = array();
     if ($this->casHelper->isProxy()) {
-      // Extract the PGTIOU from the XML. Place it into $info['proxy'].
+      // Extract the PGTIOU from the XML.
       $pgt_element = $success_element->getElementsByTagName("proxyGrantingTicket");
       if ($pgt_element->length == 0) {
         throw new CasValidateException("Proxy initialized, but no PGTIOU provided in response.");
       }
       $pgt = $pgt_element->item(0)->nodeValue;
       $this->casHelper->log("Extracted PGT: $pgt");
-      $info['pgt'] = $pgt;
+      $property_bag->setPgt($pgt);
     }
-    else {
-      $info['pgt'] = NULL;
-    }
-    $info['username'] = $username;
-    return $info;
+    return $property_bag;
   }
 
   /**
@@ -272,5 +276,26 @@ class CasValidator {
       $proxies[] = $node->nodeValue;
     }
     return $proxies;
+  }
+
+  /**
+   * Parse the attributes list from the CAS Server into an array.
+   *
+   * @param \DOMNodeList $xml_list
+   *   An XML element containing attributes.
+   *
+   * @return array
+   *   An associative array of attributes.
+   */
+  private function parseAttributes($xml_list) {
+    $attributes = array();
+    $node = $xml_list->item(0);
+    foreach ($node->childNodes as $child) {
+      $name = $child->localName;
+      $value = $child->nodeValue;
+      $attributes[$name][] = $value;
+    }
+    $this->casHelper->log("Parsed out attributes: " . print_r($attributes, TRUE));
+    return $attributes;
   }
 }

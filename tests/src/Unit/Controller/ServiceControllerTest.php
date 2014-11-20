@@ -11,6 +11,7 @@ use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Controller\ServiceController;
 use Drupal\cas\Exception\CasValidateException;
 use Drupal\cas\Exception\CasLoginException;
+use Drupal\cas\CasPropertyBag;
 
 /**
  * ServiceController unit tests.
@@ -217,12 +218,14 @@ class ServiceControllerTest extends UnitTestCase {
       $this->assertDestinationSetFromReturnTo();
     }
 
+    $validation_data = new CasPropertyBag('testuser');
+
     $this->assertSuccessfulValidation($returnto, $cas_temp_disable);
 
     // Login should be called.
     $this->casLogin->expects($this->once())
       ->method('loginToDrupal')
-      ->with($this->equalTo('testuser'), $this->equalTo('ST-foobar'));
+      ->with($this->equalTo($validation_data), $this->equalTo('ST-foobar'));
 
     $this->assertRedirectedToFrontPageOnHandle();
     if ($cas_temp_disable) {
@@ -262,10 +265,13 @@ class ServiceControllerTest extends UnitTestCase {
 
     $this->assertSuccessfulValidation($returnto, $cas_temp_disable, TRUE);
 
+    $validation_data = new CasPropertyBag('testuser');
+    $validation_data->setPgt('testpgt');
+
     // Login should be called.
     $this->casLogin->expects($this->once())
       ->method('loginToDrupal')
-      ->with($this->equalTo('testuser'), $this->equalTo('ST-foobar'));
+      ->with($this->equalTo($validation_data), $this->equalTo('ST-foobar'));
 
     // PGT should be saved.
     $this->casHelper->expects($this->once())
@@ -411,9 +417,9 @@ class ServiceControllerTest extends UnitTestCase {
       $service_params['cas_temp_disable'] = TRUE;
     }
 
-    $validation_data = array('username' => 'testuser');
+    $validation_data = new CasPropertyBag('testuser');
     if ($for_proxy) {
-      $validation_data['pgt'] = 'testpgt';
+      $validation_data->setPgt('testpgt');
     }
 
     // Validation service should be called for that ticket.

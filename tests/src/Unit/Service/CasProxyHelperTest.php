@@ -72,7 +72,7 @@ class CasProxyHelperTest extends UnitTestCase {
    */
   public function testProxyAuthenticate($target_service, $cookie_domain, $already_proxied) {
     // Set up the fake pgt in the session.
-    $_SESSION['cas_pgt'] = (object) ['pgt' => $this->randomMachineName(24)];
+    $_SESSION['cas_pgt'] = $this->randomMachineName(24);
 
     // Set up properties so the http client callback knows about them.
     $cookie_value = $this->randomMachineName(24);
@@ -152,7 +152,7 @@ class CasProxyHelperTest extends UnitTestCase {
   public function testProxyAuthenticateException($is_proxy, $pgt_set, $target_service, $response, $client_exception, $exception_type, $exception_message) {
     if ($pgt_set) {
       // Set up the fake pgt in the session.
-      $_SESSION['cas_pgt'] = (object) ['pgt' => $this->randomMachineName(24)];
+      $_SESSION['cas_pgt'] = $this->randomMachineName(24);
     }
     // Set up properties so the http client callback knows about them.
     $cookie_value = $this->randomMachineName(24);

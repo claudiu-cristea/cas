@@ -61,6 +61,20 @@ class CasHelper {
   const CAS_MAKE_DEFAULT = 2;
 
   /**
+   * Event type identifier for cas user alter.
+   *
+   * @var string
+   */
+  const CAS_USER_ALTER = 'cas.user_alter';
+
+  /**
+   * Event type identifier for cas property alter.
+   *
+   * @var string
+   */
+  const CAS_PROPERTY_ALTER = 'cas.property_alter';
+
+  /**
    * @var \Drupal\Core\Database\Connection
    */
   protected $connection;
@@ -256,7 +270,8 @@ class CasHelper {
       ->fields('c', array('pgt'))
       ->condition('pgt_iou', $pgt_iou)
       ->execute()
-      ->fetch();
+      ->fetch()
+      ->pgt;
   }
 
   /**
@@ -267,7 +282,7 @@ class CasHelper {
    */
   public function storePGTSession($pgt_iou) {
     $pgt = $this->lookupPgtByPgtIou($pgt_iou);
-    $_SESSION['cas_pgt'] = $pgt->pgt;
+    $_SESSION['cas_pgt'] = $pgt;
     // Now that we have the pgt in the session,
     // we can delete the database mapping.
     $this->deletePgtMappingByPgtIou($pgt_iou);

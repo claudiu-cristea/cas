@@ -134,10 +134,10 @@ class ServiceController implements ContainerInjectionInterface {
     }
 
     try {
-      $this->casLogin->loginToDrupal($cas_validation_info['username'], $ticket);
-      if ($this->casHelper->isProxy() && isset($cas_validation_info['pgt'])) {
+      $this->casLogin->loginToDrupal($cas_validation_info, $ticket);
+      if ($this->casHelper->isProxy() && $cas_validation_info->getPgt()) {
         $this->casHelper->log("Storing PGT information for this session.");
-        $this->casHelper->storePGTSession($cas_validation_info['pgt']);
+        $this->casHelper->storePGTSession($cas_validation_info->getPgt());
       }
       $this->setMessage(t('You have been logged in.'));
     }
