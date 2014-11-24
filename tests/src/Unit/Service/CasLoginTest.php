@@ -246,10 +246,13 @@ class CasLoginTest extends UnitTestCase {
         $this->eventDispatcher,
       ))
       ->getMock();
+    $account = $this->getMockBuilder('Drupal\user\UserInterface')
+                    ->disableOriginalConstructor()
+                    ->getMock();
 
     $cas_login->expects($this->any())
       ->method('userLoadByName')
-      ->will($this->returnValue(FALSE));
+      ->will($this->returnValue($property_bag->getRegisterStatus() ? $account : FALSE));
 
     $_SESSION['cas_temp_disable'] = FALSE;
     $ticket = $this->randomMachineName(24);

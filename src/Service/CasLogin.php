@@ -68,10 +68,6 @@ class CasLogin {
    */
   public function loginToDrupal(CasPropertyBag $property_bag, $ticket) {
     $this->eventDispatcher->dispatch(CasHelper::CAS_PROPERTY_ALTER, new CasPropertyEvent($property_bag));
-    if (!$property_bag->getLoginStatus()) {
-      $_SESSION['cas_temp_disable'] = TRUE;
-      throw new CasLoginException("Cannot login, an event listener denied access.");
-    }
     $account = $this->userLoadByName($property_bag->getUsername());
     if (!$account) {
       $config = $this->settings->get('cas.settings');
@@ -87,6 +83,11 @@ class CasLogin {
       }
     }
     $this->eventDispatcher->dispatch(CasHelper::CAS_USER_ALTER, new CasUserEvent($account, $property_bag));
+    $account->save();
+    if (!$property_bag->getLoginStatus()) {
+      $_SESSION['cas_temp_disable'] = TRUE;
+      throw new CasLoginException("Cannot login, an event listener denied access.");
+    }
     $this->userLoginFinalize($account);
     $this->storeLoginSessionData($this->sessionManager->getId(), $ticket);
   }
