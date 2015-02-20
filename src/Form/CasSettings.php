@@ -311,4 +311,11 @@ class CasSettings extends ConfigFormBase {
     $config->save();
     parent::submitForm($form, $form_state);
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getEditableConfigNames() {
+    return array('cas.settings');
+  }
 }
