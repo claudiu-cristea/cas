@@ -63,3 +63,17 @@ cas.settings:
         proxy_chains:
           type: string
           label: 'Proxy Chains'
+    redirection:
+      type: mapping
+      label: 'Redirection'
+      mapping:
+        logout_destination:
+          type: string
+          label: 'Logout Destination'
+    debugging:
+      type: mapping
+      label: 'Debugging'
+      mapping:
+        log:
+          type: boolean
+          label: 'Log Debug Information'
