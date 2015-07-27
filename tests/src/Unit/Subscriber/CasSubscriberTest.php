@@ -437,7 +437,6 @@ class CasSubscriberTest extends UnitTestCase {
    *
    * @covers ::handle
    * @covers ::handleForcedPath
-   * @covers :: __construct
    * @covers ::handleGateway
    */
   public function testHandleForcedPathWithConfigOff() {
@@ -486,7 +485,6 @@ class CasSubscriberTest extends UnitTestCase {
    *
    * @covers ::handle
    * @covers ::handleForcedPath
-   * @covers :: __construct
    * @covers ::handleGateway
    */
   public function testHandleForcedPathNoConditionMatch() {
