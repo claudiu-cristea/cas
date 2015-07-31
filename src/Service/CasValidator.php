@@ -3,14 +3,14 @@
 namespace Drupal\cas\Service;
 
 use Drupal\cas\Exception\CasValidateException;
-use Drupal\Core\Http\Client;
+use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use Drupal\cas\CasPropertyBag;
 
 class CasValidator {
 
   /**
-   * @var \Drupal\Core\Http\Client
+   * @var \GuzzleHttp\Client
    */
   protected $httpClient;
 

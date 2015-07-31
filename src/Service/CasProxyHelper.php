@@ -2,7 +2,7 @@
 
 namespace Drupal\cas\Service;
 
-use Drupal\Core\Http\Client;
+use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use Drupal\Component\Utility\UrlHelper;
 use GuzzleHttp\Cookie\CookieJar;
@@ -11,7 +11,7 @@ use Drupal\cas\Exception\CasProxyException;
 class CasProxyHelper {
 
   /**
-   * @var \Drupal\Core\Http\Client
+   * @var GuzzleHttp\Client
    */
   protected $httpClient;
 

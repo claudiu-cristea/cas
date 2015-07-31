@@ -9,7 +9,7 @@ namespace Drupal\Tests\cas\Unit\Service;
 
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Service\CasProxyHelper;
-use Drupal\Core\Http\Client;
+use GuzzleHttp\Client;
 use GuzzleHttp\Subscriber\Mock;
 use GuzzleHttp\Message\Response;
 use GuzzleHttp\Stream\Stream;
@@ -27,7 +27,7 @@ class CasProxyHelperTest extends UnitTestCase {
   /**
    * The mocked http client.
    *
-   * @var \Drupal\Core\Http\Client
+   * @var \GuzzleHttp\Client
    */
   protected $httpClient;
 

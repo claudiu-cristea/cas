@@ -25,7 +25,7 @@ class CasValidatorTest extends UnitTestCase {
   /**
    * The mocked http client.
    *
-   * @var \Drupal\Core\Http\Client|\PHPUnit_Framework_MockObject_MockObject
+   * @var \GuzzleHttp\Client|\PHPUnit_Framework_MockObject_MockObject
    */
   protected $httpClient;
 
@@ -51,7 +51,7 @@ class CasValidatorTest extends UnitTestCase {
   protected function setUp() {
     parent::setUp();
 
-    $this->httpClient = $this->getMockBuilder('\Drupal\Core\Http\Client')
+    $this->httpClient = $this->getMockBuilder('\GuzzleHttp\Client')
                              ->disableOriginalConstructor()
                              ->getMock();
     $this->casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
