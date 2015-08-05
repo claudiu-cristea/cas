@@ -8,7 +8,6 @@
 namespace Drupal\Tests\cas\Unit\Controller;
 
 use Drupal\Tests\UnitTestCase;
-use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\cas\Controller\LogoutController;
 
 /**

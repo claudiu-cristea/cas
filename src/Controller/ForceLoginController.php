@@ -5,7 +5,7 @@ namespace Drupal\cas\Controller;
 use Drupal\cas\Service\CasHelper;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Routing\TrustedRedirectResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 class ForceLoginController implements ContainerInjectionInterface {
@@ -54,6 +54,6 @@ class ForceLoginController implements ContainerInjectionInterface {
     $cas_login_url = $this->casHelper->getServerLoginUrl($query_params);
     $this->casHelper->log("Cas forced login route, redirecting to: $cas_login_url");
 
-    return RedirectResponse::create($cas_login_url, 302);
+    return TrustedRedirectResponse::create($cas_login_url, 302);
   }
 }

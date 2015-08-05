@@ -8,7 +8,7 @@ namespace Drupal\cas\Subscriber;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Session\AccountInterface;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Routing\TrustedRedirectResponse;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
@@ -168,7 +168,7 @@ class CasSubscriber implements EventSubscriberInterface {
         'cas_temp_disable' => TRUE,
       ));
       $this->casHelper->log("Protected Url detected, redirecting to: $cas_login_url");
-      $event->setResponse(RedirectResponse::create($cas_login_url));
+      $event->setResponse(TrustedRedirectResponse::create($cas_login_url));
       return TRUE;
     }
     return FALSE;
@@ -220,7 +220,7 @@ class CasSubscriber implements EventSubscriberInterface {
       'cas_temp_disable' => TRUE,
     ), TRUE);
     $this->casHelper->log("Gateway activated, redirecting to $cas_login_url");
-    $event->setResponse(RedirectResponse::create($cas_login_url));
+    $event->setResponse(TrustedRedirectResponse::create($cas_login_url));
 
     return TRUE;
   }

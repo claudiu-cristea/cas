@@ -8,7 +8,7 @@
 namespace Drupal\Tests\cas\Unit\Controller;
 
 use Drupal\Tests\UnitTestCase;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\cas\Controller\ForceLoginController;
 
 /**
@@ -69,7 +69,7 @@ class ForceLoginControllerTest extends UnitTestCase {
       ->with($this->equalTo($parameters))
       ->will($this->returnValue('https://example.com'));
 
-    $expected_response = new RedirectResponse('https://example.com', 302);
+    $expected_response = new TrustedRedirectResponse('https://example.com', 302);
 
     $force_login_controller = new ForceLoginController($this->casHelper, $this->requestStack);
     $response = $force_login_controller->forceLogin();
