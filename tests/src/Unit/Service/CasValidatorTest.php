@@ -11,6 +11,10 @@ use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Service\CasValidator;
 use GuzzleHttp\Exception\ClientException;
 use Drupal\cas\CasPropertyBag;
+use GuzzleHttp\Client;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
 
 /**
  * CasHelper unit tests.
@@ -21,45 +25,6 @@ use Drupal\cas\CasPropertyBag;
  * @coversDefaultClass \Drupal\cas\Service\CasValidator
  */
 class CasValidatorTest extends UnitTestCase {
-
-  /**
-   * The mocked http client.
-   *
-   * @var \GuzzleHttp\Client|\PHPUnit_Framework_MockObject_MockObject
-   */
-  protected $httpClient;
-
-  /**
-   * The mocked CasHelper.
-   *
-   * @var \Drupal\cas\Service\CasHelper|\PHPUnit_Framework_MockObject_MockObject
-   */
-  protected $casHelper;
-
-  /**
-   * The CasValidator to test.
-   *
-   * @var \Drupal\cas\Service\CasValidator
-   */
-  protected $casValidator;
-
-  /**
-   * {@inheritdoc}
-   *
-   * @covers ::__construct
-   */
-  protected function setUp() {
-    parent::setUp();
-
-    $this->httpClient = $this->getMockBuilder('\GuzzleHttp\Client')
-                             ->disableOriginalConstructor()
-                             ->getMock();
-    $this->casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
-                            ->disableOriginalConstructor()
-                            ->getMock();
-    $this->casValidator = new CasValidator($this->httpClient, $this->casHelper);
-
-  }
 
   /**
    * Test validation of Cas tickets.
@@ -74,37 +39,33 @@ class CasValidatorTest extends UnitTestCase {
    * @dataProvider validateTicketDataProvider
    */
   public function testValidateTicket($version, $ticket, $username, $response, $is_proxy, $can_be_proxied, $proxy_chains) {
-    $response_object = $this->getMock('\GuzzleHttp\Message\ResponseInterface');
-    $body_object = $this->getMock('\GuzzleHttp\Stream\StreamInterface');
-    $this->httpClient->expects($this->once())
-                     ->method('get')
-                     ->will($this->returnValue($response_object));
 
-    $response_object->expects($this->once())
-                    ->method('getBody')
-                    ->will($this->returnValue($body_object));
+    $mock = new MockHandler([new Response(200, array(), $response)]);
+    $handler = HandlerStack::create($mock);
+    $httpClient = new Client(['handler' => $handler]);
 
-    $body_object->expects($this->once())
-                ->method('__toString')
-                ->will($this->returnValue($response));
+    $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+                      ->disableOriginalConstructor()
+                      ->getMock();
+    $casValidator = new CasValidator($httpClient, $casHelper);
 
-    $this->casHelper->expects($this->once())
-                    ->method('getCertificateAuthorityPem')
-                    ->will($this->returnValue('foo'));
+    $casHelper->expects($this->once())
+              ->method('getCertificateAuthorityPem')
+              ->will($this->returnValue('foo'));
 
-    $this->casHelper->expects($this->any())
-                    ->method('isProxy')
-                    ->will($this->returnValue($is_proxy));
+    $casHelper->expects($this->any())
+              ->method('isProxy')
+              ->will($this->returnValue($is_proxy));
 
-    $this->casHelper->expects($this->any())
-                    ->method('canBeProxied')
-                    ->will($this->returnValue($can_be_proxied));
+    $casHelper->expects($this->any())
+              ->method('canBeProxied')
+              ->will($this->returnValue($can_be_proxied));
 
-    $this->casHelper->expects($this->any())
-                    ->method('getProxyChains')
-                    ->will($this->returnValue($proxy_chains));
+    $casHelper->expects($this->any())
+              ->method('getProxyChains')
+              ->will($this->returnValue($proxy_chains));
 
-    $property_bag = $this->casValidator->validateTicket($version, $ticket, array());
+    $property_bag = $casValidator->validateTicket($version, $ticket, array());
     $this->assertEquals($username, $property_bag->getUsername());
   }
 
@@ -228,40 +189,26 @@ class CasValidatorTest extends UnitTestCase {
    * @dataProvider validateTicketExceptionDataProvider
    */
   public function testValidateTicketException($version, $response, $is_proxy, $can_be_proxied, $proxy_chains, $exception, $exception_message, $http_client_exception) {
-    $response_object = $this->getMock('\GuzzleHttp\Message\ResponseInterface');
-    $body_object = $this->getMock('\GuzzleHttp\Stream\StreamInterface');
+    $mock = new MockHandler([new Response(200, array(), $response)]);
+    $handler = HandlerStack::create($mock);
+    $httpClient = new Client(['handler' => $handler]);
 
-    if ($http_client_exception) {
-      $request = $this->getMock('\GuzzleHttp\Message\RequestInterface');
-      $this->httpClient->expects($this->once())
-                       ->method('get')
-                       ->will($this->throwException(new ClientException('', $request)));
-    }
-    else {
-      $this->httpClient->expects($this->once())
-                       ->method('get')
-                       ->will($this->returnValue($response_object));
-    }
+    $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+                      ->disableOriginalConstructor()
+                      ->getMock();
+    $casValidator = new CasValidator($httpClient, $casHelper);
 
-    $response_object->expects($this->any())
-                    ->method('getBody')
-                    ->will($this->returnValue($body_object));
+    $casHelper->expects($this->any())
+              ->method('isProxy')
+              ->will($this->returnValue($is_proxy));
 
-    $body_object->expects($this->any())
-                ->method('__toString')
-                ->will($this->returnValue($response));
+    $casHelper->expects($this->any())
+              ->method('canBeProxied')
+              ->will($this->returnValue($can_be_proxied));
 
-    $this->casHelper->expects($this->any())
-                    ->method('isProxy')
-                    ->will($this->returnValue($is_proxy));
-
-    $this->casHelper->expects($this->any())
-                    ->method('canBeProxied')
-                    ->will($this->returnValue($can_be_proxied));
-
-    $this->casHelper->expects($this->any())
-                    ->method('getProxyChains')
-                    ->will($this->returnValue($proxy_chains));
+    $casHelper->expects($this->any())
+              ->method('getProxyChains')
+              ->will($this->returnValue($proxy_chains));
 
     if (!empty($exception_message)) {
       $this->setExpectedException($exception, $exception_message);
@@ -270,7 +217,7 @@ class CasValidatorTest extends UnitTestCase {
       $this->setExpectedException($exception);
     }
     $ticket = $this->randomMachineName(24);
-    $user = $this->casValidator->validateTicket($version, $ticket, array());
+    $user = $casValidator->validateTicket($version, $ticket, array());
   }
 
   /**
@@ -475,25 +422,20 @@ class CasValidatorTest extends UnitTestCase {
           </cas:attributes>
         </cas:authenticationSuccess>
        </cas:serviceResponse>";
-    $response_object = $this->getMock('\GuzzleHttp\Message\ResponseInterface');
-    $body_object = $this->getMock('\GuzzleHttp\Stream\StreamInterface');
-    $this->httpClient->expects($this->once())
-                     ->method('get')
-                     ->will($this->returnValue($response_object));
+    $mock = new MockHandler([new Response(200, array(), $response)]);
+    $handler = HandlerStack::create($mock);
+    $httpClient = new Client(['handler' => $handler]);
 
-    $response_object->expects($this->once())
-                    ->method('getBody')
-                    ->will($this->returnValue($body_object));
-
-    $body_object->expects($this->once())
-                ->method('__toString')
-                ->will($this->returnValue($response));
+    $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+                      ->disableOriginalConstructor()
+                      ->getMock();
+    $casValidator = new CasValidator($httpClient, $casHelper);
     $expected_bag = new CasPropertyBag('username');
     $expected_bag->setAttributes(array(
       'email' => array('foo@example.com'),
       'memberof' => array('cn=foo,o=example', 'cn=bar,o=example'),
     ));
-    $actual_bag = $this->casValidator->validateTicket($version, $ticket, $service_params);
+    $actual_bag = $casValidator->validateTicket($version, $ticket, $service_params);
     $this->assertEquals($expected_bag, $actual_bag);
   }
 

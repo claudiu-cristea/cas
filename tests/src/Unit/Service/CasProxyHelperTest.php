@@ -10,9 +10,9 @@ namespace Drupal\Tests\cas\Unit\Service;
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Service\CasProxyHelper;
 use GuzzleHttp\Client;
-use GuzzleHttp\Subscriber\Mock;
-use GuzzleHttp\Message\Response;
-use GuzzleHttp\Stream\Stream;
+use GuzzleHttp\Handler\MockHandler;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Psr7\Response;
 
 /**
  * CasHelper unit tests.
@@ -23,43 +23,6 @@ use GuzzleHttp\Stream\Stream;
  * @coversDefaultClass \Drupal\cas\Service\CasProxyHelper
  */
 class CasProxyHelperTest extends UnitTestCase {
-
-  /**
-   * The mocked http client.
-   *
-   * @var \GuzzleHttp\Client
-   */
-  protected $httpClient;
-
-  /**
-   * The mocked CasHelper.
-   *
-   * @var \Drupal\cas\Service\CasHelper|\PHPUnit_Framework_MockObject_MockObject
-   */
-  protected $casHelper;
-
-  /**
-   * The casProxyHelper to test.
-   *
-   * @var \Drupal\cas\Service\CasProxyHelper|\PHPUnit_Framework_MockObject_MockObject
-   */
-  protected $casProxyHelper;
-
-  /**
-   * {@inheritdoc}
-   *
-   * @covers ::__construct
-   */
-  protected function setUp() {
-    parent::setUp();
-
-    $this->httpClient = new Client();
-    $this->casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
-                            ->disableOriginalConstructor()
-                            ->getMock();
-    $this->casProxyHelper = new CasProxyHelper($this->httpClient, $this->casHelper);
-
-  }
 
   /**
    * Test proxy authentication to a service.
@@ -84,33 +47,49 @@ class CasProxyHelperTest extends UnitTestCase {
         'Value' => $cookie_value,
         'Domain' => $cookie_domain,
       );
-      $jar = $this->casProxyHelper->proxyAuthenticate($target_service);
+
+      $httpClient = new Client();
+      $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+                        ->disableOriginalConstructor()
+                        ->getMock();
+      $casProxyHelper = new CasProxyHelper($httpClient, $casHelper);
+
+      $jar = $casProxyHelper->proxyAuthenticate($target_service);
       $cookie_array = $jar->toArray();
       $this->assertEquals('SESSION', $cookie_array[0]['Name']);
       $this->assertEquals($cookie_value, $cookie_array[0]['Value']);
       $this->assertEquals($cookie_domain, $cookie_array[0]['Domain']);
     }
     else {
-      // The casHelper expects to be called for a few things.
-      $this->casHelper->expects($this->once())
-                      ->method('getServerBaseUrl')
-                      ->will($this->returnValue('https://example.com/cas/'));
-      $this->casHelper->expects($this->once())
-                      ->method('isProxy')
-                      ->will($this->returnValue(TRUE));
+
       $proxy_ticket = $this->randomMachineName(24);
       $xml_response = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
            <cas:proxySuccess>
              <cas:proxyTicket>PT-$proxy_ticket</cas:proxyTicket>
             </cas:proxySuccess>
          </cas:serviceResponse>";
-      $stream = Stream::factory($xml_response);
-      $text = "HTTP/1.0 200 OK
-      Content-type: text/html
-      Set-Cookie: SESSION=" . $cookie_value;
-      $mock = new Mock([new Response(200, array(), $stream), $text]);
-      $this->httpClient->getEmitter()->attach($mock);
-      $jar = $this->casProxyHelper->proxyAuthenticate($target_service);
+      $mock = new MockHandler([
+        new Response(200, [], $xml_response),
+        new Response(200, ['Content-type' =>  'text/html', 'Set-Cookie' => 'SESSION=' . $cookie_value]),
+      ]);
+      $handler = HandlerStack::create($mock);
+      $httpClient = new Client(['handler' => $handler]);
+
+      $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+                        ->disableOriginalConstructor()
+                        ->getMock();
+      $casProxyHelper = new CasProxyHelper($httpClient, $casHelper);
+
+      // The casHelper expects to be called for a few things.
+      $casHelper->expects($this->once())
+                ->method('getServerBaseUrl')
+                ->will($this->returnValue('https://example.com/cas/'));
+      $casHelper->expects($this->once())
+                ->method('isProxy')
+                ->will($this->returnValue(TRUE));
+
+
+      $jar = $casProxyHelper->proxyAuthenticate($target_service);
       $this->assertEquals('SESSION', $_SESSION['cas_proxy_helper'][$target_service][0]['Name']);
       $this->assertEquals($cookie_value, $_SESSION['cas_proxy_helper'][$target_service][0]['Value']);
       $this->assertEquals($cookie_domain, $_SESSION['cas_proxy_helper'][$target_service][0]['Domain']);
@@ -157,14 +136,17 @@ class CasProxyHelperTest extends UnitTestCase {
     // Set up properties so the http client callback knows about them.
     $cookie_value = $this->randomMachineName(24);
 
-    $this->casHelper->expects($this->any())
-                    ->method('getServerBaseUrl')
-                    ->will($this->returnValue('https://example.com/cas/'));
-    $this->casHelper->expects($this->any())
-                    ->method('isProxy')
-                    ->will($this->returnValue($is_proxy));
+    $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+                      ->disableOriginalConstructor()
+                      ->getMock();
 
-    $stream = Stream::factory($response);
+    $casHelper->expects($this->any())
+              ->method('getServerBaseUrl')
+              ->will($this->returnValue('https://example.com/cas/'));
+    $casHelper->expects($this->any())
+              ->method('isProxy')
+              ->will($this->returnValue($is_proxy));
+
     if ($client_exception == 'server') {
       $code = 404;
     }
@@ -172,17 +154,18 @@ class CasProxyHelperTest extends UnitTestCase {
       $code = 200;
     }
     if ($client_exception == 'client') {
-      $text = "HTTP/1.0 404 Not Found";
+      $secondResponse = new Response(404);
     }
     else {
-      $text = "HTTP/1.0 200 OK
-        Content-type: text/html
-        Set-Cookie: SESSION=" . $cookie_value;
+      $secondResponse = new Response(200, ['Content-type' => 'text/html', 'Set-Cookie' => 'SESSION=' . $cookie_value]);
     }
-    $mock = new Mock([new Response($code, array(), $stream), $text]);
-    $this->httpClient->getEmitter()->attach($mock);
+    $mock = new MockHandler([new Response($code, [], $response), $secondResponse]);
+    $handler = HandlerStack::create($mock);
+    $httpClient = new Client(['handler' => $handler]);
+
+    $casProxyHelper = new CasProxyHelper($httpClient, $casHelper);
     $this->setExpectedException($exception_type, $exception_message);
-    $jar = $this->casProxyHelper->proxyAuthenticate($target_service);
+    $jar = $casProxyHelper->proxyAuthenticate($target_service);
 
   }
 
