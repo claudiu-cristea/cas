@@ -43,14 +43,14 @@ function cas_schema() {
     'fields' => array(
       'pgt_iou' => array(
         'description' => 'PGTIOU is the key returned from the CAS server for the PGT',
-        'type' => 'varchar',
-        'length' => 255,
+        'type' => 'varchar_ascii',
+        'length' => 256,
         'not null' => TRUE,
       ),
       'pgt' => array(
         'description' => 'The actual ProxyGrantingTicket value.',
-        'type' => 'varchar',
-        'length' => 255,
+        'type' => 'varchar_ascii',
+        'length' => 256,
         'not null' => TRUE,
       ),
       'timestamp' => array(
