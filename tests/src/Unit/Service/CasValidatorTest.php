@@ -15,6 +15,8 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Psr7\Request;
 
 /**
  * CasHelper unit tests.
@@ -39,7 +41,6 @@ class CasValidatorTest extends UnitTestCase {
    * @dataProvider validateTicketDataProvider
    */
   public function testValidateTicket($version, $ticket, $username, $response, $is_proxy, $can_be_proxied, $proxy_chains) {
-
     $mock = new MockHandler([new Response(200, array(), $response)]);
     $handler = HandlerStack::create($mock);
     $httpClient = new Client(['handler' => $handler]);
@@ -189,7 +190,12 @@ class CasValidatorTest extends UnitTestCase {
    * @dataProvider validateTicketExceptionDataProvider
    */
   public function testValidateTicketException($version, $response, $is_proxy, $can_be_proxied, $proxy_chains, $exception, $exception_message, $http_client_exception) {
-    $mock = new MockHandler([new Response(200, array(), $response)]);
+    if ($http_client_exception) {
+      $mock = new MockHandler([new RequestException($exception_message, new Request('GET', 'test'))]);
+    }
+    else {
+      $mock = new MockHandler([new Response(200, array(), $response)]);
+    }
     $handler = HandlerStack::create($mock);
     $httpClient = new Client(['handler' => $handler]);
 
@@ -210,12 +216,7 @@ class CasValidatorTest extends UnitTestCase {
               ->method('getProxyChains')
               ->will($this->returnValue($proxy_chains));
 
-    if (!empty($exception_message)) {
-      $this->setExpectedException($exception, $exception_message);
-    }
-    else {
-      $this->setExpectedException($exception);
-    }
+    $this->setExpectedException($exception, $exception_message);
     $ticket = $this->randomMachineName(24);
     $user = $casValidator->validateTicket($version, $ticket, array());
   }
@@ -237,11 +238,9 @@ class CasValidatorTest extends UnitTestCase {
     $exception_type = '\Drupal\cas\Exception\CasValidateException';
 
     /* The first exception is actually a 'recasting' of an http client
-     * exception. We're not in the business of checking their exception text,
-     * so simply tell the client to throw an exception, and don't worry about
-     * the message given.
+     * exception.
      */
-    $params[] = array('2.0', '', FALSE, FALSE, '', $exception_type, '', TRUE);
+    $params[] = array('2.0', '', FALSE, FALSE, '', $exception_type, 'External http client exception', TRUE);
 
     /* Protocol version 1 can throw two exceptions: 'no' text is found, or
      * 'yes' text is not found (in that order).

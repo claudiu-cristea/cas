@@ -4,7 +4,7 @@ namespace Drupal\cas\Service;
 
 use Drupal\cas\Exception\CasValidateException;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ClientException;
+use GuzzleHttp\Exception\RequestException;
 use Drupal\cas\CasPropertyBag;
 
 class CasValidator {
@@ -65,7 +65,7 @@ class CasValidator {
       $response_data = $response->getBody()->__toString();
       $this->casHelper->log("Received " . htmlspecialchars($response_data));
     }
-    catch (ClientException $e) {
+    catch (RequestException $e) {
       throw new CasValidateException("Error with request to validate ticket: " . $e->getMessage());
     }
 
