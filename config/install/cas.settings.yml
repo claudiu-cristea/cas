@@ -3,6 +3,7 @@ server:
   hostname: ''
   port: 443
   path: '/'
+  verify: 0
   cert: ''
 
 gateway:

@@ -54,12 +54,20 @@ class CasValidator {
       $validate_url = $this->casHelper->getServerValidateUrl($ticket, $service_params);
       $this->casHelper->log("Trying to validate against $validate_url");
       $options = array();
-      $cert = $this->casHelper->getCertificateAuthorityPem();
-      if (!empty($cert)) {
-        $options['verify'] = $cert;
-      }
-      else {
-        $options['verify'] = FALSE;
+      $verify = $this->casHelper->getSslVerificationMethod();
+      switch ($verify) {
+        case CasHelper::CA_CUSTOM:
+          $cert = $this->casHelper->getCertificateAuthorityPem();
+          $options['verify'] = $cert;
+          break;
+
+        case CasHelper::CA_NONE:
+          $options['verify'] = FALSE;
+          break;
+
+        default:
+          // This triggers for CasHelper::CA_DEFAULT.
+          $options['verify'] = TRUE;
       }
       $response = $this->httpClient->get($validate_url, $options);
       $response_data = $response->getBody()->__toString();

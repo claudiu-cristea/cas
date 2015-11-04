@@ -17,6 +17,8 @@ use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Middleware;
+use Drupal\cas\Service\CasHelper;
 
 /**
  * CasHelper unit tests.
@@ -31,6 +33,7 @@ class CasValidatorTest extends UnitTestCase {
   /**
    * Test validation of Cas tickets.
    *
+   * @covers ::__construct
    * @covers ::validateTicket
    * @covers ::validateVersion1
    * @covers ::validateVersion2
@@ -40,9 +43,12 @@ class CasValidatorTest extends UnitTestCase {
    *
    * @dataProvider validateTicketDataProvider
    */
-  public function testValidateTicket($version, $ticket, $username, $response, $is_proxy, $can_be_proxied, $proxy_chains) {
+  public function testValidateTicket($version, $ticket, $username, $response, $is_proxy, $can_be_proxied, $proxy_chains, $ssl_verification) {
     $mock = new MockHandler([new Response(200, array(), $response)]);
     $handler = HandlerStack::create($mock);
+    $container = [];
+    $history = Middleware::history($container);
+    $handler->push($history);
     $httpClient = new Client(['handler' => $handler]);
 
     $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
@@ -51,6 +57,10 @@ class CasValidatorTest extends UnitTestCase {
     $casValidator = new CasValidator($httpClient, $casHelper);
 
     $casHelper->expects($this->once())
+              ->method('getSslVerificationMethod')
+              ->willReturn($ssl_verification);
+
+    $casHelper->expects($this->any())
               ->method('getCertificateAuthorityPem')
               ->will($this->returnValue('foo'));
 
@@ -67,6 +77,20 @@ class CasValidatorTest extends UnitTestCase {
               ->will($this->returnValue($proxy_chains));
 
     $property_bag = $casValidator->validateTicket($version, $ticket, array());
+
+    // Test that we sent the correct ssl option to the http client.
+    foreach ($container as $transaction) {
+      switch ($ssl_verification) {
+        case CasHelper::CA_CUSTOM:
+          $this->assertEquals('foo', $transaction['options']['verify']);
+          break;
+        case CasHelper::CA_NONE:
+          $this->assertEquals(FALSE, $transaction['options']['verify']);
+          break;
+        default:
+          $this->assertEquals(TRUE, $transaction['options']['verify']);
+      }
+    }
     $this->assertEquals($username, $property_bag->getUsername());
   }
 
@@ -90,6 +114,7 @@ class CasValidatorTest extends UnitTestCase {
       FALSE,
       FALSE,
       '',
+      CasHelper::CA_CUSTOM,
     );
 
     // Second test case: protocol version 2, no proxies.
@@ -107,6 +132,7 @@ class CasValidatorTest extends UnitTestCase {
       FALSE,
       FALSE,
       '',
+      CasHelper::CA_NONE,
     );
 
     // Third test case: protocol version 2, initialize as proxy.
@@ -127,6 +153,7 @@ class CasValidatorTest extends UnitTestCase {
       TRUE,
       FALSE,
       '',
+      CasHelper::CA_DEFAULT,
     );
 
     // Fourth test case: protocol version 2, can be proxied.
@@ -149,6 +176,7 @@ class CasValidatorTest extends UnitTestCase {
       FALSE,
       TRUE,
       $proxy_chains,
+      CasHelper::CA_DEFAULT,
     );
 
     // Fifth test case: protocol version 2, proxy in both directions.
@@ -172,6 +200,7 @@ class CasValidatorTest extends UnitTestCase {
       TRUE,
       TRUE,
       $proxy_chains,
+      CasHelper::CA_DEFAULT,
     );
 
     return $params;

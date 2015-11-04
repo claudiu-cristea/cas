@@ -103,11 +103,27 @@ class CasSettings extends ConfigFormBase {
       '#size' => 30,
       '#default_value' => $config->get('server.path'),
     );
+    $form['server']['verify'] = array(
+      '#type' => 'radios',
+      '#title' => 'SSL Verification',
+      '#description' => $this->t('Choose an appropriate option for verifying the certificate of your CAS server.'),
+      '#options' => array(
+        CasHelper::CA_DEFAULT => $this->t('Verify using web server\'s default certificates.'),
+        CasHelper::CA_NONE => $this->t('Do not verify CAS server. (Note: this should NEVER be used in production.)'),
+        CasHelper::CA_CUSTOM => $this->t('Verify using a custom certificate in the local filesystem. Use the field below to provide path.'),
+      ),
+      '#default_value' => $config->get('server.verify'),
+    );
     $form['server']['cert'] = array(
       '#type' => 'textfield',
-      '#title' => $this->t('Certificate Authority PEM Certificate'),
-      '#description' => $this->t('The PEM certificate of the Certificate Authority that issued the certificate of the CAS server. If omitted, the certificate authority will not be verified.'),
+      '#title' => $this->t('Custom Certificate Authority PEM Certificate'),
+      '#description' => $this->t('The PEM certificate of the Certificate Authority that issued the certificate on the CAS server, used only with the custom certificate option above.'),
       '#default_value' => $config->get('server.cert'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="server[verify]"]' => array('value' => CasHelper::CA_CUSTOM),
+        ),
+      ),
     );
 
     $form['gateway'] = array(
@@ -264,6 +280,13 @@ class CasSettings extends ConfigFormBase {
     $condition_values = (new FormState())
       ->setValues($form_state->getValue(['forced_login', 'paths']));
     $this->forcedLoginPaths->validateConfigurationForm($form, $condition_values);
+
+    $sslVerificationMethod = $form_state->getValue(['server', 'verify']);
+    $certPath = $form_state->getValue(['server', 'cert']);
+    if ($sslVerificationMethod == CasHelper::CA_CUSTOM && !file_exists($certPath)) {
+      $form_state->setErrorByName('server][cert', $this->t('The path you provided to the custom PEM certificate for your CAS server does not exist or is not readable. Verify this path and try again.'));
+    }
+
     return parent::validateForm($form, $form_state);
   }
 
@@ -279,6 +302,7 @@ class CasSettings extends ConfigFormBase {
       ->set('server.hostname', $server_data['hostname'])
       ->set('server.port', $server_data['port'])
       ->set('server.path', $server_data['path'])
+      ->set('server.verify', $server_data['verify'])
       ->set('server.cert', $server_data['cert']);
 
     $condition_values = (new FormState())

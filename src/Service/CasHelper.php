@@ -13,6 +13,27 @@ use Drupal\Core\Logger\RfcLogLevel;
 class CasHelper {
 
   /**
+   * SSL configuration to use the system's CA bundle to verify CAS server.
+   *
+   * @var int
+   */
+  const CA_DEFAULT = 0;
+
+  /**
+   * SSL configuration to use provided file to verify CAS server.
+   *
+   * @var int
+   */
+  const CA_CUSTOM = 1;
+
+  /**
+   * SSL Configuration to not verify CAS server.
+   *
+   * @var int
+   */
+  const CA_NONE = 2;
+
+  /**
    * Gateway configuration to never check preemptively to see if the user is
    * logged in.
    *
@@ -184,6 +205,16 @@ class CasHelper {
    */
   public function getCasProtocolVersion() {
     return $this->settings->get('server.version');
+  }
+
+  /**
+   * Return the SSL verification method.
+   *
+   * @return int
+   *   The verification method.
+   */
+  public function getSslVerificationMethod() {
+    return $this->settings->get('server.verify');
   }
 
   /**

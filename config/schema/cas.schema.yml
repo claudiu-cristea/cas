@@ -20,6 +20,9 @@ cas.settings:
         path:
           type: string
           label: 'Path'
+        verify:
+          type: integer
+          label: 'SSL Verification Method'
         cert:
           type: string
           label: 'PEM Cert path'

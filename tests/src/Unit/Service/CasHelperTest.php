@@ -368,6 +368,24 @@ class CasHelperTest extends UnitTestCase {
   }
 
   /**
+   * Test getting the SSL verification method.
+   *
+   * @covers ::getSslVerificationMethod
+   */
+  public function testGetSslVerificationMethod() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example.com',
+        'server.port' => 443,
+        'server.path' => '/cas',
+        'server.verify' => 17,
+      ),
+    ));
+    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory);
+    $this->assertEquals(17, $cas_helper->getSslVerificationMethod());
+  }
+
+  /**
    * Test getting the CA PEM file.
    *
    * @covers ::getCertificateAuthorityPem
