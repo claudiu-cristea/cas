@@ -18,3 +18,8 @@ services:
   cas.proxy_helper:
     class: Drupal\cas\Service\CasProxyHelper
     arguments: ['@http_client', '@cas.helper']
+  cas.route_enhancer:
+    class: Drupal\cas\Routing\CasRouteEnhancer
+    arguments: ['@cas.helper']
+    tags:
+      - { name: route_enhancer }

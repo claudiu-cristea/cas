@@ -189,6 +189,19 @@ class CasSettings extends ConfigFormBase {
       '#default_value' => $config->get('user_accounts.auto_register'),
     );
 
+    $form['logout'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Logout'),
+      '#open' => FALSE,
+      '#tree' => TRUE,
+    );
+    $form['logout']['cas_logout'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Drupal Logout Triggers CAS Logout'),
+      '#description' => $this->t('When enabled, a Drupal user logout will cause a CAS logout.'),
+      '#default_value' => $config->get('logout.cas_logout'),
+    );
+
     $form['redirection'] = array(
       '#type' => 'details',
       '#title' => $this->t('Redirection'),
@@ -328,6 +341,8 @@ class CasSettings extends ConfigFormBase {
       ->set('proxy.proxy_chains', $form_state->getValue(['proxy', 'proxy_chains']));
     $config
       ->set('user_accounts.auto_register', $form_state->getValue(['user_accounts', 'auto_register']));
+    $config
+      ->set('logout.cas_logout', $form_state->getValue(['logout', 'cas_logout']));
 
     $config
       ->set('debugging.log', $form_state->getValue(['debugging', 'log']));

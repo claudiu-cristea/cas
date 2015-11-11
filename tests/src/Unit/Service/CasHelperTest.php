@@ -604,4 +604,58 @@ class CasHelperTest extends UnitTestCase {
       ->will($this->returnValue(FALSE));
     $this->assertEquals('https://example.com/logout?service=https%3A//bar.example.com/node/1', $cas_helper->getServerLogoutUrl($request));
   }
+
+  /**
+   * Test providing CAS logout override.
+   *
+   * @dataProvider provideCasLogoutOverrideDataProvider
+   */
+  public function testProvideCasLogoutOverride($config, $cas_authenticated) {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'logout.cas_logout' => $config,
+      )
+    ));
+    $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+      ->setConstructorArgs(array($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory))
+      ->setMethods(array('isCasSession'))
+      ->getMock();
+    $cas_helper->expects($this->any())
+      ->method('isCasSession')
+      ->willReturn($cas_authenticated);
+    $request = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Request')
+                    ->disableOriginalConstructor()
+                    ->getMock();
+    $session = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session')
+                    ->disableOriginalConstructor()
+                    ->setMethods(['getId'])
+                    ->getMock();
+    if ($config) {
+      $request->expects($this->once())
+       ->method('getSession')
+       ->willReturn($session);
+      $session->expects($this->once())
+       ->method('getId')
+       ->willReturn($this->randomMachineName(8));
+    }
+
+    $this->assertEquals($config && $cas_authenticated, $cas_helper->provideCasLogoutOverride($request));
+  }
+
+  /**
+   * Provide configuration for testProvideCasLogoutOverride()
+   *
+   * @return array
+   *   Parameters.
+   *
+   * @see \Drupal\Tests\cas\Unit\Service\CasHelperTest::testProvideCasLogoutOverride
+   */
+  public function provideCasLogoutOverrideDataProvider() {
+    return [
+      [TRUE, TRUE],
+      [TRUE, FALSE],
+      [FALSE, TRUE],
+      [FALSE, FALSE],
+    ];
+  }
 }

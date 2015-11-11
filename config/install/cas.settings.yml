@@ -25,5 +25,8 @@ proxy:
 user_accounts:
   auto_register: false
 
+logout:
+  cas_logout: false
+
 debugging:
   log: false

@@ -53,6 +53,13 @@ cas.settings:
         auto_register:
           type: boolean
           label: 'Auto Register Users'
+    logout:
+      type: mapping
+      label: 'Logout'
+      mapping:
+        cas_logout:
+          type: boolean
+          label: 'Drupal Logout Triggers CAS Logout'
     proxy:
       type: mapping
       label: 'Proxy'

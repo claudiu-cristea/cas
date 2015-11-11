@@ -5,6 +5,7 @@ namespace Drupal\cas\Service;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Component\Utility\UrlHelper;
+use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\Logger\LoggerChannelFactory;
 use Drupal\Core\Logger\LoggerChannel;
@@ -413,5 +414,45 @@ class CasHelper {
    */
   protected function isExternal($url) {
     return UrlHelper::isExternal($url);
+  }
+
+  /**
+   * Check if the current logout request should be served by caslogout.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request instance.
+   *
+   * @return bool
+   *   Whether to process logout as caslogout.
+   */
+  public function provideCasLogoutOverride($request) {
+    if ($this->settings->get('logout.cas_logout') == TRUE) {
+      if ($this->isCasSession($request->getSession()->getId())) {
+        return TRUE;
+      }
+    }
+
+    return FALSE;
+  }
+
+  /**
+   * Check if the given session ID was authenticated with CAS.
+   *
+   * @param string $session_id
+   *   The session ID to look up.
+   *
+   * @return bool
+   *   Whether or not this session was authenticated with CAS.
+   *
+   * @codeCoverageIgnore
+   */
+  public function isCasSession($session_id) {
+    $results = $this->connection->select('cas_login_data')
+      ->fields('cas_login_data', array('sid'))
+      ->condition('sid', Crypt::hashBase64($session_id))
+      ->execute()
+      ->fetchAll();
+
+    return !empty($results);
   }
 }
