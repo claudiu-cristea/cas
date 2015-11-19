@@ -505,7 +505,7 @@ class CasHelperTest extends UnitTestCase {
   public function testGetServerLogoutUrlNoRedirect() {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
-        'redirection.logout_destination' => '',
+        'logout.logout_destination' => '',
       )
     ));
     $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
@@ -529,7 +529,7 @@ class CasHelperTest extends UnitTestCase {
   public function testGetServerLogoutUrlFrontPage() {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
-        'redirection.logout_destination' => '<front>',
+        'logout.logout_destination' => '<front>',
       )
     ));
     $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
@@ -556,7 +556,7 @@ class CasHelperTest extends UnitTestCase {
   public function testGetServerLogoutUrlExternalUrl() {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
-        'redirection.logout_destination' => 'https://foo.example.com',
+        'logout.logout_destination' => 'https://foo.example.com',
       )
     ));
     $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
@@ -583,7 +583,7 @@ class CasHelperTest extends UnitTestCase {
   public function testGetServerLogoutUrlInternalPath() {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
-        'redirection.logout_destination' => 'node/1',
+        'logout.logout_destination' => 'node/1',
       )
     ));
     $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')

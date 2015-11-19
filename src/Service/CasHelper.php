@@ -380,8 +380,8 @@ class CasHelper {
    */
   public function getServerLogoutUrl($request) {
     $base_url = $this->getServerBaseUrl() . 'logout';
-    if ($this->settings->get('redirection.logout_destination') != '') {
-      $destination = $this->settings->get('redirection.logout_destination');
+    if ($this->settings->get('logout.logout_destination') != '') {
+      $destination = $this->settings->get('logout.logout_destination');
       if ($destination == '<front>') {
         // If we have '<front>', resolve the path.
         $params['service'] = $this->urlGenerator->generate($destination, array(), TRUE);
@@ -454,5 +454,15 @@ class CasHelper {
       ->fetchAll();
 
     return !empty($results);
+  }
+
+  /**
+   * Whether or not session IDs are stored for single logout.
+   *
+   * @return bool
+   *   Whether or not single logout is enabled in the configuration.
+   */
+  public function getSingleLogOut() {
+    return $this->settings->get('logout.enable_single_logout');
   }
 }

@@ -191,7 +191,7 @@ class CasSettings extends ConfigFormBase {
 
     $form['logout'] = array(
       '#type' => 'details',
-      '#title' => $this->t('Logout'),
+      '#title' => $this->t('Logout Behavior'),
       '#open' => FALSE,
       '#tree' => TRUE,
     );
@@ -201,21 +201,23 @@ class CasSettings extends ConfigFormBase {
       '#description' => $this->t('When enabled, a Drupal user logout will cause a CAS logout.'),
       '#default_value' => $config->get('logout.cas_logout'),
     );
-
-    $form['redirection'] = array(
-      '#type' => 'details',
-      '#title' => $this->t('Redirection'),
-      '#open' => FALSE,
-      '#tree' => TRUE,
-    );
-    $form['redirection']['logout_destination'] = array(
+    $form['logout']['logout_destination'] = array(
       '#type' => 'textfield',
       '#title' => $this->t('Logout destination'),
       '#description' => $this->t(
         'Drupal path or URL. Enter a destination if you want the CAS Server to ' .
         'redirect the user after logging out of CAS.'
       ),
-      '#default_value' => $config->get('redirection.logout_destination'),
+      '#default_value' => $config->get('logout.logout_destination'),
+    );
+    $form['logout']['enable_single_logout'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable single log out?'),
+      '#default_value' => $config->get('logout.enable_single_logout'),
+      '#description' => $this->t('If enabled (and your CAS server supports it), ' .
+        'users will be logged out of your Drupal site when they log out of your ' .
+        'CAS server. NOTE: THIS WILL REMOVE A SECURITY HARDENING FEATURE ADDED ' .
+        'IN DRUPAL 8! Session IDs to be stored unhashed in the database.'),
     );
 
     $form['proxy'] = array(
@@ -333,16 +335,15 @@ class CasSettings extends ConfigFormBase {
       ->set('forced_login.paths', $this->forcedLoginPaths->getConfiguration());
 
     $config
-      ->set('redirection.logout_destination', $form_state->getValue(['redirection', 'logout_destination']));
-
+      ->set('logout.logout_destination', $form_state->getValue(['logout', 'logout_destination']))
+      ->set('logout.enable_single_logout', $form_state->getValue(['logout', 'enable_single_logout']))
+      ->set('logout.cas_logout', $form_state->getValue(['logout', 'cas_logout']));
     $config
       ->set('proxy.initialize', $form_state->getValue(['proxy', 'initialize']))
       ->set('proxy.can_be_proxied', $form_state->getValue(['proxy', 'can_be_proxied']))
       ->set('proxy.proxy_chains', $form_state->getValue(['proxy', 'proxy_chains']));
     $config
       ->set('user_accounts.auto_register', $form_state->getValue(['user_accounts', 'auto_register']));
-    $config
-      ->set('logout.cas_logout', $form_state->getValue(['logout', 'cas_logout']));
 
     $config
       ->set('debugging.log', $form_state->getValue(['debugging', 'log']));

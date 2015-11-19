@@ -14,8 +14,9 @@ forced_login:
   enabled: false
   paths: {}
 
-redirection:
+logout:
   logout_destination: ''
+  enable_single_logout: false
 
 proxy:
   initialize: false
