@@ -56,6 +56,10 @@ class CasValidatorTest extends UnitTestCase {
                       ->getMock();
     $casValidator = new CasValidator($httpClient, $casHelper);
 
+    $casHelper->expects($this->any())
+              ->method('getCasProtocolVersion')
+              ->will($this->returnValue($version));
+
     $casHelper->expects($this->once())
               ->method('getSslVerificationMethod')
               ->willReturn($ssl_verification);
@@ -234,6 +238,10 @@ class CasValidatorTest extends UnitTestCase {
     $casValidator = new CasValidator($httpClient, $casHelper);
 
     $casHelper->expects($this->any())
+              ->method('getCasProtocolVersion')
+              ->will($this->returnValue($version));
+
+    $casHelper->expects($this->any())
               ->method('isProxy')
               ->will($this->returnValue($is_proxy));
 
@@ -247,7 +255,7 @@ class CasValidatorTest extends UnitTestCase {
 
     $this->setExpectedException($exception, $exception_message);
     $ticket = $this->randomMachineName(24);
-    $user = $casValidator->validateTicket($version, $ticket, array());
+    $casValidator->validateTicket($ticket, array());
   }
 
   /**
@@ -423,7 +431,7 @@ class CasValidatorTest extends UnitTestCase {
       FALSE,
       '',
       $exception_type,
-      "Unknown CAS protocol version specified.",
+      "Unknown CAS protocol version specified: foobarbaz",
       FALSE,
     );
 
@@ -438,7 +446,6 @@ class CasValidatorTest extends UnitTestCase {
    */
   public function testParseAttributes() {
     $ticket = $this->randomMachineName(8);
-    $version = '2.0';
     $service_params = array();
     $response = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
         <cas:authenticationSuccess>
@@ -457,13 +464,18 @@ class CasValidatorTest extends UnitTestCase {
     $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
                       ->disableOriginalConstructor()
                       ->getMock();
+
+    $casHelper->expects($this->any())
+              ->method('getCasProtocolVersion')
+              ->willReturn('2.0');
+
     $casValidator = new CasValidator($httpClient, $casHelper);
     $expected_bag = new CasPropertyBag('username');
     $expected_bag->setAttributes(array(
       'email' => array('foo@example.com'),
       'memberof' => array('cn=foo,o=example', 'cn=bar,o=example'),
     ));
-    $actual_bag = $casValidator->validateTicket($version, $ticket, $service_params);
+    $actual_bag = $casValidator->validateTicket($ticket, $service_params);
     $this->assertEquals($expected_bag, $actual_bag);
   }
 

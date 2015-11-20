@@ -12,7 +12,7 @@ services:
     arguments: ['@http_client', '@cas.helper']
   cas.login:
     class: Drupal\cas\Service\CasLogin
-    arguments: ['@config.factory', '@entity.manager', '@session_manager', '@database', '@event_dispatcher']
+    arguments: ['@config.factory', '@entity_type.manager', '@session_manager', '@database', '@event_dispatcher']
   cas.logout:
     class: Drupal\cas\Service\CasLogout
     arguments: ['@cas.helper', '@database']

@@ -1,6 +1,11 @@
 <?php
 
 /**
+ * @file
+ * The Drupal install file.
+ */
+
+/**
  * Implements hook_schema().
  */
 function cas_schema() {

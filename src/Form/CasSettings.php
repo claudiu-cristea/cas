@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Contains \Drupal\cas\Form\CasSettings.
@@ -15,16 +16,22 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\cas\Service\CasHelper;
 
 /**
+ * Class CasSettings.
+ *
  * @codeCoverageIgnore
  */
 class CasSettings extends ConfigFormBase {
 
   /**
+   * RequestPath condition that contains the paths to use for gateway.
+   *
    * @var \Drupal\system\Plugin\Condition\RequestPath
    */
   protected $gatewayPaths;
 
   /**
+   * RequestPath condition that contains the paths to used for forcedLogin.
+   *
    * @var \Drupal\system\Plugin\Condition\RequestPath
    */
   protected $forcedLoginPaths;
@@ -56,7 +63,7 @@ class CasSettings extends ConfigFormBase {
   /**
    * {@inheritdoc}
    */
-  public function getFormID() {
+  public function getFormId() {
     return 'cas_settings';
   }
 
@@ -78,7 +85,6 @@ class CasSettings extends ConfigFormBase {
       '#options' => array(
         '1.0' => $this->t('1.0'),
         '2.0' => $this->t('2.0 or higher'),
-        'S1' => $this->t('SAML Version 1.1'),
       ),
       '#default_value' => $config->get('server.version'),
     );
@@ -296,9 +302,9 @@ class CasSettings extends ConfigFormBase {
       ->setValues($form_state->getValue(['forced_login', 'paths']));
     $this->forcedLoginPaths->validateConfigurationForm($form, $condition_values);
 
-    $sslVerificationMethod = $form_state->getValue(['server', 'verify']);
-    $certPath = $form_state->getValue(['server', 'cert']);
-    if ($sslVerificationMethod == CasHelper::CA_CUSTOM && !file_exists($certPath)) {
+    $ssl_verification_method = $form_state->getValue(['server', 'verify']);
+    $cert_path = $form_state->getValue(['server', 'cert']);
+    if ($ssl_verification_method == CasHelper::CA_CUSTOM && !file_exists($cert_path)) {
       $form_state->setErrorByName('server][cert', $this->t('The path you provided to the custom PEM certificate for your CAS server does not exist or is not readable. Verify this path and try again.'));
     }
 
@@ -358,4 +364,5 @@ class CasSettings extends ConfigFormBase {
   protected function getEditableConfigNames() {
     return array('cas.settings');
   }
+
 }

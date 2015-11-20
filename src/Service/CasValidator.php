@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Contains \src\Drupal\Service\CasValidator.
+ */
+
 namespace Drupal\cas\Service;
 
 use Drupal\cas\Exception\CasValidateException;
@@ -7,14 +12,21 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Drupal\cas\CasPropertyBag;
 
+/**
+ * Class CasValidator.
+ */
 class CasValidator {
 
   /**
+   * Stores the Guzzle HTTP client used when validating service tickets.
+   *
    * @var \GuzzleHttp\Client
    */
   protected $httpClient;
 
   /**
+   * Stores CAS helper.
+   *
    * @var \Drupal\cas\Service\CasHelper
    */
   protected $casHelper;
@@ -38,8 +50,6 @@ class CasValidator {
    * This method will return the username of the user if valid, and raise an
    * exception if the ticket is not found or not valid.
    *
-   * @param string $version
-   *   The protocol version of the CAS server.
    * @param string $ticket
    *   The CAS authentication ticket to validate.
    * @param array $service_params
@@ -47,37 +57,43 @@ class CasValidator {
    *
    * @return array
    *   An array containing validation result data from the CAS server.
+   *
    * @throws CasValidateException
+   *   Thrown if there was a problem making the validation request or
+   *   if there was a local configuration issue.
    */
-  public function validateTicket($version, $ticket, $service_params = array()) {
+  public function validateTicket($ticket, $service_params = array()) {
+    $options = array();
+    $verify = $this->casHelper->getSslVerificationMethod();
+    switch ($verify) {
+      case CasHelper::CA_CUSTOM:
+        $cert = $this->casHelper->getCertificateAuthorityPem();
+        $options['verify'] = $cert;
+        break;
+
+      case CasHelper::CA_NONE:
+        $options['verify'] = FALSE;
+        break;
+
+      case CasHelper::CA_DEFAULT:
+      default:
+        // This triggers for CasHelper::CA_DEFAULT.
+        $options['verify'] = TRUE;
+    }
+
+    $validate_url = $this->casHelper->getServerValidateUrl($ticket, $service_params);
+    $this->casHelper->log("Attempting to validate service ticket using URL $validate_url");
     try {
-      $validate_url = $this->casHelper->getServerValidateUrl($ticket, $service_params);
-      $this->casHelper->log("Trying to validate against $validate_url");
-      $options = array();
-      $verify = $this->casHelper->getSslVerificationMethod();
-      switch ($verify) {
-        case CasHelper::CA_CUSTOM:
-          $cert = $this->casHelper->getCertificateAuthorityPem();
-          $options['verify'] = $cert;
-          break;
-
-        case CasHelper::CA_NONE:
-          $options['verify'] = FALSE;
-          break;
-
-        default:
-          // This triggers for CasHelper::CA_DEFAULT.
-          $options['verify'] = TRUE;
-      }
       $response = $this->httpClient->get($validate_url, $options);
       $response_data = $response->getBody()->__toString();
-      $this->casHelper->log("Received " . htmlspecialchars($response_data));
+      $this->casHelper->log("Validation response received from CAS server: " . htmlspecialchars($response_data));
     }
     catch (RequestException $e) {
       throw new CasValidateException("Error with request to validate ticket: " . $e->getMessage());
     }
 
-    switch ($version) {
+    $protocol_version = $this->casHelper->getCasProtocolVersion();
+    switch ($protocol_version) {
       case "1.0":
         return $this->validateVersion1($response_data);
 
@@ -85,8 +101,7 @@ class CasValidator {
         return $this->validateVersion2($response_data);
     }
 
-    // If we get here, its because we had a bad CAS version specified.
-    throw new CasValidateException("Unknown CAS protocol version specified.");
+    throw new CasValidateException('Unknown CAS protocol version specified: ' . $protocol_version);
   }
 
   /**
@@ -97,7 +112,9 @@ class CasValidator {
    *
    * @return array
    *   An array containing validation result data from the CAS server.
+   *
    * @throws CasValidateException
+   *   Thrown if there was a problem parsing the validation data.
    */
   private function validateVersion1($data) {
     if (preg_match('/^no\n/', $data)) {
@@ -122,7 +139,9 @@ class CasValidator {
    *
    * @return array
    *   An array containing validation result data from the CAS server.
+   *
    * @throws CasValidateException
+   *   Thrown if there was a problem parsing the validation data.
    */
   private function validateVersion2($data) {
     $dom = new \DOMDocument();
@@ -197,8 +216,9 @@ class CasValidator {
    *   An XML element containing proxy values, from most recent to first.
    *
    * @throws CasValidateException
+   *   Thrown if the proxy chain did not match the allowed list from settings.
    */
-  private function verifyProxyChain($proxy_chain) {
+  private function verifyProxyChain(\DOMNodeList $proxy_chain) {
     $allowed_proxy_chains_raw = $this->casHelper->getProxyChains();
     $allowed_proxy_chains = $this->parseAllowedProxyChains($allowed_proxy_chains_raw);
     $server_chain = $this->parseServerProxyChain($proxy_chain);
@@ -238,7 +258,6 @@ class CasValidator {
     }
 
     // If we've reached this point, no chain was validated, so throw exception.
-    $this->casHelper->log("Proxy chain did not match allowed list.");
     throw new CasValidateException("Proxy chain did not match allowed list.");
   }
 
@@ -277,7 +296,7 @@ class CasValidator {
    * @return array
    *   An array of proxy values, from most recent to first.
    */
-  private function parseServerProxyChain($xml_list) {
+  private function parseServerProxyChain(\DOMNodeList $xml_list) {
     $proxies = array();
     // Loop through the DOMNodeList, adding each proxy to the list.
     foreach ($xml_list as $node) {
@@ -295,7 +314,7 @@ class CasValidator {
    * @return array
    *   An associative array of attributes.
    */
-  private function parseAttributes($xml_list) {
+  private function parseAttributes(\DOMNodeList $xml_list) {
     $attributes = array();
     $node = $xml_list->item(0);
     foreach ($node->childNodes as $child) {
@@ -306,4 +325,5 @@ class CasValidator {
     $this->casHelper->log("Parsed out attributes: " . print_r($attributes, TRUE));
     return $attributes;
   }
+
 }

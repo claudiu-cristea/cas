@@ -1,25 +1,41 @@
 <?php
 
+/**
+ * @file
+ * Contains \Drupal\cas\Service\CasLogout.
+ */
+
 namespace Drupal\cas\Service;
 
 use Drupal\cas\Exception\CasSloException;
-use Drupal\cas\Service\CasHelper;
 use Drupal\Core\Database\Connection;
 
+/**
+ * Class CasLogout.
+ */
 class CasLogout {
 
   /**
+   * The CAS helper.
+   *
    * @var \Drupal\cas\Service\CasHelper;
    */
   protected $casHelper;
 
   /**
+   * The database connection used to find the user's session ID.
+   *
    * @var \Drupal\Core\Database\Connection;
    */
   protected $connection;
 
   /**
-   * Constructor.
+   * CasLogout constructor.
+   *
+   * @param \Drupal\cas\Service\CasHelper $cas_helper
+   *   The CAS helper.
+   * @param \Drupal\Core\Database\Connection $database_connection
+   *   The database connection.
    */
   public function __construct(CasHelper $cas_helper, Connection $database_connection) {
     $this->casHelper = $cas_helper;
@@ -33,27 +49,26 @@ class CasLogout {
    *   The raw data posted to us from the CAS server.
    */
   public function handleSlo($data) {
+    $this->casHelper->log("Attempting to handle SLO request.");
+
     // Only look up tickets if they were stored to begin with.
     if (!$this->casHelper->getSingleLogout()) {
+      $this->casHelper->log("Aborting; SLO is not enabled in CAS settings.");
       return;
     }
 
-    try {
-      $service_ticket = $this->getServiceTicketFromData($data);
-      
-      // Look up the session ID by the service ticket, then load up that
-      // session and destroy it.
-      $sid = $this->lookupSessionIdByServiceTicket($service_ticket);
-      if (!$sid) {
-        return;
-      }
+    $service_ticket = $this->getServiceTicketFromData($data);
 
-      $this->destroySession($sid);
+    // Look up the session ID by the service ticket, then load up that
+    // session and destroy it.
+    $sid = $this->lookupSessionIdByServiceTicket($service_ticket);
+    if (!$sid) {
+      return;
     }
-    catch (CasSloException $e) {
-      // Log the error, do nothing else.
-      $this->casHelper->log($e->getMessage());
-    }
+
+    $this->destroySession($sid);
+
+    $this->casHelper->log("SLO request completed successfully.");
   }
 
   /**
@@ -80,7 +95,9 @@ class CasLogout {
    *
    * @return string
    *   The service ticket to log out.
+   *
    * @throws CasSloException
+   *   If the logout data could not be parsed.
    */
   private function getServiceTicketFromData($data) {
     $dom = new \DOMDocument();
@@ -121,4 +138,5 @@ class CasLogout {
       return $result->plainsid;
     }
   }
+
 }

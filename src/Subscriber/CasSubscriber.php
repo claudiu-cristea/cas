@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Contains Drupal\cas\Subscriber\CasSubscriber.
@@ -59,6 +60,8 @@ class CasSubscriber implements EventSubscriberInterface {
   protected $conditionManager;
 
   /**
+   * CAS helper.
+   *
    * @var \Drupal\cas\Service\CasHelper
    */
   protected $casHelper;
@@ -300,4 +303,5 @@ class CasSubscriber implements EventSubscriberInterface {
 
     return FALSE;
   }
+
 }

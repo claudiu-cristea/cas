@@ -12,9 +12,19 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Route;
 use Drupal\cas\Service\CasHelper;
 
+/**
+ * Class CasRouteEnhancer.
+ *
+ * Override the default logout controller action with our own.
+ *
+ * Our controller action will log the user out of Drupal and then redirect
+ * to the CAS server logout page as well.
+ */
 class CasRouteEnhancer implements RouteEnhancerInterface {
 
   /**
+   * Stores CAS helper object.
+   *
    * @var \Drupal\cas\Service\CasHelper
    */
   protected $casHelper;
