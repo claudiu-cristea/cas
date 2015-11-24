@@ -142,7 +142,9 @@ class CasSettings extends ConfigFormBase {
         'When enabled, Drupal will check if a visitor is already logged into your CAS server before ' .
         'serving a page request. If they have an active CAS session, they will be automatically ' .
         'logged into the Drupal site. This is done by quickly redirecting them to the CAS server to perform the ' .
-        'active session check, and then redirecting them back to page they initially requested.',
+        'active session check, and then redirecting them back to page they initially requested.<br/><br/>' .
+        '<strong>WARNING:</strong> This feature is NOT compatible with the Internal Page Cache module or external ' .
+        'page caching software like Varnish.',
         array('@cas-gateway' => 'https://wiki.jasig.org/display/CAS/gateway')
       ),
     );
@@ -167,7 +169,9 @@ class CasSettings extends ConfigFormBase {
       '#description' => $this->t(
         'Anonymous users will be forced to login through CAS when enabled. ' .
         'This differs from the "gateway feature" in that it will REQUIRE that a user be logged in to their CAS ' .
-        'account, instead of just checking if they already are.'
+        'account, instead of just checking if they already are.<br/><br/>' .
+        '<strong>WARNING:</strong> This feature is NOT compatible with the Internal Page Cache module or external ' .
+        'page caching software like Varnish.'
       ),
     );
     $form['forced_login']['enabled'] = array(
