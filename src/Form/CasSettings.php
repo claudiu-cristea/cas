@@ -143,6 +143,8 @@ class CasSettings extends ConfigFormBase {
         'serving a page request. If they have an active CAS session, they will be automatically ' .
         'logged into the Drupal site. This is done by quickly redirecting them to the CAS server to perform the ' .
         'active session check, and then redirecting them back to page they initially requested.<br/><br/>' .
+        'If enabled, all pages on your site will trigger this feature. You can instead enable ' .
+        'this feature for only specific pages by listing them below.<br/><br/>' .
         '<strong>WARNING:</strong> This feature is NOT compatible with the Internal Page Cache module or external ' .
         'page caching software like Varnish.',
         array('@cas-gateway' => 'https://wiki.jasig.org/display/CAS/gateway')
@@ -177,7 +179,7 @@ class CasSettings extends ConfigFormBase {
     $form['forced_login']['enabled'] = array(
       '#type' => 'checkbox',
       '#title' => $this->t('Enable'),
-      '#description' => $this->t('When enabled, every path will force a CAS login, unless specific pages are listed.'),
+      '#description' => $this->t('When enabled, every path will force a CAS login, unless specific pages are listed below.'),
       '#default_value' => $config->get('forced_login.enabled'),
     );
     $this->forcedLoginPaths->setConfiguration($config->get('forced_login.paths'));
