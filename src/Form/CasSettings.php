@@ -210,7 +210,7 @@ class CasSettings extends ConfigFormBase {
     $form['logout']['cas_logout'] = array(
       '#type' => 'checkbox',
       '#title' => $this->t('Drupal Logout Triggers CAS Logout'),
-      '#description' => $this->t('When enabled, a Drupal user logout will cause a CAS logout.'),
+      '#description' => $this->t('When enabled, users that log out of your Drupal site will then be logged out of your CAS server as well. This is done by redirecting the user to the CAS logout page.'),
       '#default_value' => $config->get('logout.cas_logout'),
     );
     $form['logout']['logout_destination'] = array(
