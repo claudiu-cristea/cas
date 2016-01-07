@@ -129,12 +129,12 @@ class CasHelperTest extends UnitTestCase {
       array(
         array(),
         TRUE,
-        'https://example.com:443/cas/login?gateway=1&service=https%3A//example.com/client',
+        'https://example.com:443/cas/login?gateway=true&service=https%3A//example.com/client',
       ),
       array(
         array('returnto' => 'node/1'),
         TRUE,
-        'https://example.com:443/cas/login?gateway=1&service=https%3A//example.com/client%3Freturnto%3Dnode%252F1',
+        'https://example.com:443/cas/login?gateway=true&service=https%3A//example.com/client%3Freturnto%3Dnode%252F1',
       ),
     );
   }
