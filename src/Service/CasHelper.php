@@ -141,7 +141,7 @@ class CasHelper {
 
     $params = array();
     if ($gateway) {
-      $params['gateway'] = TRUE;
+      $params['gateway'] = 'true';
     }
     $params['service'] = $this->getCasServiceUrl($service_params);
 
