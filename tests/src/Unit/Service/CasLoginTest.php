@@ -38,9 +38,9 @@ class CasLoginTest extends UnitTestCase {
   /**
    * The mocked session manager.
    *
-   * @var \Drupal\Core\Session\SessionManager|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Symfony\Component\HttpFoundation\Session\SessionInterface|\PHPUnit_Framework_MockObject_MockObject
    */
-  protected $sessionManager;
+  protected $session;
 
   /**
    * The mocked event dispatcher.
@@ -58,9 +58,14 @@ class CasLoginTest extends UnitTestCase {
     $this->connection = $this->getMockBuilder('\Drupal\Core\Database\Connection')
                              ->disableOriginalConstructor()
                              ->getMock();
-    $this->sessionManager = $this->getMockBuilder('\Drupal\Core\Session\SessionManager')
-                                 ->disableOriginalConstructor()
-                                 ->getMock();
+    $storage = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage')
+                    ->setMethods(NULL)
+                    ->getMock();
+    $this->session = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session\Session')
+                          ->setConstructorArgs(array($storage))
+                          ->setMethods(NULL)
+                          ->getMock();
+    $this->session->start();
     $this->eventDispatcher = $this->getMockBuilder('\Symfony\Component\EventDispatcher\EventDispatcherInterface')
                                   ->disableOriginalConstructor()
                                   ->getMock();
@@ -87,7 +92,7 @@ class CasLoginTest extends UnitTestCase {
       ->setConstructorArgs(array(
         $config_factory,
         $this->entityManager,
-        $this->sessionManager,
+        $this->session,
         $this->connection,
         $this->eventDispatcher,
       ))
@@ -162,7 +167,7 @@ class CasLoginTest extends UnitTestCase {
       ->setConstructorArgs(array(
         $config_factory,
         $this->entityManager,
-        $this->sessionManager,
+        $this->session,
         $this->connection,
         $this->eventDispatcher,
       ))
@@ -241,7 +246,7 @@ class CasLoginTest extends UnitTestCase {
       ->setConstructorArgs(array(
         $config_factory,
         $this->entityManager,
-        $this->sessionManager,
+        $this->session,
         $this->connection,
         $this->eventDispatcher,
       ))
@@ -254,12 +259,12 @@ class CasLoginTest extends UnitTestCase {
       ->method('userLoadByName')
       ->will($this->returnValue($property_bag->getRegisterStatus() ? $account : FALSE));
 
-    $_SESSION['cas_temp_disable'] = FALSE;
+    $this->session->set('cas_temp_disable', FALSE);
     $ticket = $this->randomMachineName(24);
     $this->setExpectedException('\Drupal\cas\Exception\CasLoginException', $exception_message);
-    
+
     $cas_login->loginToDrupal($property_bag, $ticket);
-    $this->assertEquals('TRUE', $_SESSION['cas_temp_disable']);
+    $this->assertEquals('TRUE', $this->session->get('cas_temp_disable'));
   }
 
   /**

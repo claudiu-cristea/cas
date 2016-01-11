@@ -11,7 +11,6 @@ use Drupal\cas\Exception\CasLoginException;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Entity\EntityStorageException;
-use Drupal\Core\Session\SessionManagerInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Component\Utility\Crypt;
 use Drupal\user\UserInterface;
@@ -19,6 +18,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\cas\Event\CasUserEvent;
 use Drupal\cas\CasPropertyBag;
 use Drupal\cas\Event\CasPropertyEvent;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 
 /**
  * Class CasLogin.
@@ -42,9 +42,9 @@ class CasLogin {
   /**
    * Used to get session data.
    *
-   * @var \Drupal\Core\Session\SessionManagerInterface
+   * @var \Symfony\Component\HttpFoundation\Session\SessionInterface
    */
-  protected $sessionManager;
+  protected $session;
 
   /**
    * Used when storing CAS login data.
@@ -67,17 +67,17 @@ class CasLogin {
    *   The settings.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
-   * @param \Drupal\Core\Session\SessionManagerInterface $session_manager
-   *   The session manager.
+   * @param \Symfony\Component\HttpFoundation\Session\SessionInterface $session
+   *   The session.
    * @param \Drupal\Core\Database\Connection $database_connection
    *   The database connection.
    * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
    *   The event dispatcher.
    */
-  public function __construct(ConfigFactoryInterface $settings, EntityTypeManagerInterface $entity_type_manager, SessionManagerInterface $session_manager, Connection $database_connection, EventDispatcherInterface $event_dispatcher) {
+  public function __construct(ConfigFactoryInterface $settings, EntityTypeManagerInterface $entity_type_manager, SessionInterface $session, Connection $database_connection, EventDispatcherInterface $event_dispatcher) {
     $this->settings = $settings;
     $this->entityTypeManager = $entity_type_manager;
-    $this->sessionManager = $session_manager;
+    $this->session = $session;
     $this->connection = $database_connection;
     $this->eventDispatcher = $event_dispatcher;
   }
@@ -106,7 +106,7 @@ class CasLogin {
       $config = $this->settings->get('cas.settings');
       if ($config->get('user_accounts.auto_register') === TRUE) {
         if (!$property_bag->getRegisterStatus()) {
-          $_SESSION['cas_temp_disable'] = TRUE;
+          $this->session->set('cas_temp_disable', TRUE);
           throw new CasLoginException("Cannot register user, an event listener denied access.");
         }
         $account = $this->registerUser($property_bag->getUsername());
@@ -121,7 +121,7 @@ class CasLogin {
     $this->eventDispatcher->dispatch(CasHelper::CAS_USER_ALTER, new CasUserEvent($account, $property_bag));
 
     if (!$property_bag->getLoginStatus()) {
-      $_SESSION['cas_temp_disable'] = TRUE;
+      $this->session->set('cas_temp_disable', TRUE);
       throw new CasLoginException("Cannot login, an event listener denied access.");
     }
 
@@ -129,7 +129,7 @@ class CasLogin {
     $account->save();
 
     $this->userLoginFinalize($account);
-    $this->storeLoginSessionData($this->sessionManager->getId(), $ticket);
+    $this->storeLoginSessionData($this->session->getId(), $ticket);
   }
 
   /**

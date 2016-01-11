@@ -132,7 +132,7 @@ class ServiceController implements ContainerInjectionInterface {
     // subscriber on the next redirect. This prevents an infinite redirect loop.
     if ($request->query->has('cas_temp_disable')) {
       $this->casHelper->log("Temp disable flag set, set session flag.");
-      $_SESSION['cas_temp_disable'] = TRUE;
+      $request->getSession()->set('cas_temp_disable', TRUE);
     }
 
     /* If there is no ticket parameter on the request, the browser either:

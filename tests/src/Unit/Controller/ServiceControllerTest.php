@@ -95,12 +95,22 @@ class ServiceControllerTest extends UnitTestCase {
     $this->requestStack = $this->getMock('\Symfony\Component\HttpFoundation\RequestStack');
     $this->urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
-    $this->requestObject = $this->getMock('\Symfony\Component\HttpFoundation\Request');
+    $this->requestObject = new \Symfony\Component\HttpFoundation\Request();
     $request_bag = $this->getMock('\Symfony\Component\HttpFoundation\ParameterBag');
     $query_bag = $this->getMock('\Symfony\Component\HttpFoundation\ParameterBag');
     $this->requestObject->query = $query_bag;
     $this->requestObject->request = $request_bag;
 
+    $storage = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage')
+                    ->setMethods(NULL)
+                    ->getMock();
+    $session = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session\Session')
+                    ->setConstructorArgs(array($storage))
+                    ->setMethods(NULL)
+                    ->getMock();
+    $session->start();
+
+    $this->requestObject->setSession($session);
 
 
     $this->serviceController = new TestServiceController(
@@ -190,7 +200,7 @@ class ServiceControllerTest extends UnitTestCase {
 
     $this->assertRedirectedToFrontPageOnHandle();
     if ($cas_temp_disable) {
-      $this->assertEquals(TRUE, $_SESSION['cas_temp_disable']);
+      $this->assertEquals(TRUE, $this->requestObject->getSession()->get('cas_temp_disable'));
     }
   }
 
@@ -230,7 +240,7 @@ class ServiceControllerTest extends UnitTestCase {
 
     $this->assertRedirectedToFrontPageOnHandle();
     if ($cas_temp_disable) {
-      $this->assertEquals(TRUE, $_SESSION['cas_temp_disable']);
+      $this->assertEquals(TRUE, $this->requestObject->getSession()->get('cas_temp_disable'));
     }
   }
 
@@ -254,7 +264,7 @@ class ServiceControllerTest extends UnitTestCase {
     $this->requestStack->expects($this->once())
       ->method('getCurrentRequest')
       ->will($this->returnValue($this->requestObject));
-    
+
     if ($returnto) {
       $this->assertDestinationSetFromReturnTo();
     }
@@ -281,7 +291,7 @@ class ServiceControllerTest extends UnitTestCase {
 
     $this->assertRedirectedToFrontPageOnHandle();
     if ($cas_temp_disable) {
-      $this->assertEquals(TRUE, $_SESSION['cas_temp_disable']);
+      $this->assertEquals(TRUE, $this->requestObject->getSession()->get('cas_temp_disable'));
     }
   }
 
@@ -301,11 +311,11 @@ class ServiceControllerTest extends UnitTestCase {
       // ticket.
       TRUE
     );
-    
+
     $this->requestStack->expects($this->once())
       ->method('getCurrentRequest')
       ->will($this->returnValue($this->requestObject));
-    
+
     if ($returnto) {
       $this->assertDestinationSetFromReturnTo();
     }
@@ -321,7 +331,7 @@ class ServiceControllerTest extends UnitTestCase {
 
     $this->assertRedirectedToFrontPageOnHandle();
     if ($cas_temp_disable) {
-      $this->assertEquals(TRUE, $_SESSION['cas_temp_disable']);
+      $this->assertEquals(TRUE, $this->requestObject->getSession()->get('cas_temp_disable'));
     }
   }
 
@@ -341,11 +351,11 @@ class ServiceControllerTest extends UnitTestCase {
       // ticket.
       TRUE
     );
-    
+
     $this->requestStack->expects($this->once())
       ->method('getCurrentRequest')
       ->will($this->returnValue($this->requestObject));
-    
+
     if ($returnto) {
       $this->assertDestinationSetFromReturnTo();
     }
@@ -359,7 +369,7 @@ class ServiceControllerTest extends UnitTestCase {
 
     $this->assertRedirectedToFrontPageOnHandle();
     if ($cas_temp_disable) {
-      $this->assertEquals(TRUE, $_SESSION['cas_temp_disable']);
+      $this->assertEquals(TRUE, $this->requestObject->getSession()->get('cas_temp_disable'));
     }
   }
 
