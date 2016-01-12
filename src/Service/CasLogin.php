@@ -128,13 +128,13 @@ class CasLogin {
     $pre_auth_event = new CasPreAuthEvent($account, $property_bag);
     $this->eventDispatcher->dispatch(CasHelper::EVENT_PRE_AUTH, $pre_auth_event);
 
+    // Save user entity since event listeners may have altered it.
+    $account->save();
+
     if (!$pre_auth_event->allowLogin) {
       $this->session->set('cas_temp_disable', TRUE);
       throw new CasLoginException("Cannot login, an event listener denied access.");
     }
-
-    // Save user entity since event listeners may have altered it.
-    $account->save();
 
     $this->userLoginFinalize($account);
     $this->storeLoginSessionData($this->session->getId(), $ticket);
@@ -161,7 +161,6 @@ class CasLogin {
         'pass' => $this->randomPassword(),
       ));
       $account->enforceIsNew();
-      $account->save();
       return $account;
     }
     catch (EntityStorageException $e) {
