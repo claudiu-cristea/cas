@@ -82,7 +82,7 @@ class CasLoginTest extends UnitTestCase {
    */
   public function testExistingAccountIsLoggedIn() {
     $cas_login = $this->getMockBuilder('Drupal\cas\Service\CasLogin')
-      ->setMethods(array('userLoadByName', 'userLoginFinalize', 'storeLoginSessionData'))
+      ->setMethods(array('userLoadByName', 'userLoginFinalize', 'storeLoginSessionData', 'randomPassword'))
       ->setConstructorArgs(array(
         $this->getConfigFactoryStub(),
         $this->entityManager,
@@ -127,7 +127,7 @@ class CasLoginTest extends UnitTestCase {
     ));
 
     $cas_login = $this->getMockBuilder('Drupal\cas\Service\CasLogin')
-      ->setMethods(array('userLoadByName'))
+      ->setMethods(array('userLoadByName', 'randomPassword'))
       ->setConstructorArgs(array(
         $config_factory,
         $this->entityManager,

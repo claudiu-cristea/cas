@@ -158,6 +158,7 @@ class CasLogin {
       $account = $user_storage->create(array(
         'name' => $username,
         'status' => 1,
+        'pass' => $this->randomPassword(),
       ));
       $account->enforceIsNew();
       $account->save();
@@ -222,6 +223,16 @@ class CasLogin {
         array(Crypt::hashBase64($session_id), $plainsid, $ticket)
       )
       ->execute();
+  }
+
+  /**
+   * Wrapper for Drupal function user_password so we can stub it in unit tests.
+   *
+   * @return string
+   *   A random password.
+   */
+  protected function randomPassword() {
+    return user_password(30);
   }
 
 }
