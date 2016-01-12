@@ -65,18 +65,18 @@ class CasHelper {
   const CHECK_ALWAYS = 0;
 
   /**
-   * Event type identifier for cas user alter.
+   * Event type identifier for user load events.
    *
    * @var string
    */
-  const CAS_USER_ALTER = 'cas.user_alter';
+  const EVENT_USER_LOAD = 'cas.user_load';
 
   /**
-   * Event type identifier for cas property alter.
+   * Event type identifier for pre auth events.
    *
    * @var string
    */
-  const CAS_PROPERTY_ALTER = 'cas.property_alter';
+  const EVENT_PRE_AUTH = 'cas.pre_auth';
 
   /**
    * Stores database connection.

@@ -7,6 +7,8 @@
 
 namespace Drupal\cas\Service;
 
+use Drupal\cas\Event\CasPreAuthEvent;
+use Drupal\cas\Event\CasUserLoadEvent;
 use Drupal\cas\Exception\CasLoginException;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -97,30 +99,36 @@ class CasLogin {
    *   Thrown if there was a problem logging in the user.
    */
   public function loginToDrupal(CasPropertyBag $property_bag, $ticket) {
-    // Fire CAS pre-login event to allow modules the opportunity to inspect
-    // the CAS data and deny login or registration for the user.
-    $this->eventDispatcher->dispatch(CasHelper::CAS_PROPERTY_ALTER, new CasPropertyEvent($property_bag));
+    // Dispatch an event that allows modules to change user data we received
+    // from CAS before attempting to use it to load a Drupal user.
+    // Auto-registration can also be disabled for this user if their account
+    // does not exist.
+    $user_load_event = new CasUserLoadEvent($property_bag);
+    $this->eventDispatcher->dispatch(CasHelper::EVENT_USER_LOAD, $user_load_event);
 
     $account = $this->userLoadByName($property_bag->getUsername());
     if (!$account) {
       $config = $this->settings->get('cas.settings');
       if ($config->get('user_accounts.auto_register') === TRUE) {
-        if (!$property_bag->getRegisterStatus()) {
+        if ($user_load_event->allowAutoRegister) {
+          $account = $this->registerUser($property_bag->getUsername());
+        }
+        else {
           $this->session->set('cas_temp_disable', TRUE);
           throw new CasLoginException("Cannot register user, an event listener denied access.");
         }
-        $account = $this->registerUser($property_bag->getUsername());
       }
       else {
         throw new CasLoginException("Cannot login, local Drupal user account does not exist.");
       }
     }
 
-    // Dispatch additional CAS pre-login event to allow modules to alter the
-    // user object before logging them in (like to add user roles).
-    $this->eventDispatcher->dispatch(CasHelper::CAS_USER_ALTER, new CasUserEvent($account, $property_bag));
+    // Dispatch an event that allows modules to prevent this user from logging
+    // in and/or alter the user entity before we save it.
+    $pre_auth_event = new CasPreAuthEvent($account, $property_bag);
+    $this->eventDispatcher->dispatch(CasHelper::EVENT_PRE_AUTH, $pre_auth_event);
 
-    if (!$property_bag->getLoginStatus()) {
+    if (!$pre_auth_event->allowLogin) {
       $this->session->set('cas_temp_disable', TRUE);
       throw new CasLoginException("Cannot login, an event listener denied access.");
     }
@@ -144,7 +152,7 @@ class CasLogin {
    * @throws CasLoginException
    *   Thrown if there was a problem registering the user.
    */
-  private function registerUser($username) {
+  protected function registerUser($username) {
     try {
       $user_storage = $this->entityTypeManager->getStorage('user');
       $account = $user_storage->create(array(
