@@ -345,12 +345,12 @@ class CasSubscriberTest extends UnitTestCase {
       ->will($this->returnValue('NotAKnownBot'));
 
     // We want to check that we've gotten past this point.
-    $this->session->set('cas_temp_disable', TRUE);
+    $this->session->set('cas_temp_disable_auto_auth', TRUE);
     $cas_subscriber->handle($this->event);
   }
 
   /**
-   * Test backing out when we have cas_temp_disable.
+   * Test backing out when we have cas_temp_disable_auto_auth.
    *
    * @covers ::handle
    * @covers ::__construct
@@ -383,7 +383,7 @@ class CasSubscriberTest extends UnitTestCase {
       ->method('getCurrentRequest')
       ->will($this->returnValue($request_object));
     // Set the session variable that should force backing out.
-    $this->session->set('cas_temp_disable', TRUE);
+    $this->session->set('cas_temp_disable_auto_auth', TRUE);
 
     $cas_subscriber->expects($this->never())
       ->method('handleForcedPath');

@@ -131,9 +131,10 @@ class CasSubscriber implements EventSubscriberInterface {
     // The service controller may have indicated that this current request
     // should not be automatically sent to CAS for authentication checking.
     // This is to prevent infinite redirect loops.
-    if ($this->requestStack->getCurrentRequest()->getSession()->has('cas_temp_disable')) {
-      $this->requestStack->getCurrentRequest()->getSession()->remove('cas_temp_disable');
-      $this->casHelper->log("Temp disable flag set. Skip processing this request.");
+    $session = $this->requestStack->getCurrentRequest()->getSession();
+    if ($session->has('cas_temp_disable_auto_auth')) {
+      $session->remove('cas_temp_disable_auto_auth');
+      $this->casHelper->log("Temp disable flag set, skipping CAS subscriber.");
       return;
     }
 
@@ -170,7 +171,6 @@ class CasSubscriber implements EventSubscriberInterface {
     if ($this->conditionManager->execute($condition)) {
       $cas_login_url = $this->casHelper->getServerLoginUrl(array(
         'returnto' => $this->requestStack->getCurrentRequest()->getUri(),
-        'cas_temp_disable' => TRUE,
       ));
       $this->casHelper->log("Forced login path detected, redirecting to: $cas_login_url");
       $event->setResponse($this->createNonCachedRedirectToCasServer($cas_login_url));
@@ -222,7 +222,6 @@ class CasSubscriber implements EventSubscriberInterface {
 
     $cas_login_url = $this->casHelper->getServerLoginUrl(array(
       'returnto' => $this->requestStack->getCurrentRequest()->getUri(),
-      'cas_temp_disable' => TRUE,
     ), TRUE);
     $this->casHelper->log("Gateway activated, redirecting to $cas_login_url");
 

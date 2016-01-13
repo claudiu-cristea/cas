@@ -114,7 +114,6 @@ class CasLogin {
           $account = $this->registerUser($property_bag->getUsername());
         }
         else {
-          $this->session->set('cas_temp_disable', TRUE);
           throw new CasLoginException("Cannot register user, an event listener denied access.");
         }
       }
@@ -132,7 +131,6 @@ class CasLogin {
     $account->save();
 
     if (!$pre_auth_event->allowLogin) {
-      $this->session->set('cas_temp_disable', TRUE);
       throw new CasLoginException("Cannot login, an event listener denied access.");
     }
 
