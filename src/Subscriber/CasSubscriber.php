@@ -295,6 +295,7 @@ class CasSubscriber implements EventSubscriberInterface {
       'cas.service',
       'cas.proxyCallback',
       'cas.login',
+      'cas.legacy_login',
       'cas.logout',
       'system.cron',
     );
