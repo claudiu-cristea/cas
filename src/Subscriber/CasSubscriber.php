@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\cas\Subscriber\CasSubscriber.
- */
-
 namespace Drupal\cas\Subscriber;
 
 use Drupal\cas\CasRedirectResponse;
