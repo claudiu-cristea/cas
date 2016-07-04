@@ -559,8 +559,7 @@ class CasSubscriberTest extends UnitTestCase {
   public function testHandleGatewayConfigOff() {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
-        'forced_login.enabled' => TRUE,
-        'forced_login.paths' => array('<front>'),
+        'forced_login.enabled' => FALSE,
         'gateway.check_frequency' => CasHelper::CHECK_NEVER,
       ),
     ));
@@ -587,23 +586,6 @@ class CasSubscriberTest extends UnitTestCase {
     $request_object->expects($this->any())
       ->method('getSession')
       ->will($this->returnValue($this->session));
-    $condition = $this->getMockBuilder('\Drupal\Core\Condition\ConditionPluginBase')
-                      ->disableOriginalConstructor()
-                      ->getMock();
-
-    // Asserting that these methods are only called once means that we exited
-    // out of handleGateway during configuration checking.
-    $this->conditionManager->expects($this->once())
-      ->method('createInstance')
-      ->with('request_path')
-      ->will($this->returnValue($condition));
-    $condition->expects($this->once())
-      ->method('setConfiguration')
-      ->with(array('<front>'));
-    $this->conditionManager->expects($this->once())
-      ->method('execute')
-      ->with($condition)
-      ->will($this->returnValue(FALSE));
 
     $request_object->expects($this->once())
       ->method('isMethod')
@@ -626,8 +608,7 @@ class CasSubscriberTest extends UnitTestCase {
   public function testHandleGatewayWithPathNotInConfig() {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
-        'forced_login.enabled' => TRUE,
-        'forced_login.paths' => array('<front>'),
+        'forced_login.enabled' => FALSE,
         'gateway.check_frequency' => CasHelper::CHECK_ALWAYS,
         'gateway.paths' => array('<front>'),
       ),
@@ -697,8 +678,7 @@ class CasSubscriberTest extends UnitTestCase {
   public function testHandleGatewayWithGatewayAlreadyChecked() {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
-        'forced_login.enabled' => TRUE,
-        'forced_login.paths' => array('<front>'),
+        'forced_login.enabled' => FALSE,
         'gateway.check_frequency' => CasHelper::CHECK_ONCE,
         'gateway.paths' => array('<front>'),
       ),
@@ -740,7 +720,7 @@ class CasSubscriberTest extends UnitTestCase {
     $this->conditionManager->expects($this->any())
       ->method('execute')
       ->with($condition)
-      ->will($this->onConsecutiveCalls(FALSE, TRUE));
+      ->will($this->returnValue(TRUE));
 
     $request_object->expects($this->once())
       ->method('isMethod')
@@ -770,8 +750,7 @@ class CasSubscriberTest extends UnitTestCase {
   public function testHandleGatewayWithCheckOnceSuccess() {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
-        'forced_login.enabled' => TRUE,
-        'forced_login.paths' => array('<front>'),
+        'forced_login.enabled' => FALSE,
         'gateway.check_frequency' => CasHelper::CHECK_ONCE,
         'gateway.paths' => array('<front>'),
       ),
@@ -813,7 +792,7 @@ class CasSubscriberTest extends UnitTestCase {
     $this->conditionManager->expects($this->any())
       ->method('execute')
       ->with($condition)
-      ->will($this->onConsecutiveCalls(FALSE, TRUE));
+      ->will($this->returnValue(true));
 
     $request_object->expects($this->once())
       ->method('isMethod')
