@@ -228,106 +228,6 @@ class CasSubscriberTest extends UnitTestCase {
   }
 
   /**
-   * Test backing out when the request comes from specific automated sources.
-   *
-   * @covers ::handle
-   * @covers ::isCrawlerRequest
-   * @covers ::__construct
-   * @covers ::isIgnoreableRoute
-   */
-  public function testHandleDoesNothingWhenWebCrawlerRequest() {
-    $config_factory = $this->getConfigFactoryStub();
-    $cas_subscriber = $this->getMockBuilder('\Drupal\cas\Subscriber\CasSubscriber')
-                           ->setConstructorArgs(array(
-                             $this->requestStack,
-                             $this->routeMatcher,
-                             $config_factory,
-                             $this->currentUser,
-                             $this->conditionManager,
-                             $this->casHelper,
-                           ))
-                           ->setMethods(NULL)
-                           ->getMock();
-    $this->event->expects($this->any())
-      ->method('getRequestType')
-      ->will($this->returnValue(HttpKernelInterface::MASTER_REQUEST));
-
-    $this->routeMatcher->expects($this->once())
-      ->method('getRouteName')
-      ->will($this->returnValue('not_cas.service'));
-    $request_object = $this->getMock('\Symfony\Component\HttpFoundation\Request');
-    $server = $this->getMock('\Symfony\Component\HttpFoundation\ServerBag');
-    $request_object->server = $server;
-    $this->requestStack->expects($this->once())
-      ->method('getCurrentRequest')
-      ->will($this->returnValue($request_object));
-
-    $map = array(
-      array('HTTP_USER_AGENT', NULL, FALSE, 'gsa-crawler'),
-    );
-    $server->expects($this->any())
-      ->method('get')
-      ->will($this->returnValueMap($map));
-    $cas_subscriber->expects($this->never())
-      ->method('handleForcedPath');
-    $cas_subscriber->expects($this->never())
-      ->method('handleGateway');
-    $cas_subscriber->handle($this->event);
-  }
-
-  /**
-   * Tests that a request from a non-crawler proceeds as normal.
-   *
-   * @todo This test is not really great. It has too much knowledge about the
-   *       implementation of the method it's testing, specifically when
-   *       trying to ensure that we "got past" the web crawler check.
-   *
-   * @covers ::handle
-   * @covers ::isCrawlerRequest
-   * @covers ::__construct
-   * @covers ::isIgnoreableRoute
-   */
-  public function testHandleDoesNotBackoutWhenNonCrawlerRequest() {
-    $config_factory = $this->getConfigFactoryStub();
-    $cas_subscriber = $this->getMockBuilder('\Drupal\cas\Subscriber\CasSubscriber')
-                           ->setConstructorArgs(array(
-                             $this->requestStack,
-                             $this->routeMatcher,
-                             $config_factory,
-                             $this->currentUser,
-                             $this->conditionManager,
-                             $this->casHelper,
-                             $this->session
-                           ))
-                           ->setMethods(NULL)
-                           ->getMock();
-    $this->event->expects($this->any())
-      ->method('getRequestType')
-      ->will($this->returnValue(HttpKernelInterface::MASTER_REQUEST));
-
-    $this->routeMatcher->expects($this->once())
-      ->method('getRouteName')
-      ->will($this->returnValue('not_cas.service'));
-    $request_object = $this->getMock('\Symfony\Component\HttpFoundation\Request');
-    $server = $this->getMock('\Symfony\Component\HttpFoundation\ServerBag');
-    $request_object->server = $server;
-    $request_object->expects($this->any())
-      ->method('getSession')
-      ->will($this->returnValue($this->session));
-    $this->requestStack->expects($this->any())
-      ->method('getCurrentRequest')
-      ->will($this->returnValue($request_object));
-
-    $server->expects($this->any())
-      ->method('get')
-      ->will($this->returnValue('NotAKnownBot'));
-
-    // We want to check that we've gotten past this point.
-    $this->session->set('cas_temp_disable_auto_auth', TRUE);
-    $cas_subscriber->handle($this->event);
-  }
-
-  /**
    * Test backing out when we have cas_temp_disable_auto_auth.
    *
    * @covers ::handle
@@ -596,6 +496,61 @@ class CasSubscriberTest extends UnitTestCase {
       ->method('getCurrentRequest')
       ->will($this->returnValue($request_object));
 
+    $cas_subscriber->handle($this->event);
+  }
+
+  /**
+   * Tests that web crawlers do not trigger gateway mode.
+   * 
+   * @covers ::handle
+   * @covers ::handleGateway
+   * @covers ::isCrawlerRequest
+   */
+  public function testGatewayModeIgnoredWhenWebCrawlerRequest() {
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'forced_login.enabled' => FALSE,
+        'gateway.check_frequency' => CasHelper::CHECK_ALWAYS,
+        'gateway.paths' => array('<front>'),
+      ),
+    ));
+    $cas_subscriber = $this->getMockBuilder('\Drupal\cas\Subscriber\CasSubscriber')
+                           ->setConstructorArgs(array(
+                             $this->requestStack,
+                             $this->routeMatcher,
+                             $config_factory,
+                             $this->currentUser,
+                             $this->conditionManager,
+                             $this->casHelper,
+                           ))
+                           ->setMethods(NULL)
+                           ->getMock();
+    $this->event->expects($this->any())
+      ->method('getRequestType')
+      ->will($this->returnValue(HttpKernelInterface::MASTER_REQUEST));
+
+    $this->routeMatcher->expects($this->once())
+      ->method('getRouteName')
+      ->will($this->returnValue('not_cas.service'));
+    $request_object = $this->getMock('\Symfony\Component\HttpFoundation\Request');
+    $server = $this->getMock('\Symfony\Component\HttpFoundation\ServerBag');
+    $request_object->server = $server;
+    $request_object->expects($this->any())
+      ->method('getSession')
+      ->will($this->returnValue($this->session));
+    $this->requestStack->expects($this->any())
+      ->method('getCurrentRequest')
+      ->will($this->returnValue($request_object));
+
+    $map = array(
+      array('HTTP_USER_AGENT', NULL, FALSE, 'gsa-crawler'),
+    );
+    $server->expects($this->any())
+      ->method('get')
+      ->will($this->returnValueMap($map));
+
+    $this->event->expects($this->never())
+      ->method('setResponse');
     $cas_subscriber->handle($this->event);
   }
 
