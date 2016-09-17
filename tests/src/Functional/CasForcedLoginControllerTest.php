@@ -10,7 +10,7 @@ use Drupal\Component\Utility\UrlHelper;
  *
  * @group cas
  */
-class CasForceLoginControllerTest extends BrowserTestBase {
+class CasForcedLoginControllerTest extends CasBrowserTestBase {
 
   /**
    * {@inheritdoc}
@@ -18,68 +18,51 @@ class CasForceLoginControllerTest extends BrowserTestBase {
   public static $modules = ['cas'];
 
   /**
-   * {@inheritdoc}
-   */
-  protected function setUp() {
-    parent::setUp();
-  }
-
-  private function disableRedirects()
-  {
-    $this->getSession()->getDriver()->getClient()->followRedirects(FALSE);
-  }
-
-  /**
    * Tests the the forced login route that redirects users authenticate.
    *
-   * Our data provider may provide us with array of query string parameters
-   * that are present on the forced login route. These parameters should
-   * become part of the service URL that is passed to the CAS server on the
-   * redirect.
-   *
-   * @dataProvider forceLoginRouteQueryStringProvider
+   * @dataProvider queryStringDataProvider
    */
-  public function testForceLoginRoute($queryParams) {
-    $config = $this->config('cas.settings');
-    $config
-      ->set('server.version', '1.0')
-      ->set('server.hostname', 'fakecasserver.localhost')
-      ->set('server.port', 443)
-      ->set('server.path', '/authenticate')
-      ->set('server.verify', 0);
-    $config->save();
+  public function testForcedLoginRoute(array $params = []) {
+    $admin = $this->drupalCreateUser(['administer account settings']);
+    $this->drupalLogin($admin);
 
-    $forcedLoginPath = '/cas';
-    $expectedServiceUrl = $this->baseUrl . '/casservice';
-    if (!empty($queryParams)) {
-      $encodedQueryParams = UrlHelper::buildQuery($queryParams);
-      $forcedLoginPath .= '?' . $encodedQueryParams;
-      $expectedServiceUrl .= '?' . $encodedQueryParams;
-    }
+    $edit = [
+      'server[hostname]' => 'fakecasserver.localhost',
+      'server[path]' => '/auth',
+    ];
+    $this->drupalPostForm('/admin/config/people/cas', $edit, 'Save configuration');
+
+    $this->drupalLogout();
 
     $this->disableRedirects();
     $this->prepareRequest();
-
     $session = $this->getSession();
-    $session->visit($forcedLoginPath);
 
-    $expectedRedirectLocation = 'https://fakecasserver.localhost/authenticate/login?' . UrlHelper::buildQuery(['service' => $expectedServiceUrl]);
+    // We want to test that query string parameters that are present on the
+    // request to the forced login route are passed along to the service
+    // URL as well, so test each of these cases individually.
+    $forced_login_path = '/cas';
+    if (!empty($params)) {
+      $forced_login_path .= '?' . UrlHelper::buildQuery($params);
+    }
+
+    $session->visit($forced_login_path);
 
     $this->assertEquals(302, $session->getStatusCode());
-    $this->assertEquals($expectedRedirectLocation, $session->getResponseHeader('Location'));
+    $expected_redirect_location = 'https://fakecasserver.localhost/auth/login?' . UrlHelper::buildQuery(['service' => $this->buildServiceUrlWithParams($params)]);
+    $this->assertEquals($expected_redirect_location, $session->getResponseHeader('Location'));
   }
 
   /**
-   * Data provider for testForceLoginRoute.
+   * Data provider for testForcedLoginRoute.
+   *
+   * Provides various different query strings to the forced login route.
    */
-  public function forceLoginRouteQueryStringProvider()
-  {
-    // Provide a varying set of query string paramaters which will be applied
-    // to the CAS login path during the test.
+  public function queryStringDataProvider() {
     return [
       [[]],
       [['returnto' => 'node/1']],
-      [['buzz' => 'bazz', 'foo' => 'bar']]
+      [['foo' => 'bar', 'buzz' => 'baz']],
     ];
   }
 }

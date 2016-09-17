@@ -160,7 +160,7 @@ class CasSubscriber implements EventSubscriberInterface {
 
     if ($this->conditionManager->execute($condition)) {
       $cas_login_url = $this->casHelper->getServerLoginUrl(array(
-        'returnto' => $this->requestStack->getCurrentRequest()->getUri(),
+        'returnto' => $this->requestStack->getCurrentRequest()->getRequestUri(),
       ));
       $this->casHelper->log("Forced login path detected, redirecting to: $cas_login_url");
 
