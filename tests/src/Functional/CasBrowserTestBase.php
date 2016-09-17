@@ -10,7 +10,7 @@ use Drupal\Tests\BrowserTestBase;
  *
  * @group cas
  */
-class CasBrowserTestBase extends BrowserTestBase {
+abstract class CasBrowserTestBase extends BrowserTestBase {
 
   /**
    * {@inheritdoc}
