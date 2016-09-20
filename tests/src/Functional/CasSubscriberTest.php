@@ -55,27 +55,29 @@ class CasSubscriberTest extends CasBrowserTestBase {
     $session = $this->getSession();
 
     // Our forced login subscriber should not intervene when viewing node/1.
-    $session->visit('/node/1');
+    $session->visit($this->buildUrl('node/1', ['absolute' => TRUE]));
     $this->assertEquals(200, $session->getStatusCode());
 
     // But for node/2 and the node/3 path alias, we should be redirected to
     // the CAS server to login with the proper service URL appended as a query
     // string parameter.
-    $session->visit('/node/2');
+    $url = $this->buildUrl('node/2', ['absolute' => TRUE]);
+    $session->visit($url);
     $this->assertEquals(302, $session->getStatusCode());
-    $expected_redirect_url = 'https://fakecasserver.localhost/auth/login?' . UrlHelper::buildQuery(['service' => $this->buildServiceUrlWithParams(['returnto' => '/node/2'])]);
+    $expected_redirect_url = 'https://fakecasserver.localhost/auth/login?' . UrlHelper::buildQuery(['service' => $this->buildServiceUrlWithParams(['returnto' => $url])]);
     $this->assertEquals($expected_redirect_url, $session->getResponseHeader('Location'));
 
-    $session->visit('/my/path?foo=bar');
+    $url = $this->buildUrl('my/path', ['absolute' => TRUE, 'query' => ['foo' => 'bar']]);
+    $session->visit($url);
     $this->assertEquals(302, $session->getStatusCode());
-    $expected_redirect_url = 'https://fakecasserver.localhost/auth/login?' . UrlHelper::buildQuery(['service' => $this->buildServiceUrlWithParams(['returnto' => '/my/path?foo=bar'])]);
+    $expected_redirect_url = 'https://fakecasserver.localhost/auth/login?' . UrlHelper::buildQuery(['service' => $this->buildServiceUrlWithParams(['returnto' => $url])]);
     $this->assertEquals($expected_redirect_url, $session->getResponseHeader('Location'));
 
     // When we are already logged in, we should not be redirected to the CAS
     // server when hitting a forced login path.
     $this->enabledRedirects();
     $this->drupalLogin($admin);
-    $session->visit('/node/2');
+    $session->visit($this->buildUrl('node/2', ['absolute' => TRUE]));
     $this->assertEquals(200, $session->getStatusCode());
   }
 

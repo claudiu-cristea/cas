@@ -41,12 +41,9 @@ class CasForcedLoginControllerTest extends CasBrowserTestBase {
     // We want to test that query string parameters that are present on the
     // request to the forced login route are passed along to the service
     // URL as well, so test each of these cases individually.
-    $forced_login_path = '/cas';
-    if (!empty($params)) {
-      $forced_login_path .= '?' . UrlHelper::buildQuery($params);
-    }
+    $path = $this->buildUrl('cas', ['query' => $params, 'absolute' => true]);
 
-    $session->visit($forced_login_path);
+    $session->visit($path);
 
     $this->assertEquals(302, $session->getStatusCode());
     $expected_redirect_location = 'https://fakecasserver.localhost/auth/login?' . UrlHelper::buildQuery(['service' => $this->buildServiceUrlWithParams($params)]);
