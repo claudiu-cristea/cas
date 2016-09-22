@@ -34,7 +34,7 @@
   "minimum-stability": "dev",
   "require": {
     "drupal/externalauth": "1.0.0-alpha3"
-   },
+  },
   "extra": {
     "branch-alias": {
       "dev-8.x-1.x": "8.1.x-dev"
