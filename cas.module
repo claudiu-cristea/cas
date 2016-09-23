@@ -6,6 +6,7 @@
  */
 
 use Drupal\user\RoleInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Implements hook_cron().
@@ -20,7 +21,7 @@ function cas_cron() {
 }
 
 /**
- * Implements hook_ENTITY_TYPE_delete() for user_role entities.
+ * Implements hook_ENTITY_TYPE_delete().
  */
 function cas_user_role_delete(RoleInterface $role) {
   $config = \Drupal::configFactory()->getEditable('cas.settings');
@@ -30,5 +31,98 @@ function cas_user_role_delete(RoleInterface $role) {
     // Remove the role from the auto-assigned roles.
     unset($auto_assigned_roles[$array_key]);
     $config->set('user_accounts.auto_assigned_roles', $auto_assigned_roles)->save();
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function cas_form_user_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  _cas_alter_user_form($form);
+
+  // Set default value of the CAS username if this user already has one set.
+  $authmap = \Drupal::service('externalauth.authmap');
+  $account = $form_state->getFormObject()->getEntity();
+  $cas_username = $authmap->get($account->id(), 'cas');
+  if ($cas_username) {
+    $form['cas_username']['#default_value'] = $cas_username;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function cas_form_user_register_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  _cas_alter_user_form($form);
+}
+
+/**
+ * Alter the user entity form to include a textfield for CAS username.
+ *
+ * @param array $form
+ *   The user entity form.
+ */
+function _cas_alter_user_form(&$form) {
+  $form['cas_username'] = [
+    '#type' => 'textfield',
+    '#title' => t('CAS Username'),
+    '#description' => t('The CAS username to associate with this user. Typically the same as the Drupal username. This must be entered to allow this user to authenticate with CAS.'),
+    '#access' => \Drupal::currentUser()->hasPermission('administer users'),
+    '#maxlength' => 128,
+  ];
+
+  // We cannot apply form validation method directly to buttons on entity forms
+  // anymore so apply it to the whole form instead.
+  $form['#validate'][] = '_cas_user_form_validate';
+  $form['actions']['submit']['#submit'][] = '_cas_user_form_submit';
+}
+
+/**
+ * Validation callback for the user entity form.
+ *
+ * Verify that the provided CAS username is not already taken by someone else.
+ *
+ * @param array $form
+ *   The form.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The form state object.
+ */
+function _cas_user_form_validate(&$form, FormStateInterface $form_state) {
+  // Verify that it was the save / register button that was clicked. We don't
+  // want to run our validation if this was for a 'cancel account' action.
+  if (in_array('::save', $form_state->getTriggeringElement()['#submit'])) {
+    // The externalauth module does not provide this validation so we have to
+    // implement it ourselves. See https://drupal.org/node/2804797.
+    $cas_username = $form_state->getValue('cas_username');
+    if (!empty($cas_username)) {
+      $authmap = \Drupal::service('externalauth.authmap');
+      $existing_uid = $authmap->getUid($cas_username, 'cas');
+      $user_being_edited = $form_state->getFormObject()->getEntity();
+
+      if ($existing_uid && $existing_uid !== $user_being_edited->id()) {
+        $form_state->setError($form['cas_username'], t('The specified CAS username is already in use by another user.'));
+      }
+    }
+  }
+}
+
+/**
+ * Submit callback for the user entity form.
+ *
+ * Save (or remove) the association of the CAS username to this edited user.
+ *
+ * @param array $form
+ *   The form.
+ * @param \Drupal\Core\Form\FormStateInterface $form_state
+ *   The form state object.
+ */
+function _cas_user_form_submit($form, FormStateInterface $form_state) {
+  $authmap = \Drupal::service('externalauth.authmap');
+  if ($form_state->getValue('cas_username')) {
+    $account = $form_state->getFormObject()->getEntity();
+    $authmap->save($account, 'cas', $form_state->getValue('cas_username'));
+  }
+  else {
+    $authmap->delete($form_state->getValue('uid'));
   }
 }
