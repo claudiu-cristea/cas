@@ -4,11 +4,12 @@ namespace Drupal\cas\Subscriber;
 
 use Drupal\cas\CasRedirectResponse;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\EventSubscriber\HttpExceptionSubscriberBase;
 use Drupal\Core\Session\AccountInterface;
+use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\HttpKernel\Event\GetResponseEvent;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Condition\ConditionManager;
@@ -17,7 +18,7 @@ use Drupal\cas\Service\CasHelper;
 /**
  * Provides a CasSubscriber.
  */
-class CasSubscriber implements EventSubscriberInterface {
+class CasSubscriber extends HttpExceptionSubscriberBase {
 
   /**
    * The request.
@@ -93,6 +94,7 @@ class CasSubscriber implements EventSubscriberInterface {
     // Priority is just before the Dynamic Page Cache subscriber, but after
     // important services like route matcher and maintenance mode subscribers.
     $events[KernelEvents::REQUEST][] = array('handle', 29);
+    $events[KernelEvents::EXCEPTION][] = ['onException', 0];
     return $events;
   }
 
@@ -296,6 +298,30 @@ class CasSubscriber implements EventSubscriberInterface {
     }
 
     return FALSE;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getHandledFormats() {
+    return ['html'];
+  }
+
+  /**
+   * Handle 403 errors.
+   *
+   * Other request subscribers with a higher priority may intercept the request
+   * and return a 403 before our request subscriber can handle it. In those
+   * instances we handle the forced login redirect if applicable here instead,
+   * using an exception subscriber.
+   *
+   * @param \Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent $event
+   *   The event to process.
+   */
+  public function on403(GetResponseForExceptionEvent $event) {
+    if (\Drupal::currentUser()->isAnonymous()) {
+      $this->handleForcedPath($event);
+    }
   }
 
 }
