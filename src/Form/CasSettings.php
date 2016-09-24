@@ -128,6 +128,30 @@ class CasSettings extends ConfigFormBase {
       ),
     );
 
+    $form['general'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('General Settings'),
+      '#open' => TRUE,
+      '#tree' => TRUE,
+    );
+    $form['general']['login_link_enabled'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Login Link Enabled'),
+      '#description' => $this->t('Display a link to login via CAS above the user login form.'),
+      '#default_value' => $config->get('login_link_enabled'),
+    );
+    $form['general']['login_link_label'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Login Link Label'),
+      '#description' => $this->t('The text that makes up the login link to this CAS server.'),
+      '#default_value' => $config->get('login_link_label'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="general[login_link_enabled]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+
     $form['gateway'] = array(
       '#type' => 'details',
       '#title' => $this->t('Gateway Feature (Auto Login)'),
@@ -354,6 +378,11 @@ class CasSettings extends ConfigFormBase {
       ->set('server.path', $server_data['path'])
       ->set('server.verify', $server_data['verify'])
       ->set('server.cert', $server_data['cert']);
+
+    $general_data = $form_state->getValue('general');
+    $config
+      ->set('login_link_enabled', $general_data['login_link_enabled'])
+      ->set('login_link_label', $general_data['login_link_label']);
 
     $condition_values = (new FormState())
       ->setValues($form_state->getValue(['gateway', 'paths']));

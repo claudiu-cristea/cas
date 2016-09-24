@@ -7,6 +7,7 @@
 
 use Drupal\user\RoleInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 
 /**
  * Implements hook_cron().
@@ -124,5 +125,33 @@ function _cas_user_form_submit($form, FormStateInterface $form_state) {
   }
   else {
     $authmap->delete($form_state->getValue('uid'));
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Add a link to login via CAS on the user login form.
+ */
+function cas_form_user_login_form_alter(&$form, FormStateInterface $form_state) {
+  $config = Drupal::config('cas.settings');
+
+  $enabled = $config->get('login_link_enabled');
+  if ($enabled) {
+    $url = new Url('cas.login', array(), array(
+      'attributes' => array(
+        'class' => array('cas-login-link'),
+      ),
+    ));
+
+    $form['cas_login_link'] = [
+      '#type' => 'link',
+      '#url' => $url,
+      '#title' => $config->get('login_link_label'),
+      '#weight' => -1,
+      '#cache' => [
+        'tags' => $config->getCacheTags(),
+      ],
+    ];
   }
 }

@@ -30,3 +30,5 @@ user_accounts:
   auto_assigned_roles: {}
 debugging:
   log: false
+login_link_enabled: true
+login_link_label: 'CAS Login'
