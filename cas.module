@@ -42,9 +42,9 @@ function cas_form_user_form_alter(&$form, FormStateInterface $form_state, $form_
   _cas_alter_user_form($form);
 
   // Set default value of the CAS username if this user already has one set.
-  $authmap = \Drupal::service('externalauth.authmap');
+  $cas_user_manager = \Drupal::service('cas.user_manager');
   $account = $form_state->getFormObject()->getEntity();
-  $cas_username = $authmap->get($account->id(), 'cas');
+  $cas_username = $cas_user_manager->getCasUsernameForAccount($account);
   if ($cas_username) {
     $form['cas_username']['#default_value'] = $cas_username;
   }
@@ -96,8 +96,8 @@ function _cas_user_form_validate(&$form, FormStateInterface $form_state) {
     // implement it ourselves. See https://drupal.org/node/2804797.
     $cas_username = $form_state->getValue('cas_username');
     if (!empty($cas_username)) {
-      $authmap = \Drupal::service('externalauth.authmap');
-      $existing_uid = $authmap->getUid($cas_username, 'cas');
+      $cas_user_manager = \Drupal::service('cas.user_manager');
+      $existing_uid = $cas_user_manager->getUidForCasUsername($cas_username);
       $user_being_edited = $form_state->getFormObject()->getEntity();
 
       if ($existing_uid && $existing_uid !== $user_being_edited->id()) {
@@ -118,13 +118,13 @@ function _cas_user_form_validate(&$form, FormStateInterface $form_state) {
  *   The form state object.
  */
 function _cas_user_form_submit($form, FormStateInterface $form_state) {
-  $authmap = \Drupal::service('externalauth.authmap');
+  $cas_user_manager = \Drupal::service('cas.user_manager');
+  $account = $form_state->getFormObject()->getEntity();
   if ($form_state->getValue('cas_username')) {
-    $account = $form_state->getFormObject()->getEntity();
-    $authmap->save($account, 'cas', $form_state->getValue('cas_username'));
+    $cas_user_manager->setCasUsernameForAccount($account, $form_state->getValue('cas_username'));
   }
   else {
-    $authmap->delete($form_state->getValue('uid'));
+    $cas_user_manager->removeCasUsernameForAccount($account);
   }
 }
 

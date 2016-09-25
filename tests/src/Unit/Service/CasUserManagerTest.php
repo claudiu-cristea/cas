@@ -26,6 +26,13 @@ class CasUserManagerTest extends UnitTestCase {
   protected $externalAuth;
 
   /**
+   * The mocked Authmap.
+   *
+   * @var \Drupal\externalauth\AuthmapInterface
+   */
+  protected $authmap;
+
+  /**
    * The mocked Entity Manager.
    *
    * @var \Drupal\Core\Entity\EntityManagerInterface|\PHPUnit_Framework_MockObject_MockObject
@@ -68,6 +75,9 @@ class CasUserManagerTest extends UnitTestCase {
     $this->externalAuth = $this->getMockBuilder('\Drupal\externalauth\ExternalAuth')
       ->disableOriginalConstructor()
       ->getMock();
+    $this->authmap = $this->getMockBuilder('\Drupal\externalauth\Authmap')
+      ->disableOriginalConstructor()
+      ->getMock();
     $storage = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage')
       ->setMethods(NULL)
       ->getMock();
@@ -104,6 +114,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->setMethods(NULL)
       ->setConstructorArgs(array(
         $this->externalAuth,
+        $this->authmap,
         $this->getConfigFactoryStub(),
         $this->session,
         $this->connection,
@@ -132,6 +143,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->setMethods(array('storeLoginSessionData'))
       ->setConstructorArgs(array(
         $this->externalAuth,
+        $this->authmap,
         $config_factory,
         $this->session,
         $this->connection,
@@ -172,6 +184,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->setMethods(array('storeLoginSessionData'))
       ->setConstructorArgs(array(
         $this->externalAuth,
+        $this->authmap,
         $config_factory,
         $this->session,
         $this->connection,
@@ -220,6 +233,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->setMethods(array('register', 'storeLoginSessionData'))
       ->setConstructorArgs(array(
         $this->externalAuth,
+        $this->authmap,
         $config_factory,
         $this->session,
         $this->connection,
@@ -256,6 +270,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->setMethods(array('storeLoginSessionData'))
       ->setConstructorArgs(array(
         $this->externalAuth,
+        $this->authmap,
         $this->getConfigFactoryStub(),
         $this->session,
         $this->connection,
@@ -302,6 +317,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->setMethods(array('storeLoginSessionData'))
       ->setConstructorArgs(array(
         $this->externalAuth,
+        $this->authmap,
         $this->getConfigFactoryStub(),
         $this->session,
         $this->connection,
@@ -343,6 +359,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->setMethods(array('storeLoginSessionData'))
       ->setConstructorArgs(array(
         $this->externalAuth,
+        $this->authmap,
         $this->getConfigFactoryStub(),
         $this->session,
         $this->connection,
