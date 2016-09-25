@@ -5,7 +5,7 @@ namespace Drupal\Tests\cas\Functional;
 use Drupal\Tests\BrowserTestBase;
 
 /**
- * Tests the CAS forced login controller.
+ * Tests the login link on the user login form.
  *
  * @group cas
  */
@@ -17,35 +17,31 @@ class CasLoginFormTest extends BrowserTestBase {
   public static $modules = ['cas'];
 
   /**
-   * {@inheritdoc}
+   * Tests the login link on the user login form.
    */
-  protected function setUp() {
-    parent::setUp();
-  }
-
   public function testLoginLinkOnLoginForm() {
+    // Should be disabled by default.
     $config = $this->config('cas.settings');
-    $config
-      ->set('server.version', '1.0')
-      ->set('server.hostname', 'fakecasserver.localhost')
-      ->set('server.port', 443)
-      ->set('server.path', '/authenticate')
-      ->set('server.verify', 0);
-
-    $config
-      ->set('login_link_enabled', TRUE)
-      ->set('login_link_label', 'Click to login via CAS');
-
-    $config->save();
-
+    $this->assertFalse($config->get('login_link_enabled'));
+    $this->assertEquals('CAS Login', $config->get('login_link_label'));
     $this->drupalGet('/user/login');
-    $this->assertSession()->linkExists('Click to login via CAS');
+    $this->assertSession()->linkNotExists('CAS Login');
 
-    $config
-      ->set('login_link_enabled', FALSE);
-    $config->save();
+    // Enable it.
+    $this->drupalLogin($this->drupalCreateUser(['administer account settings']));
+    $edit = [
+      'general[login_link_enabled]' => TRUE,
+      'general[login_link_label]' => 'Click here to login!',
+    ];
+    $this->drupalPostForm('/admin/config/people/cas', $edit, 'Save configuration');
+    $config = $this->config('cas.settings');
+    $this->assertTrue($config->get('login_link_enabled'));
+    $this->assertEquals('Click here to login!', $config->get('login_link_label'));
 
+    // Test that it appears properly.
+    $this->drupalLogout();
     $this->drupalGet('/user/login');
-    $this->assertSession()->linkNotExists('Click to login via CAS');
+    $this->assertSession()->linkExists('Click here to login!');
   }
+
 }

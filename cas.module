@@ -136,6 +136,9 @@ function _cas_user_form_submit($form, FormStateInterface $form_state) {
 function cas_form_user_login_form_alter(&$form, FormStateInterface $form_state) {
   $config = Drupal::config('cas.settings');
 
+  // Cached form must be busted if we alter CAS settings.
+  $form['#cache']['tags'] = array_merge($form['#cache']['tags'], $config->getCacheTags());
+
   $enabled = $config->get('login_link_enabled');
   if ($enabled) {
     $url = new Url('cas.login', array(), array(
@@ -149,9 +152,6 @@ function cas_form_user_login_form_alter(&$form, FormStateInterface $form_state) 
       '#url' => $url,
       '#title' => $config->get('login_link_label'),
       '#weight' => -1,
-      '#cache' => [
-        'tags' => $config->getCacheTags(),
-      ],
     ];
   }
 }
