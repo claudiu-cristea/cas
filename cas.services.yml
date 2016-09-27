@@ -24,3 +24,7 @@ services:
     arguments: ['@cas.helper']
     tags:
       - { name: route_enhancer }
+  cas.external_auth_subscriber:
+    class: Drupal\cas\Subscriber\ExternalAuthSubscriber
+    tags:
+      - { name: 'event_subscriber' }
