@@ -184,17 +184,13 @@ class CasUserManager {
    */
   protected function storeLoginSessionData($session_id, $ticket) {
     if ($this->settings->get('cas.settings')->get('logout.enable_single_logout') === TRUE) {
-      $plainsid = $session_id;
+      $this->connection->insert('cas_login_data')
+        ->fields(
+          array('sid', 'plainsid', 'ticket'),
+          array(Crypt::hashBase64($session_id), $session_id, $ticket)
+        )
+        ->execute();
     }
-    else {
-      $plainsid = '';
-    }
-    $this->connection->insert('cas_login_data')
-      ->fields(
-        array('sid', 'plainsid', 'ticket'),
-        array(Crypt::hashBase64($session_id), $plainsid, $ticket)
-      )
-      ->execute();
   }
 
   /**
