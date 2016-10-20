@@ -52,21 +52,14 @@ class ForceLoginController implements ContainerInjectionInterface {
    */
   public function forceLogin() {
     // TODO: What if CAS is not configured? need to handle that case.
-    $query_params = $this->requestStack->getCurrentRequest()->query->all();
-    $cas_login_url = $this->casHelper->getServerLoginUrl($query_params);
-    $this->casHelper->log("Cas forced login route, redirecting to: $cas_login_url");
 
-    // This response is OK to cache, but since the redirect URL is dependent on
-    // the configured server settings, we need to add some cache metadata tied
-    // to the settings.
-    $cacheable_metadata = new CacheableMetadata();
-    $cacheable_metadata->addCacheTags(array(
-      'config:cas.settings',
-    ));
-    $response = TrustedRedirectResponse::create($cas_login_url, 302);
-    $response->addCacheableDependency($cacheable_metadata);
+    $this->casHelper->log('CAS forced login controller hit, redirecting to CAS server for forced authentication.');
 
-    return $response;
+    // TODO: We're currently passing ALL existing query string parameters to
+    // the service URL, but why? We only need to check if there's a returnto
+    // parameter and pass that one along.
+    $service_url_query_params = $this->requestStack->getCurrentRequest()->query->all();
+    return $this->casHelper->createForcedRedirectResponse($service_url_query_params);
   }
 
 }

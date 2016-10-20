@@ -161,12 +161,15 @@ class CasSubscriber extends HttpExceptionSubscriberBase {
     $condition->setConfiguration($config->get('forced_login.paths'));
 
     if ($this->conditionManager->execute($condition)) {
-      $cas_login_url = $this->casHelper->getServerLoginUrl(array(
-        'returnto' => $this->requestStack->getCurrentRequest()->getUri(),
-      ));
-      $this->casHelper->log("Forced login path detected, redirecting to: $cas_login_url");
+      $this->casHelper->log('CAS forced login path detected, redirecting to CAS server for forced authentication.');
 
-      $event->setResponse(new CasRedirectResponse($cas_login_url));
+      // Set the returnto parameter as part of the service URL so the user is
+      // redirected back to the page they were on after authentication.
+      $service_url_query_params = [
+        'returnto' => $this->requestStack->getCurrentRequest()->getUri(),
+      ];
+      $response = $this->casHelper->createForcedRedirectResponse($service_url_query_params);
+      $event->setResponse($response);
 
       return TRUE;
     }
@@ -240,6 +243,7 @@ class CasSubscriber extends HttpExceptionSubscriberBase {
    */
   private function isCrawlerRequest() {
     $current_request = $this->requestStack->getCurrentRequest();
+    error_log('TEST: ' . $current_request->server->get('HTTP_USER_AGENT'));
     if ($current_request->server->get('HTTP_USER_AGENT')) {
       $crawlers = array(
         'Google',

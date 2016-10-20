@@ -265,6 +265,7 @@ class CasSubscriberTest extends UnitTestCase {
     $cas_subscriber->handle($this->event);
     $this->assertEmpty($this->session->all());
   }
+
   /**
    * Test handling a forced login path.
    *
@@ -319,9 +320,14 @@ class CasSubscriberTest extends UnitTestCase {
     $this->requestStack->expects($this->any())
       ->method('getCurrentRequest')
       ->will($this->returnValue($request_object));
+
+    $redirectResponse = $this
+      ->getMockBuilder('\Drupal\Core\Routing\TrustedRedirectResponse')
+      ->disableOriginalConstructor()
+      ->getMock();
     $this->casHelper->expects($this->any())
-      ->method('getServerLoginUrl')
-      ->will($this->returnValue('https://example.com/cas/login'));
+      ->method('createForcedRedirectResponse')
+      ->will($this->returnValue($redirectResponse));
     $this->event->expects($this->once())
       ->method('setResponse');
     $cas_subscriber->expects($this->never())

@@ -2,7 +2,9 @@
 
 namespace Drupal\cas\Service;
 
+use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Component\Utility\Crypt;
@@ -459,6 +461,28 @@ class CasHelper {
    */
   public function getSingleLogOut() {
     return $this->settings->get('logout.enable_single_logout');
+  }
+
+  /**
+   * Construct a cacheable redirect response to the CAS server for forced auth.
+   *
+   * @param array $service_url_query_params
+   *   Query string parameters to append to the service URL.
+   *
+   * @return \Drupal\Core\Routing\TrustedRedirectResponse
+   *   The cacheable redirect response.
+   */
+  public function createForcedRedirectResponse(array $service_url_query_params = []) {
+    $cas_login_url = $this->getServerLoginUrl($service_url_query_params);
+
+    $cacheable_metadata = new CacheableMetadata();
+    $cacheable_metadata->addCacheTags([
+      'config:cas.settings',
+    ]);
+    $response = new TrustedRedirectResponse($cas_login_url);
+    $response->addCacheableDependency($cacheable_metadata);
+
+    return $response;
   }
 
 }

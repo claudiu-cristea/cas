@@ -28,3 +28,9 @@ services:
     class: Drupal\cas\Subscriber\ExternalAuthSubscriber
     tags:
       - { name: 'event_subscriber' }
+  cas.page_cache_response_policy.deny_cas:
+    class: Drupal\cas\PageCache\DenyCas
+    arguments: ['@config.factory', '@plugin.manager.condition']
+    public: false
+    tags:
+      - { name: page_cache_response_policy }

@@ -1,6 +1,7 @@
 <?php
 
 namespace Drupal\Tests\cas\Functional;
+use Drupal\cas\Service\CasHelper;
 use Drupal\Component\Utility\UrlHelper;
 
 /**
@@ -79,6 +80,50 @@ class CasSubscriberTest extends CasBrowserTestBase {
     $this->drupalLogin($admin);
     $session->visit($this->buildUrl('node/2', ['absolute' => TRUE]));
     $this->assertEquals(200, $session->getStatusCode());
+  }
+
+  /**
+   * Test that the gateway auth works as expected.
+   */
+  public function testGatewayPaths() {
+    $admin = $this->drupalCreateUser(['administer account settings']);
+    $this->drupalLogin($admin);
+
+    // Create some dummy nodes so we have some content paths to work with
+    // when triggering forced auth paths.
+    $this->drupalCreateContentType(array('type' => 'page', 'name' => 'Basic page'));
+    $node1 = $this->drupalCreateNode();
+
+    // Configure CAS with gateway auth enabled for our node.
+    $edit = [
+      'server[hostname]' => 'fakecasserver.localhost',
+      'server[path]' => '/auth',
+      'gateway[check_frequency]' => CasHelper::CHECK_ONCE,
+      'gateway[paths][pages]' => "/node/1",
+    ];
+    $this->drupalPostForm('/admin/config/people/cas', $edit, 'Save configuration');
+
+    $config = $this->config('cas.settings');
+    $this->assertEquals(CasHelper::CHECK_ONCE, $config->get('gateway.check_frequency'));
+    $this->assertEquals("/node/1", $config->get('gateway.paths')['pages']);
+
+    $this->drupalLogout();
+    $this->disableRedirects();
+
+    // Visit the page as a bot, which should not trigger the gateway redirect.
+    $node_url = $this->buildUrl('node/1', ['absolute' => TRUE]);
+    $session = $this->getSession();
+    $session->setCookie('SIMPLETEST_USER_AGENT', 'Google');
+    $session->visit($node_url);
+    print $node_url;
+    $this->assertEquals(200, $session->getStatusCode());
+
+    // Now visit the page as a normal user and see if we are redirected.
+    $session->setCookie('SIMPLETEST_USER_AGENT', 'Drupal command line');
+    $session->visit($node_url);
+    $this->assertEquals(302, $session->getStatusCode());
+    $expected_redirect_url = 'https://fakecasserver.localhost/auth/login?' . UrlHelper::buildQuery(['service' => $this->buildServiceUrlWithParams()]);
+    $this->assertEquals($expected_redirect_url, $session->getResponseHeader('Location'));
   }
 
 }

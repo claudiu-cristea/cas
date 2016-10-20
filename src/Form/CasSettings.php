@@ -165,8 +165,7 @@ class CasSettings extends ConfigFormBase {
         'active session check, and then redirecting them back to page they initially requested.<br/><br/>' .
         'If enabled, all pages on your site will trigger this feature. You can instead enable ' .
         'this feature for only specific pages by listing them below.<br/><br/>' .
-        '<strong>WARNING:</strong> This feature is NOT compatible with the Internal Page Cache module or external ' .
-        'page caching software like Varnish.',
+        '<strong>WARNING:</strong> This feature will disable page caching on pages it is active on.',
         array('@cas-gateway' => 'https://wiki.jasig.org/display/CAS/gateway')
       ),
     );
@@ -191,15 +190,13 @@ class CasSettings extends ConfigFormBase {
       '#description' => $this->t(
         'Anonymous users will be forced to login through CAS when enabled. ' .
         'This differs from the "gateway feature" in that it will REQUIRE that a user be logged in to their CAS ' .
-        'account, instead of just checking if they already are.<br/><br/>' .
-        '<strong>WARNING:</strong> This feature is NOT compatible with the Internal Page Cache module or external ' .
-        'page caching software like Varnish.'
+        'account, instead of just checking if they already are.'
       ),
     );
     $form['forced_login']['enabled'] = array(
       '#type' => 'checkbox',
       '#title' => $this->t('Enable'),
-      '#description' => $this->t('When enabled, every path will force a CAS login, unless specific pages are listed below.'),
+      '#description' => $this->t('If enabled, all pages on your site will trigger this feature. You can instead enable this feature for only specific pages by listing them below.'),
       '#default_value' => $config->get('forced_login.enabled'),
     );
     $this->forcedLoginPaths->setConfiguration($config->get('forced_login.paths'));
