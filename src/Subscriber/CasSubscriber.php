@@ -243,7 +243,6 @@ class CasSubscriber extends HttpExceptionSubscriberBase {
    */
   private function isCrawlerRequest() {
     $current_request = $this->requestStack->getCurrentRequest();
-    error_log('TEST: ' . $current_request->server->get('HTTP_USER_AGENT'));
     if ($current_request->server->get('HTTP_USER_AGENT')) {
       $crawlers = array(
         'Google',

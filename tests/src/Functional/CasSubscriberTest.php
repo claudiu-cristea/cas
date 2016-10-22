@@ -109,21 +109,20 @@ class CasSubscriberTest extends CasBrowserTestBase {
 
     $this->drupalLogout();
     $this->disableRedirects();
+    $this->prepareRequest();
 
-    // Visit the page as a bot, which should not trigger the gateway redirect.
+    // Ensure that visiting the page triggers the redirect and the returnto
+    // parameter is set bring users back to the page they were on.
     $node_url = $this->buildUrl('node/1', ['absolute' => TRUE]);
     $session = $this->getSession();
-    $session->setCookie('SIMPLETEST_USER_AGENT', 'Google');
-    $session->visit($node_url);
-    print $node_url;
-    $this->assertEquals(200, $session->getStatusCode());
-
-    // Now visit the page as a normal user and see if we are redirected.
-    $session->setCookie('SIMPLETEST_USER_AGENT', 'Drupal command line');
     $session->visit($node_url);
     $this->assertEquals(302, $session->getStatusCode());
-    $expected_redirect_url = 'https://fakecasserver.localhost/auth/login?' . UrlHelper::buildQuery(['service' => $this->buildServiceUrlWithParams()]);
+    $expected_redirect_url = 'https://fakecasserver.localhost/auth/login?' . UrlHelper::buildQuery(['gateway' => 'true', 'service' => $this->buildServiceUrlWithParams(['returnto' => $node_url])]);
     $this->assertEquals($expected_redirect_url, $session->getResponseHeader('Location'));
+
+    // @TODO Test that visting page as a bot does NOT trigger a redirect.
+    // We cannot do this at the moment because we can't spoof a user agent!
+    // See https://www.drupal.org/node/2820515.
   }
 
 }
