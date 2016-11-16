@@ -3,7 +3,6 @@
 namespace Drupal\cas\Event;
 
 use Symfony\Component\EventDispatcher\Event;
-use Drupal\user\UserInterface;
 use Drupal\cas\CasPropertyBag;
 
 /**

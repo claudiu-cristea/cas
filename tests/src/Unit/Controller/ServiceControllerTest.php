@@ -8,6 +8,7 @@ use Drupal\cas\Exception\CasLoginException;
 use Drupal\cas\CasPropertyBag;
 use Drupal\Tests\cas\Unit\Controller\TestServiceController;
 use Drupal\cas\Controller\ServiceController;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * ServiceController unit tests.
@@ -90,19 +91,19 @@ class ServiceControllerTest extends UnitTestCase {
     $this->requestStack = $this->getMock('\Symfony\Component\HttpFoundation\RequestStack');
     $this->urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
-    $this->requestObject = new \Symfony\Component\HttpFoundation\Request();
+    $this->requestObject = new Request();
     $request_bag = $this->getMock('\Symfony\Component\HttpFoundation\ParameterBag');
     $query_bag = $this->getMock('\Symfony\Component\HttpFoundation\ParameterBag');
     $this->requestObject->query = $query_bag;
     $this->requestObject->request = $request_bag;
 
     $storage = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage')
-                    ->setMethods(NULL)
-                    ->getMock();
+      ->setMethods(NULL)
+      ->getMock();
     $session = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session\Session')
-                    ->setConstructorArgs(array($storage))
-                    ->setMethods(NULL)
-                    ->getMock();
+      ->setConstructorArgs(array($storage))
+      ->setMethods(NULL)
+      ->getMock();
     $session->start();
 
     $this->requestObject->setSession($session);

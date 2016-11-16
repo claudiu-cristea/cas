@@ -25,13 +25,14 @@ abstract class CasBrowserTestBase extends BrowserTestBase {
   /**
    * Tell mink not to automatically follow redirects.
    */
-  protected function disableRedirects()
-  {
+  protected function disableRedirects() {
     $this->getSession()->getDriver()->getClient()->followRedirects(FALSE);
   }
 
-  protected function enabledRedirects()
-  {
+  /**
+   * Tell mink to follow redirects.
+   */
+  protected function enabledRedirects() {
     $this->getSession()->getDriver()->getClient()->followRedirects(TRUE);
   }
 
@@ -42,7 +43,10 @@ abstract class CasBrowserTestBase extends BrowserTestBase {
    * service URL.
    *
    * @param array $service_url_params
+   *   Parameters to include on the service url.
+   *
    * @return string
+   *   URL in string format.
    */
   protected function buildServiceUrlWithParams(array $service_url_params = []) {
     $service_url = $this->baseUrl . '/casservice';
@@ -52,4 +56,5 @@ abstract class CasBrowserTestBase extends BrowserTestBase {
     }
     return $service_url;
   }
+
 }

@@ -39,4 +39,5 @@ class CasPreRedirectEvent extends Event {
   public function getCasRedirectData() {
     return $this->casRedirectData;
   }
+
 }

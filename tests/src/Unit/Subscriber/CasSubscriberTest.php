@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\cas\Unit\Subscriber;
 
-use Drupal\cas\CasRedirectResponse;
 use Drupal\cas\Service\CasRedirector;
 use Drupal\Component\HttpFoundation\SecuredRedirectResponse;
 use Drupal\Component\Utility\UrlHelper;
@@ -213,14 +212,17 @@ class CasSubscriberTest extends UnitTestCase {
     // Mock up a routematch object.
     $this->route = 'front.page';
     $this->routeMatcher = $this->getMock('\Drupal\Core\Routing\RouteMatchInterface');
-    $this->routeMatcher->method('getRouteName')->willReturnCallback([$this,
-      'getRouteName'
-    ]);
+    $this->routeMatcher->method('getRouteName')->willReturnCallback(
+      [
+        $this,
+        'getRouteName',
+      ]
+    );
 
     // Mock event.
     $this->event = $this->getMockBuilder('\Symfony\Component\HttpKernel\Event\GetResponseEvent')
-                  ->disableOriginalConstructor()
-                  ->getMock();
+      ->disableOriginalConstructor()
+      ->getMock();
     $this->event->method('setResponse')->willReturnCallback([$this, 'setEventResponse']);
     $this->event->method('getRequestType')->willReturnCallback([$this, 'getEventRequestType']);
 
@@ -270,7 +272,7 @@ class CasSubscriberTest extends UnitTestCase {
    * @return string
    *   Fully constructed service URL.
    */
-  public function getServiceUrl(array $parameters = null) {
+  public function getServiceUrl(array $parameters = []) {
     if ($parameters) {
       return 'http://example.com/casservice?' . UrlHelper::buildQuery($parameters);
     }

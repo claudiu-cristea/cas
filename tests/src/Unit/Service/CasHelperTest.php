@@ -2,7 +2,7 @@
 
 namespace Drupal\Tests\cas\Unit\Service;
 
-use Drupal\cas\Service\CasLoginRedirector;
+use Drupal\cas\Service\CasRedirector;
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Service\CasHelper;
 
@@ -54,7 +54,7 @@ class CasHelperTest extends UnitTestCase {
   /**
    * The CasLoginRedirector.
    *
-   * @var CasLoginRedirector
+   * @var CasRedirector
    */
   protected $loginRedirector;
 
@@ -66,24 +66,24 @@ class CasHelperTest extends UnitTestCase {
 
     $this->urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
     $this->connection = $this->getMockBuilder('\Drupal\Core\Database\Connection')
-                             ->disableOriginalConstructor()
-                             ->getMock();
+      ->disableOriginalConstructor()
+      ->getMock();
     $this->loggerFactory = $this->getMock('\Drupal\Core\Logger\LoggerChannelFactory');
     $this->loggerChannel = $this->getMockBuilder('\Drupal\Core\Logger\LoggerChannel')
-                                ->disableOriginalConstructor()
-                                ->getMock();
+      ->disableOriginalConstructor()
+      ->getMock();
     $this->loggerFactory->expects($this->any())
       ->method('get')
       ->with('cas')
       ->will($this->returnValue($this->loggerChannel));
 
     $storage = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage')
-                    ->setMethods(NULL)
-                    ->getMock();
+      ->setMethods(NULL)
+      ->getMock();
     $this->session = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session\Session')
-                          ->setConstructorArgs(array($storage))
-                          ->setMethods(NULL)
-                          ->getMock();
+      ->setConstructorArgs(array($storage))
+      ->setMethods(NULL)
+      ->getMock();
     $this->session->start();
   }
 

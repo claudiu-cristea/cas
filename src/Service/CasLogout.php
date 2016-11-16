@@ -13,14 +13,14 @@ class CasLogout {
   /**
    * The CAS helper.
    *
-   * @var \Drupal\cas\Service\CasHelper;
+   * @var CasHelper
    */
   protected $casHelper;
 
   /**
    * The database connection used to find the user's session ID.
    *
-   * @var \Drupal\Core\Database\Connection;
+   * @var Connection
    */
   protected $connection;
 
@@ -47,7 +47,7 @@ class CasLogout {
     $this->casHelper->log("Attempting to handle SLO request.");
 
     // Only look up tickets if they were stored to begin with.
-    if (!$this->casHelper->getSingleLogout()) {
+    if (!$this->casHelper->getSingleLogOut()) {
       $this->casHelper->log("Aborting; SLO is not enabled in CAS settings.");
       return;
     }
@@ -131,6 +131,9 @@ class CasLogout {
       ->fetch();
     if (!empty($result)) {
       return $result->plainsid;
+    }
+    else {
+      return NULL;
     }
   }
 

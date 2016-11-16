@@ -55,6 +55,7 @@ class DenyCas implements ResponsePolicyInterface {
         return static::DENY;
       }
     }
+    return NULL;
   }
 
 }

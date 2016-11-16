@@ -32,4 +32,5 @@ class CasEventsTest extends CasBrowserTestBase {
     $this->assertFalse(user_load_by_name('foo'), 'User with name "foo" exists, but should not.');
     $this->assertNotFalse(user_load_by_name('testing_foo'), 'User with name "testing_foo" was not found.');
   }
+
 }

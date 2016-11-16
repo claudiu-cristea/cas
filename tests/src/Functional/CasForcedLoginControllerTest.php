@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\cas\Functional;
 
-use Drupal\Tests\BrowserTestBase;
 use Drupal\Component\Utility\UrlHelper;
 
 /**
@@ -20,7 +19,11 @@ class CasForcedLoginControllerTest extends CasBrowserTestBase {
   /**
    * Tests the the forced login route that redirects users authenticate.
    *
+   * @param array $params
+   *   Testing parameters.
+   *
    * @dataProvider queryStringDataProvider
+   *   Data provider
    */
   public function testForcedLoginRoute(array $params = []) {
     $admin = $this->drupalCreateUser(['administer account settings']);
@@ -41,7 +44,7 @@ class CasForcedLoginControllerTest extends CasBrowserTestBase {
     // We want to test that query string parameters that are present on the
     // request to the forced login route are passed along to the service
     // URL as well, so test each of these cases individually.
-    $path = $this->buildUrl('cas', ['query' => $params, 'absolute' => true]);
+    $path = $this->buildUrl('cas', ['query' => $params, 'absolute' => TRUE]);
 
     $session->visit($path);
 
@@ -62,4 +65,5 @@ class CasForcedLoginControllerTest extends CasBrowserTestBase {
       [['foo' => 'bar', 'buzz' => 'baz']],
     ];
   }
+
 }

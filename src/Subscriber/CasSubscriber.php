@@ -4,7 +4,7 @@ namespace Drupal\cas\Subscriber;
 
 use Drupal\cas\CasRedirectData;
 use Drupal\cas\Service\CasRedirector;
-use Drupal\Core\Condition\ConditionPluginBase;
+
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\EventSubscriber\HttpExceptionSubscriberBase;
 use Drupal\Core\Session\AccountInterface;

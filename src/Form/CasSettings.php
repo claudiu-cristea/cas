@@ -110,7 +110,7 @@ class CasSettings extends ConfigFormBase {
       '#title' => 'SSL Verification',
       '#description' => $this->t('Choose an appropriate option for verifying the certificate of your CAS server.'),
       '#options' => array(
-        CasHelper::CA_DEFAULT => $this->t('Verify using web server\'s default certificates.'),
+        CasHelper::CA_DEFAULT => $this->t("Verify using web server's default certificates."),
         CasHelper::CA_NONE => $this->t('Do not verify CAS server. (Note: this should NEVER be used in production.)'),
         CasHelper::CA_CUSTOM => $this->t('Verify using a custom certificate in the local filesystem. Use the field below to provide path.'),
       ),
