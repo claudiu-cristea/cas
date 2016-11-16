@@ -2,8 +2,9 @@
 
 namespace Drupal\cas\Service;
 
-use Drupal\cas\Event\CasPreAuthEvent;
-use Drupal\cas\Event\CasUserLoadEvent;
+use Drupal\cas\Event\CasPreLoginEvent;
+use Drupal\cas\Event\CasPreRegisterEvent;
+use Drupal\cas\Event\CasPreUserLoadEvent;
 use Drupal\externalauth\AuthmapInterface;
 use Drupal\externalauth\Exception\ExternalAuthRegisterException;
 use Drupal\cas\Exception\CasLoginException;
@@ -95,22 +96,24 @@ class CasUserManager {
    *
    * @param string $authname
    *   The CAS username.
-   * @param array $auto_assigned_roles
-   *   Array of roles to assign to this user.
+   * @param array $property_values
+   *   Property values to assign to the user on registration.
    *
    * @throws CasLoginException
+   *   When the user account could not be registered.
    *
    * @return \Drupal\user\UserInterface
    *   The user entity of the newly registered user.
    */
-  public function register($authname, $auto_assigned_roles = []) {
+  public function register($authname, array $property_values = []) {
     try {
-      $user = $this->externalAuth->register($authname, $this->provider);
+      $user = $this->externalAuth->register($authname, $this->provider, $property_values);
     }
     catch (ExternalAuthRegisterException $e) {
       throw new CasLoginException($e->getMessage());
     }
 
+    $auto_assigned_roles = $this->settings->get('cas.settings')->get('user_accounts.auto_assigned_roles');
     if (!empty($auto_assigned_roles)) {
       foreach ($auto_assigned_roles as $auto_assigned_role) {
         $user->addRole($auto_assigned_role);
@@ -133,21 +136,22 @@ class CasUserManager {
    *   Thrown if there was a problem logging in the user.
    */
   public function login(CasPropertyBag $property_bag, $ticket) {
-    // Dispatch an event that allows modules to change user data we received
-    // from CAS before attempting to use it to load a Drupal user.
-    // Auto-registration can also be disabled for this user if their account
-    // does not exist.
-    $user_load_event = new CasUserLoadEvent($property_bag);
-    $this->eventDispatcher->dispatch(CasHelper::EVENT_USER_LOAD, $user_load_event);
+    // Dispatch an event that allows modules to alter any of the CAS data
+    // before it's used to lookup a Drupal user account via the authmap table.
+    $this->eventDispatcher->dispatch(CasHelper::EVENT_PRE_USER_LOAD, new CasPreUserLoadEvent($property_bag));
 
     $account = $this->externalAuth->load($property_bag->getUsername(), $this->provider);
-    // No user exists.
     if ($account === FALSE) {
       // Check if we should create the user or not.
       $config = $this->settings->get('cas.settings');
       if ($config->get('user_accounts.auto_register') === TRUE) {
-        if ($user_load_event->allowAutoRegister) {
-          $account = $this->register($property_bag->getUsername(), $config->get('user_accounts.auto_assigned_roles'));
+        // Dispatch an event that allows modules to deny automatic registration
+        // for this user account or to set properties for the user that will
+        // be created.
+        $cas_pre_register_event = new CasPreRegisterEvent($property_bag);
+        $this->eventDispatcher->dispatch(CasHelper::EVENT_PRE_REGISTER, $cas_pre_register_event);
+        if (!$cas_pre_register_event->denyAutomaticRegistration) {
+          $account = $this->register($property_bag->getUsername(), $cas_pre_register_event->getPropertyValues());
         }
         else {
           throw new CasLoginException("Cannot register user, an event listener denied access.");
@@ -160,13 +164,13 @@ class CasUserManager {
 
     // Dispatch an event that allows modules to prevent this user from logging
     // in and/or alter the user entity before we save it.
-    $pre_auth_event = new CasPreAuthEvent($account, $property_bag);
-    $this->eventDispatcher->dispatch(CasHelper::EVENT_PRE_AUTH, $pre_auth_event);
+    $pre_login_event = new CasPreLoginEvent($account, $property_bag);
+    $this->eventDispatcher->dispatch(CasHelper::EVENT_PRE_LOGIN, $pre_login_event);
 
     // Save user entity since event listeners may have altered it.
     $account->save();
 
-    if (!$pre_auth_event->allowLogin) {
+    if (!$pre_login_event->allowLogin) {
       throw new CasLoginException("Cannot login, an event listener denied access.");
     }
 

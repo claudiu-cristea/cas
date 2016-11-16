@@ -1,12 +1,15 @@
 services:
   cas.subscriber:
     class: Drupal\cas\Subscriber\CasSubscriber
-    arguments: ['@request_stack', '@current_route_match', '@config.factory',  '@current_user', '@plugin.manager.condition', '@cas.helper']
+    arguments: ['@request_stack', '@current_route_match', '@config.factory',  '@current_user', '@plugin.manager.condition', '@cas.helper', '@cas.redirector']
     tags:
       - { name: 'event_subscriber' }
   cas.helper:
     class: Drupal\cas\Service\CasHelper
     arguments: ['@config.factory', '@url_generator.non_bubbling', '@database', '@logger.factory', '@session']
+  cas.redirector:
+    class: Drupal\cas\Service\CasRedirector
+    arguments: ['@cas.helper', '@event_dispatcher']
   cas.validator:
     class: Drupal\cas\Service\CasValidator
     arguments: ['@http_client', '@cas.helper']

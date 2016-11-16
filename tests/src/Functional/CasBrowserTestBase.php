@@ -7,8 +7,6 @@ use Drupal\Tests\BrowserTestBase;
 
 /**
  * Tests the CAS forced login controller.
- *
- * @group cas
  */
 abstract class CasBrowserTestBase extends BrowserTestBase {
 

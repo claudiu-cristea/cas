@@ -2,8 +2,9 @@
 
 namespace Drupal\Tests\cas\Unit\Service;
 
-use Drupal\cas\Event\CasPreAuthEvent;
-use Drupal\cas\Event\CasUserLoadEvent;
+use Drupal\cas\Event\CasPreLoginEvent;
+use Drupal\cas\Event\CasPreRegisterEvent;
+use Drupal\cas\Event\CasPreUserLoadEvent;
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\CasPropertyBag;
 
@@ -106,6 +107,12 @@ class CasUserManagerTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
 
+    $config_factory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'user_accounts.auto_assigned_roles' => [],
+      ),
+    ));
+
     $this->externalAuth
       ->method('register')
       ->willReturn($account);
@@ -115,7 +122,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->setConstructorArgs(array(
         $this->externalAuth,
         $this->authmap,
-        $this->getConfigFactoryStub(),
+        $config_factory,
         $this->session,
         $this->connection,
         $this->eventDispatcher,
@@ -199,8 +206,8 @@ class CasUserManagerTest extends UnitTestCase {
     $this->eventDispatcher
       ->method('dispatch')
       ->willReturnCallback(function ($event_type, $event) {
-        if ($event instanceof CasUserLoadEvent) {
-          $event->allowAutoRegister = FALSE;
+        if ($event instanceof CasPreRegisterEvent) {
+          $event->denyAutomaticRegistration = TRUE;
         }
       });
 
@@ -289,7 +296,7 @@ class CasUserManagerTest extends UnitTestCase {
     $this->eventDispatcher
       ->method('dispatch')
       ->willReturnCallback(function ($event_type, $event) {
-        if ($event instanceof CasPreAuthEvent) {
+        if ($event instanceof CasPreLoginEvent) {
           $event->allowLogin = FALSE;
         }
       });
@@ -328,7 +335,7 @@ class CasUserManagerTest extends UnitTestCase {
     $this->eventDispatcher
       ->method('dispatch')
       ->willReturnCallback(function ($event_type, $event) {
-        if ($event instanceof CasUserLoadEvent) {
+        if ($event instanceof CasPreUserLoadEvent) {
           $event->getCasPropertyBag()->setUsername('foobar');
         }
       });

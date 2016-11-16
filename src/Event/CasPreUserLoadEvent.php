@@ -6,9 +6,9 @@ use Symfony\Component\EventDispatcher\Event;
 use Drupal\cas\CasPropertyBag;
 
 /**
- * Class CasUserLoadEvent.
+ * Class CasPreUserLoadEvent.
  */
-class CasUserLoadEvent extends Event {
+class CasPreUserLoadEvent extends Event {
 
   /**
    * Store the CAS property bag.
@@ -17,13 +17,6 @@ class CasUserLoadEvent extends Event {
    *   The CasPropertyBag for context.
    */
   protected $casPropertyBag;
-
-  /**
-   * Whether or not to allow CAS to auto-register this user.
-   *
-   * @var bool
-   */
-  public $allowAutoRegister = TRUE;
 
   /**
    * Constructor.

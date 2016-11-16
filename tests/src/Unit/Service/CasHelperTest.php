@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\cas\Unit\Service;
 
+use Drupal\cas\Service\CasLoginRedirector;
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Service\CasHelper;
 
@@ -51,6 +52,13 @@ class CasHelperTest extends UnitTestCase {
   protected $session;
 
   /**
+   * The CasLoginRedirector.
+   *
+   * @var CasLoginRedirector
+   */
+  protected $loginRedirector;
+
+  /**
    * {@inheritdoc}
    */
   protected function setUp() {
@@ -80,43 +88,6 @@ class CasHelperTest extends UnitTestCase {
   }
 
   /**
-   * Test constructing the login URL.
-   *
-   * @covers ::getServerLoginUrl
-   * @covers ::__construct
-   * @covers ::getCasServiceUrl
-   *
-   * @dataProvider getServerLoginUrlDataProvider
-   */
-  public function testGetServerLoginUrl($service_params, $gateway, $result) {
-    $config_factory = $this->getConfigFactoryStub(array(
-      'cas.settings' => array(
-        'server.hostname' => 'example.com',
-        'server.port' => 443,
-        'server.path' => '/cas',
-      ),
-    ));
-    $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory, $this->session);
-
-    if (!empty($service_params)) {
-      $params = '';
-      foreach ($service_params as $key => $value) {
-        $params .= '&' . $key . '=' . urlencode($value);
-      }
-      $params = '?' . substr($params, 1);
-      $return_value = 'https://example.com/client' . $params;
-    }
-    else {
-      $return_value = 'https://example.com/client';
-    }
-    $this->urlGenerator->expects($this->once())
-      ->method('generate')
-      ->will($this->returnValue($return_value));
-    $login_url = $cas_helper->getServerLoginUrl($service_params, $gateway);
-    $this->assertEquals($result, $login_url);
-  }
-
-  /**
    * Provides parameters and expected return values for testGetServerLoginUrl.
    *
    * @return array
@@ -128,23 +99,11 @@ class CasHelperTest extends UnitTestCase {
     return array(
       array(
         array(),
-        FALSE,
-        'https://example.com/cas/login?service=https%3A//example.com/client',
+        'https://example.com/client',
       ),
       array(
         array('returnto' => 'node/1'),
-        FALSE,
-        'https://example.com/cas/login?service=https%3A//example.com/client%3Freturnto%3Dnode%252F1',
-      ),
-      array(
-        array(),
-        TRUE,
-        'https://example.com/cas/login?gateway=true&service=https%3A//example.com/client',
-      ),
-      array(
-        array('returnto' => 'node/1'),
-        TRUE,
-        'https://example.com/cas/login?gateway=true&service=https%3A//example.com/client%3Freturnto%3Dnode%252F1',
+        'https://example.com/client?returnto=node%2F1',
       ),
     );
   }

@@ -2,9 +2,7 @@
 
 namespace Drupal\cas\Service;
 
-use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Component\Utility\Crypt;
@@ -62,18 +60,32 @@ class CasHelper {
   const CHECK_ALWAYS = 0;
 
   /**
-   * Event type identifier for user load events.
+   * Event type identifier for the CasPreUserLoadEvent.
    *
    * @var string
    */
-  const EVENT_USER_LOAD = 'cas.user_load';
+  const EVENT_PRE_USER_LOAD = 'cas.pre_user_load';
+
+  /**
+   * Event type identifier for the CasPreRegisterEvent.
+   *
+   * @var string
+   */
+  const EVENT_PRE_REGISTER = 'cas.pre_register';
+
+  /**
+   * Event type identifier for the CasPreLoginEvent.
+   *
+   * @var string
+   */
+  const EVENT_PRE_LOGIN = 'cas.pre_login';
 
   /**
    * Event type identifier for pre auth events.
    *
    * @var string
    */
-  const EVENT_PRE_AUTH = 'cas.pre_auth';
+  const EVENT_PRE_REDIRECT = 'cas.pre_redirect';
 
   /**
    * Stores database connection.
@@ -131,29 +143,6 @@ class CasHelper {
 
     $this->settings = $config_factory->get('cas.settings');
     $this->loggerChannel = $logger_factory->get('cas');
-  }
-
-  /**
-   * Return the login URL to the CAS server.
-   *
-   * @param array $service_params
-   *   An array of query string parameters to add to the service URL.
-   * @param bool $gateway
-   *   TRUE if this should be a gateway request.
-   *
-   * @return string
-   *   The fully constructed server login URL.
-   */
-  public function getServerLoginUrl($service_params = array(), $gateway = FALSE) {
-    $login_url = $this->getServerBaseUrl() . 'login';
-
-    $params = array();
-    if ($gateway) {
-      $params['gateway'] = 'true';
-    }
-    $params['service'] = $this->getCasServiceUrl($service_params);
-
-    return $login_url . '?' . UrlHelper::buildQuery($params);
   }
 
   /**
@@ -234,7 +223,7 @@ class CasHelper {
    * @return string
    *   The fully constructed service URL to use for CAS server.
    */
-  private function getCasServiceUrl($service_params = array()) {
+  public function getCasServiceUrl($service_params = array()) {
     return $this->urlGenerator->generate('cas.service', $service_params, TRUE);
   }
 
@@ -461,28 +450,6 @@ class CasHelper {
    */
   public function getSingleLogOut() {
     return $this->settings->get('logout.enable_single_logout');
-  }
-
-  /**
-   * Construct a cacheable redirect response to the CAS server for forced auth.
-   *
-   * @param array $service_url_query_params
-   *   Query string parameters to append to the service URL.
-   *
-   * @return \Drupal\Core\Routing\TrustedRedirectResponse
-   *   The cacheable redirect response.
-   */
-  public function createForcedRedirectResponse(array $service_url_query_params = []) {
-    $cas_login_url = $this->getServerLoginUrl($service_url_query_params);
-
-    $cacheable_metadata = new CacheableMetadata();
-    $cacheable_metadata->addCacheTags([
-      'config:cas.settings',
-    ]);
-    $response = new TrustedRedirectResponse($cas_login_url);
-    $response->addCacheableDependency($cacheable_metadata);
-
-    return $response;
   }
 
 }
