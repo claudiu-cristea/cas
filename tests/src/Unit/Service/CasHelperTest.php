@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\cas\Unit\Service;
 
-use Drupal\cas\Service\CasRedirector;
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Service\CasHelper;
 
@@ -54,7 +53,7 @@ class CasHelperTest extends UnitTestCase {
   /**
    * The CasLoginRedirector.
    *
-   * @var CasRedirector
+   * @var \Drupal\cas\Service\CasRedirector
    */
   protected $loginRedirector;
 
@@ -115,6 +114,7 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::__construct
    */
   public function testGetServerBaseUrl() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'server.hostname' => 'example.com',
@@ -136,6 +136,7 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::__construct
    */
   public function testGetServerBaseUrlNonStandardPort() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'server.hostname' => 'example.com',
@@ -148,9 +149,21 @@ class CasHelperTest extends UnitTestCase {
     $this->assertEquals('https://example.com:4433/cas/', $cas_helper->getServerBaseUrl());
   }
 
-
   /**
    * Test constructing the CAS Server validation url.
+   *
+   * @param string $ticket
+   *   Ticket given for the test.
+   * @param array $service_params
+   *   Service paramters given for the test.
+   * @param string $return
+   *   Expected return value.
+   * @param bool $is_proxy
+   *   Expected value for isProxy method call.
+   * @param bool $can_be_proxied
+   *   Can be proxied value for the test.
+   * @param string $protocol
+   *   Protocol used for the test.
    *
    * @covers ::getServerValidateUrl
    * @covers ::formatProxyCallbackURL
@@ -159,6 +172,7 @@ class CasHelperTest extends UnitTestCase {
    * @dataProvider getServerValidateUrlDataProvider
    */
   public function testGetServerValidateUrl($ticket, $service_params, $return, $is_proxy, $can_be_proxied, $protocol) {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'server.hostname' => 'example.com',
@@ -209,6 +223,7 @@ class CasHelperTest extends UnitTestCase {
      * whether or not to initialize as a proxy, and whether or not the client
      * can be proxied.
      */
+    $ticket = '';
     for ($i = 0; $i < 10; $i++) {
       $ticket[$i] = $this->randomMachineName(24);
     }
@@ -309,19 +324,27 @@ class CasHelperTest extends UnitTestCase {
    *
    * @covers ::storePgtSession
    *
-   * @dataProvider storePGTSessionDataProvider
+   * @dataProvider storePgtSessionDataProvider
    */
   public function testStorePgtSession($pgt_iou, $pgt) {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array());
     $map = array(array($pgt_iou, $pgt));
     $cas_helper = $this->getMockBuilder('Drupal\cas\Service\CasHelper')
-      ->setConstructorArgs(array($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory, $this->session))
+      ->setConstructorArgs([
+        $config_factory,
+        $this->urlGenerator,
+        $this->connection,
+        $this->loggerFactory,
+        $this->session,
+      ])
       ->setMethods(array('lookupPgtByPgtIou', 'deletePgtMappingByPgtIou'))
       ->getMock();
     $cas_helper->expects($this->once())
       ->method('lookupPgtByPgtIou')
       ->will($this->returnValueMap($map));
 
+    /** @var CasHelper $cas_helper */
     $cas_helper->storePgtSession($pgt_iou);
     $this->assertEquals($pgt, $this->session->get('cas_pgt'));
   }
@@ -334,7 +357,7 @@ class CasHelperTest extends UnitTestCase {
    *
    * @see \Drupal\Tests\cas\Unit\Service\CasHelper::testStorePGTSession()
    */
-  public function storePGTSessionDataProvider() {
+  public function storePgtSessionDataProvider() {
     return array(
       array($this->randomMachineName(24), $this->randomMachineName(48)),
     );
@@ -347,6 +370,7 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::__construct
    */
   public function testGetCasProtocolVersion() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'server.hostname' => 'example.com',
@@ -365,6 +389,7 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::getSslVerificationMethod
    */
   public function testGetSslVerificationMethod() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'server.hostname' => 'example.com',
@@ -384,6 +409,7 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::__construct
    */
   public function testGetCertificateAuthorityPem() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'server.hostname' => 'example.com',
@@ -403,6 +429,7 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::__construct
    */
   public function testIsProxy() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'server.hostname' => 'example.com',
@@ -422,6 +449,7 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::__construct
    */
   public function testCanBeProxied() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'server.hostname' => 'example.com',
@@ -441,6 +469,7 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::__construct
    */
   public function testGetProxyChains() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'server.hostname' => 'example.com',
@@ -460,10 +489,11 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::__construct
    */
   public function testLoggingOn() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'debugging.log' => TRUE,
-      )
+      ),
     ));
     $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory, $this->session);
     $this->loggerChannel->expects($this->once())
@@ -478,10 +508,11 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::__construct
    */
   public function testLoggingOff() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'debugging.log' => FALSE,
-      )
+      ),
     ));
     $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory, $this->session);
     $this->loggerChannel->expects($this->never())
@@ -495,21 +526,29 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::getServerLogoutUrl
    */
   public function testGetServerLogoutUrlNoRedirect() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'logout.logout_destination' => '',
-      )
+      ),
     ));
     $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
-      ->setConstructorArgs(array($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory, $this->session))
+      ->setConstructorArgs([
+        $config_factory,
+        $this->urlGenerator,
+        $this->connection,
+        $this->loggerFactory,
+        $this->session,
+      ])
       ->setMethods(array('getServerBaseUrl'))
       ->getMock();
     $cas_helper->expects($this->once())
       ->method('getServerBaseUrl')
       ->will($this->returnValue('https://example.com/'));
     $request = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Request')
-                    ->disableOriginalConstructor()
-                    ->getMock();
+      ->disableOriginalConstructor()
+      ->getMock();
+    /** @var CasHelper $cas_helper */
     $this->assertEquals('https://example.com/logout', $cas_helper->getServerLogoutUrl($request));
   }
 
@@ -522,21 +561,28 @@ class CasHelperTest extends UnitTestCase {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'logout.logout_destination' => '<front>',
-      )
+      ),
     ));
     $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
-      ->setConstructorArgs(array($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory, $this->session))
+      ->setConstructorArgs([
+        $config_factory,
+        $this->urlGenerator,
+        $this->connection,
+        $this->loggerFactory,
+        $this->session,
+      ])
       ->setMethods(array('getServerBaseUrl'))
       ->getMock();
     $cas_helper->expects($this->once())
       ->method('getServerBaseUrl')
       ->will($this->returnValue('https://example.com/'));
     $request = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Request')
-                    ->disableOriginalConstructor()
-                    ->getMock();
+      ->disableOriginalConstructor()
+      ->getMock();
     $this->urlGenerator->expects($this->once())
       ->method('generate')
       ->will($this->returnValue('https://example.com/frontpage'));
+    /** @var CasHelper $cas_helper */
     $this->assertEquals('https://example.com/logout?service=https%3A//example.com/frontpage', $cas_helper->getServerLogoutUrl($request));
   }
 
@@ -549,21 +595,28 @@ class CasHelperTest extends UnitTestCase {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'logout.logout_destination' => 'https://foo.example.com',
-      )
+      ),
     ));
     $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
-      ->setConstructorArgs(array($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory, $this->session))
+      ->setConstructorArgs([
+        $config_factory,
+        $this->urlGenerator,
+        $this->connection,
+        $this->loggerFactory,
+        $this->session,
+      ])
       ->setMethods(array('getServerBaseUrl', 'isExternal'))
       ->getMock();
     $cas_helper->expects($this->once())
       ->method('getServerBaseUrl')
       ->will($this->returnValue('https://example.com/'));
     $request = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Request')
-                    ->disableOriginalConstructor()
-                    ->getMock();
+      ->disableOriginalConstructor()
+      ->getMock();
     $cas_helper->expects($this->once())
       ->method('isExternal')
       ->will($this->returnValue(TRUE));
+    /** @var CasHelper $cas_helper */
     $this->assertEquals('https://example.com/logout?service=https%3A//foo.example.com', $cas_helper->getServerLogoutUrl($request));
   }
 
@@ -573,27 +626,35 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::getServerLogoutUrl
    */
   public function testGetServerLogoutUrlInternalPath() {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'logout.logout_destination' => 'node/1',
-      )
+      ),
     ));
     $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
-      ->setConstructorArgs(array($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory, $this->session))
+      ->setConstructorArgs([
+        $config_factory,
+        $this->urlGenerator,
+        $this->connection,
+        $this->loggerFactory,
+        $this->session,
+      ])
       ->setMethods(array('getServerBaseUrl', 'isExternal'))
       ->getMock();
     $cas_helper->expects($this->once())
       ->method('getServerBaseUrl')
       ->will($this->returnValue('https://example.com/'));
     $request = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Request')
-                    ->disableOriginalConstructor()
-                    ->getMock();
+      ->disableOriginalConstructor()
+      ->getMock();
     $request->expects($this->once())
       ->method('getSchemeAndHttpHost')
       ->will($this->returnValue('https://bar.example.com'));
     $cas_helper->expects($this->once())
       ->method('isExternal')
       ->will($this->returnValue(FALSE));
+    /** @var CasHelper $cas_helper */
     $this->assertEquals('https://example.com/logout?service=https%3A//bar.example.com/node/1', $cas_helper->getServerLogoutUrl($request));
   }
 
@@ -603,34 +664,41 @@ class CasHelperTest extends UnitTestCase {
    * @dataProvider provideCasLogoutOverrideDataProvider
    */
   public function testProvideCasLogoutOverride($config, $cas_authenticated) {
+    /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'logout.cas_logout' => $config,
-      )
+      ),
     ));
     $cas_helper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
-      ->setConstructorArgs(array($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory, $this->session))
+      ->setConstructorArgs([
+        $config_factory,
+        $this->urlGenerator,
+        $this->connection,
+        $this->loggerFactory,
+        $this->session,
+      ])
       ->setMethods(array('isCasSession'))
       ->getMock();
     $cas_helper->expects($this->any())
       ->method('isCasSession')
       ->willReturn($cas_authenticated);
     $request = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Request')
-                    ->disableOriginalConstructor()
-                    ->getMock();
+      ->disableOriginalConstructor()
+      ->getMock();
     $session = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session')
-                    ->disableOriginalConstructor()
-                    ->setMethods(['getId'])
-                    ->getMock();
+      ->disableOriginalConstructor()
+      ->setMethods(['getId'])
+      ->getMock();
     if ($config) {
       $request->expects($this->once())
-       ->method('getSession')
-       ->willReturn($session);
+        ->method('getSession')
+        ->willReturn($session);
       $session->expects($this->once())
-       ->method('getId')
-       ->willReturn($this->randomMachineName(8));
+        ->method('getId')
+        ->willReturn($this->randomMachineName(8));
     }
-
+    /** @var CasHelper $cas_helper */
     $this->assertEquals($config && $cas_authenticated, $cas_helper->provideCasLogoutOverride($request));
   }
 
@@ -650,4 +718,5 @@ class CasHelperTest extends UnitTestCase {
       [FALSE, FALSE],
     ];
   }
+
 }

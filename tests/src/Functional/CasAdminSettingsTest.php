@@ -26,7 +26,9 @@ class CasAdminSettingsTest extends BrowserTestBase {
   protected $adminUser;
 
   /**
-   * @todo fix the config schema.
+   * Disable strict schema cheking.
+   *
+   * @var bool
    */
   protected $strictConfigSchema = FALSE;
 
