@@ -118,7 +118,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->willReturn($account);
 
     $cas_user_manager = $this->getMockBuilder('Drupal\cas\Service\CasUserManager')
-      ->setMethods(NULL)
+      ->setMethods(['randomPassword'])
       ->setConstructorArgs(array(
         $this->externalAuth,
         $this->authmap,

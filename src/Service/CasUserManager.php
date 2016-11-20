@@ -107,6 +107,7 @@ class CasUserManager {
    */
   public function register($authname, array $property_values = []) {
     try {
+      $property_values['pass'] = $this->randomPassword();
       $user = $this->externalAuth->register($authname, $this->provider, $property_values);
     }
     catch (ExternalAuthRegisterException $e) {
@@ -243,6 +244,17 @@ class CasUserManager {
    */
   public function removeCasUsernameForAccount(UserInterface $account) {
     $this->authmap->delete($account->id());
+  }
+
+  /**
+   * Generate a random password for new user registrations.
+   *
+   * @return string
+   *   A random password.
+   */
+  protected function randomPassword() {
+    // Default length is 10, use a higher number that's harder to brute force.
+    return user_password(30);
   }
 
 }
