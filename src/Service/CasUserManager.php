@@ -269,7 +269,7 @@ class CasUserManager {
    */
   protected function randomPassword() {
     // Default length is 10, use a higher number that's harder to brute force.
-    return user_password(30);
+    return \user_password(30);
   }
 
   /**
