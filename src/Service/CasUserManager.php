@@ -23,6 +23,20 @@ use Drupal\Component\Utility\Crypt;
 class CasUserManager {
 
   /**
+   * Email address for new users is combo of username + custom hostname.
+   *
+   * @var int
+   */
+  const EMAIL_ASSIGNMENT_STANDARD = 0;
+
+  /**
+   * Email address for new users is derived from a CAS attirbute.
+   *
+   * @var int
+   */
+  const EMAIL_ASSIGNMENT_ATTRIBUTE = 1;
+
+  /**
    * Used to include the externalauth service from the external_auth module.
    *
    * @var \Drupal\externalauth\ExternalAuthInterface
@@ -150,6 +164,7 @@ class CasUserManager {
         // for this user account or to set properties for the user that will
         // be created.
         $cas_pre_register_event = new CasPreRegisterEvent($property_bag);
+        $cas_pre_register_event->setPropertyValue('mail', $this->getEmailForNewAccount($property_bag));
         $this->eventDispatcher->dispatch(CasHelper::EVENT_PRE_REGISTER, $cas_pre_register_event);
         if (!$cas_pre_register_event->denyAutomaticRegistration) {
           $account = $this->register($property_bag->getUsername(), $cas_pre_register_event->getPropertyValues());
@@ -255,6 +270,51 @@ class CasUserManager {
   protected function randomPassword() {
     // Default length is 10, use a higher number that's harder to brute force.
     return user_password(30);
+  }
+
+  /**
+   * Return the email address that should be assigned to an auto-register user.
+   *
+   * @param \Drupal\cas\CasPropertyBag $cas_property_bag
+   *   The CasPropertyBag associated with the user's login attempt.
+   *
+   * @return string
+   *   The email address.
+   *
+   * @throws \Drupal\cas\Exception\CasLoginException
+   *   Thrown when the email address cannot be derived properly.
+   */
+  public function getEmailForNewAccount(CasPropertyBag $cas_property_bag) {
+    $email_assignment_strategy = $this->settings->get('cas.settings')->get('user_accounts.email_assignment_strategy');
+    if ($email_assignment_strategy === self::EMAIL_ASSIGNMENT_STANDARD) {
+      return $cas_property_bag->getUsername() . '@' . $this->settings->get('cas.settings')->get('user_accounts.email_hostname');
+    }
+    elseif ($email_assignment_strategy === self::EMAIL_ASSIGNMENT_ATTRIBUTE) {
+      $email_attribute = $this->settings->get('cas.settings')->get('user_accounts.email_attribute');
+      if (empty($email_attribute) || !array_key_exists($email_attribute, $cas_property_bag->getAttributes())) {
+        throw new CasLoginException('Specified CAS email attribute does not exist.');
+      }
+
+      $val = $cas_property_bag->getAttributes()[$email_attribute];
+      if (empty($val)) {
+        throw new CasLoginException('Empty data found for CAS email attribute.');
+      }
+
+      // The attribute value may actually be an array of values, but we need it
+      // to only contain 1 value.
+      if (is_array($val) && count($val) !== 1) {
+        throw new CasLoginException('Specified CAS email attribute was formatted in an unexpected way.');
+      }
+
+      if (is_array($val)) {
+        $val = $val[0];
+      }
+
+      return trim($val);
+    }
+    else {
+      throw new CasLoginException('Invalid email address assignment type for auto user registration specified in settings.');
+    }
   }
 
 }

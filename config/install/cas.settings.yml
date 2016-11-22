@@ -27,6 +27,9 @@ proxy:
   proxy_chains: ''
 user_accounts:
   auto_register: false
+  email_assignment_strategy: 0
+  email_hostname: ''
+  email_attribute: ''
   auto_assigned_roles: {}
 debugging:
   log: false

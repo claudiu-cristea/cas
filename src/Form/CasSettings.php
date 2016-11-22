@@ -2,6 +2,7 @@
 
 namespace Drupal\cas\Form;
 
+use Drupal\cas\Service\CasUserManager;
 use Drupal\Component\Plugin\Factory\FactoryInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Form\ConfigFormBase;
@@ -218,6 +219,47 @@ class CasSettings extends ConfigFormBase {
       '#default_value' => $config->get('user_accounts.auto_register'),
     );
 
+    $form['user_accounts']['email_assignment_strategy'] = array(
+      '#type' => 'radios',
+      '#title' => t('Email address assignment'),
+      '#description' => t("Drupal requires every user have an email address. Select how you'd like to assign an email to automatically registered users."),
+      '#default_value' => $config->get('user_accounts.email_assignment_strategy'),
+      '#options' => array(
+        CasUserManager::EMAIL_ASSIGNMENT_STANDARD => $this->t('Use the CAS username combined with a custom domain name you specify.'),
+        CasUserManager::EMAIL_ASSIGNMENT_ATTRIBUTE => $this->t("Use a CAS attribute that contains the user's complete email address."),
+      ),
+      '#states' => array(
+        'visible' => array(
+          'input[name="user_accounts[auto_register]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+    $form['user_accounts']['email_hostname'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Email Hostname'),
+      '#description' => $this->t("The email domain name used to combine with the username to form the user's email address."),
+      '#field_prefix' => $this->t('username') . '@',
+      '#default_value' => $config->get('user_accounts.email_hostname'),
+      '#states' => array(
+        'visible' => array(
+          'input[name="user_accounts[auto_register]"]' => array('checked' => TRUE),
+          'input[name="user_accounts[email_assignment_strategy]"]' => array('value' => CasUserManager::EMAIL_ASSIGNMENT_STANDARD),
+        ),
+      ),
+    );
+    $form['user_accounts']['email_attribute'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Email Attribute'),
+      '#description' => $this->t("The CAS attribute that contains the user's email address."),
+      '#default_value' => $config->get('user_accounts.email_attribute'),
+      '#states' => array(
+        'visible' => array(
+          'input[name="user_accounts[auto_register]"]' => array('checked' => TRUE),
+          'input[name="user_accounts[email_assignment_strategy]"]' => array('value' => CasUserManager::EMAIL_ASSIGNMENT_ATTRIBUTE),
+        ),
+      ),
+    );
+
     $auto_assigned_roles = $config->get('user_accounts.auto_assigned_roles');
     $form['user_accounts']['auto_assigned_roles_enable'] = array(
       '#type' => 'checkbox',
@@ -358,6 +400,16 @@ class CasSettings extends ConfigFormBase {
       $form_state->setErrorByName('server][cert', $this->t('The path you provided to the custom PEM certificate for your CAS server does not exist or is not readable. Verify this path and try again.'));
     }
 
+    if ($form_state->getValue(['user_accounts', 'auto_register'])) {
+      $email_assignment_strategy = $form_state->getValue(['user_accounts', 'email_assignment_strategy']);
+      if ($email_assignment_strategy == CasUserManager::EMAIL_ASSIGNMENT_STANDARD && empty($form_state->getValue(['user_accounts', 'email_hostname']))) {
+        $form_state->setErrorByName('user_accounts][email_hostname', $this->t('You must provide a hostname for the auto assigned email address.'));
+      }
+      elseif ($email_assignment_strategy == CasUserManager::EMAIL_ASSIGNMENT_ATTRIBUTE && empty($form_state->getValue(['user_accounts', 'email_attribute']))) {
+        $form_state->setErrorByName('user_accounts][email_attribute', $this->t('You must provide an attribute name for the auto assigned email address.'));
+      }
+    }
+
     return parent::validateForm($form, $form_state);
   }
 
@@ -404,7 +456,10 @@ class CasSettings extends ConfigFormBase {
       ->set('proxy.can_be_proxied', $form_state->getValue(['proxy', 'can_be_proxied']))
       ->set('proxy.proxy_chains', $form_state->getValue(['proxy', 'proxy_chains']));
     $config
-      ->set('user_accounts.auto_register', $form_state->getValue(['user_accounts', 'auto_register']));
+      ->set('user_accounts.auto_register', $form_state->getValue(['user_accounts', 'auto_register']))
+      ->set('user_accounts.email_assignment_strategy', $form_state->getValue(['user_accounts', 'email_assignment_strategy']))
+      ->set('user_accounts.email_hostname', $form_state->getValue(['user_accounts', 'email_hostname']))
+      ->set('user_accounts.email_attribute', $form_state->getValue(['user_accounts', 'email_attribute']));
 
     $auto_assigned_roles = [];
     if ($form_state->getValue(['user_accounts', 'auto_assigned_roles_enable'])) {

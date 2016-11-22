@@ -50,6 +50,7 @@ class CasAdminSettingsTest extends BrowserTestBase {
       'user_accounts[auto_register]' => TRUE,
       'user_accounts[auto_assigned_roles_enable]' => TRUE,
       'user_accounts[auto_assigned_roles][]' => [$role_id, $role_id_2],
+      'user_accounts[email_hostname]' => 'sample.com',
     ];
     $this->drupalPostForm('/admin/config/people/cas', $edit, 'Save configuration');
 

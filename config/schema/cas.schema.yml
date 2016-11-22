@@ -59,6 +59,15 @@ cas.settings:
         auto_register:
           type: boolean
           label: 'Auto Register Users'
+        email_assignment_strategy:
+          type: integer
+          label: 'Email Assignment Strategy'
+        email_hostname:
+          type: string
+          label: 'Email Hostname'
+        email_attribute:
+          type: string
+          label: 'Email Attribute'
         auto_assigned_roles:
           type: sequence
           label: 'Auto assigned roles'

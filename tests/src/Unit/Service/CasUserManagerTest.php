@@ -5,6 +5,7 @@ namespace Drupal\Tests\cas\Unit\Service;
 use Drupal\cas\Event\CasPreLoginEvent;
 use Drupal\cas\Event\CasPreRegisterEvent;
 use Drupal\cas\Event\CasPreUserLoadEvent;
+use Drupal\cas\Service\CasUserManager;
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\CasPropertyBag;
 
@@ -184,6 +185,8 @@ class CasUserManagerTest extends UnitTestCase {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'user_accounts.auto_register' => TRUE,
+        'user_accounts.email_assignment_strategy' => CasUserManager::EMAIL_ASSIGNMENT_STANDARD,
+        'user_accounts.email_hostname' => 'sample.com',
       ),
     ));
 
@@ -227,17 +230,22 @@ class CasUserManagerTest extends UnitTestCase {
   /**
    * User account doesn't exist but is auto-registered and logged in.
    *
+   * @dataProvider automaticRegistrationDataProvider
+   *
    * @covers ::login
    */
-  public function testUserNotFoundAndIsRegisteredBeforeLogin() {
+  public function testAutomaticRegistration($email_assignment_strategy) {
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
         'user_accounts.auto_register' => TRUE,
+        'user_accounts.email_assignment_strategy' => $email_assignment_strategy,
+        'user_accounts.email_hostname' => 'sample.com',
+        'user_accounts.email_attribute' => 'email',
       ),
     ));
 
     $cas_user_manager = $this->getMockBuilder('Drupal\cas\Service\CasUserManager')
-      ->setMethods(array('register', 'storeLoginSessionData'))
+      ->setMethods(array('storeLoginSessionData'))
       ->setConstructorArgs(array(
         $this->externalAuth,
         $this->authmap,
@@ -256,15 +264,45 @@ class CasUserManagerTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
 
-    $cas_user_manager
+    // The email address assigned to the user differs depending on the settings.
+    // If CAS is configured to use "standard" assignment, it should combine the
+    // username with the specifed email hostname. If it's configured to use
+    // "attribute" assignment, it should use the value of the specified CAS
+    // attribute.
+    if ($email_assignment_strategy === CasUserManager::EMAIL_ASSIGNMENT_STANDARD) {
+      $expected_assigned_email = 'test@sample.com';
+    }
+    else {
+      $expected_assigned_email = 'test_email@foo.com';
+    }
+
+    $this->externalAuth
+      ->expects($this->once())
       ->method('register')
+      ->with('test', 'cas', ['mail' => $expected_assigned_email])
       ->willReturn($account);
 
     $this->externalAuth
       ->expects($this->once())
       ->method('userLoginFinalize');
 
-    $cas_user_manager->login(new CasPropertyBag('test'), 'ticket');
+    $cas_property_bag = new CasPropertyBag('test');
+    $cas_property_bag->setAttributes(['email' => 'test_email@foo.com']);
+
+    $cas_user_manager->login($cas_property_bag, 'ticket');
+  }
+
+  /**
+   * A data provider for testing automatic user registration.
+   *
+   * @return array
+   *   The two different email assignment strategies.
+   */
+  public function automaticRegistrationDataProvider() {
+    return [
+      [CasUserManager::EMAIL_ASSIGNMENT_STANDARD],
+      [CasUserManager::EMAIL_ASSIGNMENT_ATTRIBUTE],
+    ];
   }
 
   /**

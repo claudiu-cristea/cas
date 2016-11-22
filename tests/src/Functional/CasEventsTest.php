@@ -23,6 +23,7 @@ class CasEventsTest extends CasBrowserTestBase {
     $this->drupalLogin($this->drupalCreateUser(['administer account settings']));
     $edit = [
       'user_accounts[auto_register]' => TRUE,
+      'user_accounts[email_hostname]' => 'sample.com',
     ];
     $this->drupalPostForm('/admin/config/people/cas', $edit, 'Save configuration');
 
