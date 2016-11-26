@@ -3,15 +3,15 @@
 As described in the official CAS protocol documentation:
 
 "The Central Authentication Service (CAS) is a single-sign-on / 
-single-sign-off protocol for the web. It permits a user to access 
+single-sign-on protocol for the web. It permits a user to access 
 multiple applications while providing their credentials (such as userid 
 and password) only once to a central CAS Server application."
  
 Using a single-sign on service like CAS is a benefitial because it provides:
 
-*  Convenience. Your users don't need to remember credentials for multiple
-   different web services.
-*  Security. Your Drupal website never sees a user's password.
+* Convenience. Your users don't need to remember credentials for multiple
+  different web services.
+* Security. Your Drupal website never sees a user's password.
 
 This module implements version 1 and version 2 of the CAS protocol:
 http://jasig.github.io/cas/4.1.x/protocol/CAS-Protocol-Specification.html
@@ -38,11 +38,11 @@ This module requires the following modules:
 
 Download and install the module as you would with any other Drupal module:
 
-  * Download this module and move the folder it the DRUPAL_ROOT/modules 
-    directory.
-  * Enable the module in your Drupal admin interface.
-  * The configuration page for this module is in /admin/config/people/cas,
-    and can be accessed in the admin menu under Configuration -> People -> CAS
+* Download this module and move the folder it the DRUPAL_ROOT/modules 
+  directory.
+* Enable the module in your Drupal admin interface.
+* The configuration page for this module is in /admin/config/people/cas,
+  and can be accessed in the admin menu under Configuration -> People -> CAS
 
 # Configuration
 
@@ -60,7 +60,7 @@ section below to learn more.
 This module exposes a specific URL path on your website that will trigger
 the CAS authentication process for your users:
 
-http://yoursite.com/caslogin
+http://yoursite.com/caslogin (/cas will also work)
 
 Users will be redirected to your CAS server to authenticate. If they already
 have an active session with the CAS server, they will immediately be redirected
@@ -69,15 +69,15 @@ to enter their credentials and then redirected back to your Drupal site and
 authenticated.
 
 You can create a login button on your website that links directly to this
-path.
+path to provide a way for your users to easily login.
 
 ## Account Handling & Auto Registration
 
 Local Drupal accounts must exist for users that authenticate with CAS.
 This module simply provides a way to authenticate these users.
 
-If a user attempts to login with an account that does not already exist,
-they will receive an error message when trying to log in.
+If a user attempts to login with an account that is not already registered on
+your Drupal site, they will see an error message.
 
 However, you can configure the module to automatically register users.
 This way, when a user authenticates with CAS, a local Drupal account will
@@ -106,9 +106,7 @@ your site will automatically be logged in IF they already have an active
 CAS session with the CAS server.
 
 If the user does not have an active session with the CAS server, they will
-see the Drupal page requested as normal. If the user does have an active
-session with the CAS server, they will be seemlessly authenticated locally
-on your Drupal site and shown the page they requested.
+see the Drupal page requested as normal.
 
 This feature works by quickly redirecting the user to the CAS server to
 check for an active session, and then redirecting back to the page they
@@ -117,9 +115,7 @@ originally requested on your website.
 This feature differs from Forced Login in that it will not force the user
 to login if they do not already have an active CAS server session.
 
-This feature is not currently compatible with Drupal's Internal Page Cache
-module or external page caching software like Varnish.
-
+*This feature is not currently compatible with any form of page caching.*
 
 ## SSL Verification Setting
 This module makes an HTTP request to your CAS server during the authentication
@@ -139,7 +135,7 @@ but web hosts and system administrators should have a deep understanding
 of this topic to help further.
 
 ## Proxy
-Initializing a cas client as a proxy allows the client to make web service calls 
+Initializing a CAS client as a proxy allows the client to make web service calls 
 to other sites or web pages that are protected by cas authentication.  It 
 is often used in portal applications allowing the portal product to get 
 personalized or secure content from other products participating in single 
@@ -158,4 +154,3 @@ The fastest way to determine why the module is not behaving as expected it to
 enable the debug logging in this module's settings page. Messages related to
 the authentication process, including errors, will be logged. To view these
 logs, enable the Database Logging module or the Syslog module.
-
