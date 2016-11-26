@@ -7,6 +7,23 @@ use Drupal\cas\CasPropertyBag;
 
 /**
  * Class CasPreRegisterEvent.
+ *
+ * The CAS module dispatches this event during the authentication process just
+ * before a user is automatically registered to Drupal if:
+ *  - Automatic user registration is enabled in the CAS module settings.
+ *  - No existing Drupal account can be found that's associated with the
+ *    CAS username of the user attempting authentication.
+ *
+ * Subscribers to this event can:
+ *  - Prevent a Drupal account from being created for this user (thereby also
+ *    preventing the user from logging in).
+ *  - Change the username that will be assigned to the Drupal account. By
+ *    default it is the same as the CAS username.
+ *  - Set properties on the user account that will be created, like user roles
+ *    or a custom first name field (for example by populating it with data from
+ *    the CAS attributes available in $casPropertyBag).
+ *
+ * Any CAS attributes will be available via the $casPropertyBag data object.
  */
 class CasPreRegisterEvent extends Event {
 

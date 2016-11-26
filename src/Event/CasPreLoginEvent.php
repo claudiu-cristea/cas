@@ -8,6 +8,18 @@ use Drupal\cas\CasPropertyBag;
 
 /**
  * Class CasPreLoginEvent.
+ *
+ * CAS dispatches this event during the authentication process after a local
+ * Drupal user account has been loaded for the user attempting login, but
+ * before the user is actually authenticated to Drupal.
+ *
+ * Subscribe to this event to:
+ *  - Prevent the user from logging in by setting $allowLogin to FALSE.
+ *  - Change properties on the Drupal user account (like adding or removing
+ *    roles). The CAS module saves the user entity after dispatching the
+ *    event, so subscribers do not need to save it themselves.
+ *
+ * Any CAS attributes will be available via the $casPropertyBag data object.
  */
 class CasPreLoginEvent extends Event {
 

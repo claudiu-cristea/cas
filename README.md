@@ -154,3 +154,26 @@ The fastest way to determine why the module is not behaving as expected it to
 enable the debug logging in this module's settings page. Messages related to
 the authentication process, including errors, will be logged. To view these
 logs, enable the Database Logging module or the Syslog module.
+
+# API
+
+## Events
+Modules may subscribe to events to alter the behavior of the CAS module or
+act on the data it provides.
+
+All of the events that this module dispatches are located in the `src/Event`
+folder. Please see the comments in each of those event classes for details about
+what each event does and the common use cases for subscribing to them.
+
+## Forcing authentication yourself
+The CAS module will always attempt to authenticate a user when they visit the
+/caslogin (or /cas) path, or if they visit a Forced Login or Gateway path that's
+configured in the module's settings.
+
+If there are other times you'd like to force a user to authenticate, use the
+`CasRedirector` service. This service allows you to build a redirect response
+object that will redirect users to the CAS server for authentication.
+
+Inject this service class into one of your own services (like a kernel event
+subscriber) and call the `buildRedirectResponse` method to create the response
+object.
