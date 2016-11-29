@@ -25,6 +25,15 @@ class CasPreRegisterEvent extends Event {
   public $denyAutomaticRegistration = FALSE;
 
   /**
+   * The username that will be assigned to the Drupal user account.
+   *
+   * By default this will be populated with the CAS username.
+   *
+   * @var string
+   */
+  protected $drupalUsername;
+
+  /**
    * An array of property values to assign to the user account on registration.
    *
    * @var array
@@ -39,6 +48,7 @@ class CasPreRegisterEvent extends Event {
    */
   public function __construct(CasPropertyBag $cas_property_bag) {
     $this->casPropertyBag = $cas_property_bag;
+    $this->drupalUsername = $cas_property_bag->getUsername();
   }
 
   /**
@@ -49,6 +59,26 @@ class CasPreRegisterEvent extends Event {
    */
   public function getCasPropertyBag() {
     return $this->casPropertyBag;
+  }
+
+  /**
+   * Retrieve the username that will be assigned to the Drupal account.
+   *
+   * @return string
+   *   The username.
+   */
+  public function getDrupalUsername() {
+    return $this->drupalUsername;
+  }
+
+  /**
+   * Assign a different username to the Drupal account that is to be registered.
+   *
+   * @param string $username
+   *   The username.
+   */
+  public function setDrupalUsername($username) {
+    $this->drupalUsername = $username;
   }
 
   /**

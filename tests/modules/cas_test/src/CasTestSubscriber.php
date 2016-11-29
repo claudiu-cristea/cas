@@ -27,8 +27,8 @@ class CasTestSubscriber implements EventSubscriberInterface {
    */
   public function onPreRegister(CasPreRegisterEvent $event) {
     // Add a prefix of "testing_" to the CAS username.
-    $username = $event->getCasPropertyBag()->getUsername();
+    $username = $event->getDrupalUsername();
     $new_username = 'testing_' . $username;
-    $event->setPropertyValue('name', $new_username);
+    $event->setDrupalUsername($new_username);
   }
 }
