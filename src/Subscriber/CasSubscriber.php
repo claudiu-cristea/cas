@@ -360,14 +360,17 @@ class CasSubscriber extends HttpExceptionSubscriberBase {
   public function on403(GetResponseForExceptionEvent $event) {
     if ($this->currentUser->isAnonymous()) {
       $return_to = $this->requestStack->getCurrentRequest()->getUri();
-      $redirector = new CasRedirectData(['returnto' => $return_to]);
+      $redirect_data = new CasRedirectData(['returnto' => $return_to]);
       if ($this->handleForcedPath()) {
         $this->casHelper->log('Force Login Requested');
-        $redirector->forceRedirection();
-      };
+        $redirect_data->forceRedirection();
+      }
+      else {
+        $redirect_data->preventRedirection();
+      }
 
       // If we're still going to redirect, lets do it.
-      $response = $this->casRedirector->buildRedirectResponse($redirector, TRUE);
+      $response = $this->casRedirector->buildRedirectResponse($redirect_data, TRUE);
       if ($response) {
         $event->setResponse($response);
       }
