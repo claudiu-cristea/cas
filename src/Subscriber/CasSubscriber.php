@@ -364,13 +364,14 @@ class CasSubscriber extends HttpExceptionSubscriberBase {
       if ($this->handleForcedPath()) {
         $this->casHelper->log('Force Login Requested');
         $redirect_data->forceRedirection();
+        $redirect_data->isCacheable = TRUE;
       }
       else {
         $redirect_data->preventRedirection();
       }
 
       // If we're still going to redirect, lets do it.
-      $response = $this->casRedirector->buildRedirectResponse($redirect_data, TRUE);
+      $response = $this->casRedirector->buildRedirectResponse($redirect_data);
       if ($response) {
         $event->setResponse($response);
       }
