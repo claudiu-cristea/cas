@@ -37,7 +37,8 @@ class CasAdminSettingsTest extends BrowserTestBase {
    */
   protected function setUp() {
     parent::setUp();
-    $this->drupalLogin($this->drupalCreateUser(['administer account settings']));
+    $this->adminUser = $this->drupalCreateUser(['administer account settings']);
+    $this->drupalLogin($this->adminUser);
   }
 
   /**
@@ -65,6 +66,41 @@ class CasAdminSettingsTest extends BrowserTestBase {
     Role::load($role_id_2)->delete();
 
     $this->assertEquals([$role_id], $this->config('cas.settings')->get('user_accounts.auto_assigned_roles'));
+  }
+
+  /**
+   * Tests that access to the password reset form is disabled.
+   *
+   * @dataProvider restrictedPasswordEnabledProvider
+   */
+  public function testPasswordResetBehavior($restricted_password_enabled) {
+    $edit = [
+      'user_accounts[restrict_password_management]' => $restricted_password_enabled,
+      'user_accounts[email_hostname]' => 'sample.com',
+    ];
+    $this->drupalPostForm('/admin/config/people/cas', $edit, 'Save configuration');
+
+    // The menu router info needs to be rebuilt after saving this form so the
+    // CAS menu alter runs again.
+    $this->container->get('router.builder')->rebuild();
+
+    $this->drupalLogout();
+    $this->drupalGet('user/password');
+    if ($restricted_password_enabled) {
+      $this->assertSession()->pageTextContains(t('Access denied'));
+      $this->assertSession()->pageTextNotContains(t('Reset your password'));
+    }
+    else {
+      $this->assertSession()->pageTextNotContains(t('Access denied'));
+      $this->assertSession()->pageTextContains(t('Reset your password'));
+    }
+  }
+
+  /**
+   * Data provider for testPasswordResetBehavior.
+   */
+  public function restrictedPasswordEnabledProvider() {
+    return [[FALSE], [TRUE]];
   }
 
 }

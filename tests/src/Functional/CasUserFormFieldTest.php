@@ -3,11 +3,11 @@
 namespace Drupal\Tests\cas\Functional;
 
 /**
- * Tests the behavior of the CAS username form field on the user form.
+ * Tests modifications to the account and registration forms.
  *
  * @group cas
  */
-class CasUserFormFieldTest extends CasBrowserTestBase {
+class CasAccountAndRegistrationFormTest extends CasBrowserTestBase {
 
   /**
    * {@inheritdoc}
@@ -15,9 +15,9 @@ class CasUserFormFieldTest extends CasBrowserTestBase {
   public static $modules = ['cas'];
 
   /**
-   * Tests the the forced login route that redirects users authenticate.
+   * Tests that the CAS username field works as expected.
    */
-  public function testUserForm() {
+  public function testCasUsernameField() {
     // First test that a normal user has no access to edit their CAS username.
     $test_user_1 = $this->drupalCreateUser([], 'test_user_1');
     $this->drupalLogin($test_user_1);
@@ -86,6 +86,106 @@ class CasUserFormFieldTest extends CasBrowserTestBase {
     // Visit the edit page for this user to ensure CAS username field empty.
     $this->drupalGet('/user/' . $test_user_2->id() . '/edit');
     $this->assertEmpty($this->getSession()->getPage()->findField('cas_username')->getValue());
+  }
+
+  /**
+   * Tests the "restrict password management" feature.
+   */
+  public function testRestrictedPasswordManagementWorks() {
+    $admin = $this->drupalCreateUser(['administer account settings', 'administer users']);
+    $non_cas_user = $this->drupalCreateUser();
+    $cas_user = $this->drupalCreateUser();
+
+    // Give the second user a CAS username association.
+    $this->container->get('cas.user_manager')->setCasUsernameForAccount($cas_user, 'cas_user');
+
+    // Enable the "restrict password management" feature.
+    $this->drupalLogin($admin);
+    $edit = [
+      'user_accounts[restrict_password_management]' => TRUE,
+    ];
+    $this->drupalPostForm('/admin/config/people/cas', $edit, 'Save configuration');
+    $this->assertEquals(TRUE, $this->config('cas.settings')->get('user_accounts.restrict_password_management'));
+    $this->drupalLogout();
+
+    // The CAS module's modifications to the user account form and validation
+    // should NOT take effect for non-CAS users, so test that such a user is
+    // still able to manage their password and email as usual.
+    $this->drupalLogin($non_cas_user);
+    $this->drupalGet('/user/' . $non_cas_user->id() . '/edit');
+    $page = $this->getSession()->getPage();
+    $this->assertNotNull($page->findField('pass[pass1]'));
+    $this->assertNotNull($page->findField('pass[pass2]'));
+    $this->assertNotNull($page->findField('current_pass'));
+    $form_data = [
+      'pass[pass1]' => 'newpass',
+      'pass[pass2]' => 'newpass',
+      'current_pass' => 'incorrectpassword',
+      'mail' => 'new-noncasuser-email@sample.com',
+    ];
+    // First try changing data with wrong password.
+    $this->drupalPostForm('/user/' . $non_cas_user->id() . '/edit', $form_data, 'Save');
+    $this->assertSession()->responseContains(t('Your current password is missing or incorrect'));
+    // Now again with the correct current password.
+    $form_data['current_pass'] = $non_cas_user->pass_raw;
+    $this->drupalPostForm('/user/' . $non_cas_user->id() . '/edit', $form_data, 'Save');
+    $this->assertSession()->responseContains(t('The changes have been saved.'));
+
+    // For CAS users, we modify the user form to remove the password management
+    // fields and remove the protected password constraint that normally
+    // prevents changes to an email unless the current password is entered.
+    // So here we test that for such a user, the password fields are gone
+    // and the user can still update their email address.
+    $this->drupalLogout();
+    $this->drupalLogin($cas_user);
+    $this->drupalGet('/user/' . $cas_user->id() . '/edit');
+    $page = $this->getSession()->getPage();
+    $this->assertNull($page->findField('pass[pass1]'));
+    $this->assertNull($page->findField('pass[pass2]'));
+    $this->assertNull($page->findField('current_pass'));
+    $form_data = [
+      'mail' => 'new-casuser-email@sample.com',
+    ];
+    $this->drupalPostForm('/user/' . $cas_user->id() . '/edit', $form_data, 'Save');
+    $this->assertSession()->responseContains(t('The changes have been saved.'));
+
+    // An admin should still be able to see the password fields the CAS user.
+    $this->drupalLogout();
+    $this->drupalLogin($admin);
+    $this->drupalGet('/user/' . $cas_user->id() . '/edit');
+    $page = $this->getSession()->getPage();
+    $this->assertNotNull($page->findField('pass[pass1]'));
+    $this->assertNotNull($page->findField('pass[pass2]'));
+
+    // Now disable the "restrict password management" feature.
+    $edit = [
+      'user_accounts[restrict_password_management]' => FALSE,
+    ];
+    $this->drupalPostForm('/admin/config/people/cas', $edit, 'Save configuration');
+    $this->assertEquals(FALSE, $this->config('cas.settings')->get('user_accounts.restrict_password_management'));
+    $this->drupalLogout();
+
+    // And ensure that the CAS user can now see the password management fields
+    // and modify their password and email successfully.
+    $this->drupalLogin($cas_user);
+    $this->drupalGet('/user/' . $cas_user->id() . '/edit');
+    $page = $this->getSession()->getPage();
+    $this->assertNotNull($page->findField('pass[pass1]'));
+    $this->assertNotNull($page->findField('pass[pass2]'));
+    $this->assertNotNull($page->findField('current_pass'));
+    $form_data = [
+      'pass[pass1]' => 'newpass',
+      'pass[pass2]' => 'newpass',
+      'current_pass' => 'incorrectpassword',
+      'mail' => 'another-new-casuser-email@sample.com',
+    ];
+    // First try changing data with wrong password.
+    $this->drupalPostForm('/user/' . $cas_user->id() . '/edit', $form_data, 'Save');
+    $this->assertSession()->responseContains(t('Your current password is missing or incorrect'));
+    // Now again with the correct current password.
+    $form_data['current_pass'] = $cas_user->pass_raw;
+    $this->drupalPostForm('/user/' . $cas_user->id() . '/edit', $form_data, 'Save');
+    $this->assertSession()->responseContains(t('The changes have been saved.'));
   }
 
 }

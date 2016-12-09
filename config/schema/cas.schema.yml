@@ -73,6 +73,9 @@ cas.settings:
           label: 'Auto assigned roles'
           sequence:
             type: string
+        restrict_password_management:
+          type: boolean
+          label: 'Restrict password management'
     logout:
       type: mapping
       label: 'Logout'

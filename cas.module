@@ -38,16 +38,33 @@ function cas_user_role_delete(RoleInterface $role) {
 
 /**
  * Implements hook_form_FORM_ID_alter().
+ *
+ * Alters the user entity form.
  */
 function cas_form_user_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-  _cas_alter_user_form($form);
+  _cas_add_cas_username_to_user_form($form);
 
-  // Set default value of the CAS username if this user already has one set.
   $cas_user_manager = \Drupal::service('cas.user_manager');
   $account = $form_state->getFormObject()->getEntity();
-  $cas_username = $cas_user_manager->getCasUsernameForAccount($account);
+  $cas_username = $cas_user_manager->getCasUsernameForAccount($account->id());
+
+  // If a CAS username was found for this user, then populate the CAS username
+  // form field with its current value. Also remove the password management
+  // fields if configured to do so.
   if ($cas_username) {
     $form['cas_username']['#default_value'] = $cas_username;
+
+    if (\Drupal::config('cas.settings')->get('user_accounts.restrict_password_management') && !\Drupal::currentUser()->hasPermission('administer users')) {
+      $form['account']['pass']['#access'] = FALSE;
+
+      // Users are normally required to entier their current password when
+      // changing their password or email address. Since we are disabling access
+      // to change their password, and since a CAS user would not know their
+      // local Drupal password anyway, we remove this field as well.
+      if (isset($form['account']['current_pass'])) {
+        $form['account']['current_pass']['#access'] = FALSE;
+      }
+    }
   }
 }
 
@@ -55,7 +72,7 @@ function cas_form_user_form_alter(&$form, FormStateInterface $form_state, $form_
  * Implements hook_form_FORM_ID_alter().
  */
 function cas_form_user_register_form_alter(&$form, FormStateInterface $form_state, $form_id) {
-  _cas_alter_user_form($form);
+  _cas_add_cas_username_to_user_form($form);
 }
 
 /**
@@ -64,7 +81,7 @@ function cas_form_user_register_form_alter(&$form, FormStateInterface $form_stat
  * @param array $form
  *   The user entity form.
  */
-function _cas_alter_user_form(&$form) {
+function _cas_add_cas_username_to_user_form(&$form) {
   $form['cas_username'] = [
     '#type' => 'textfield',
     '#title' => t('CAS Username'),
@@ -155,6 +172,16 @@ function cas_form_user_login_form_alter(&$form, FormStateInterface $form_state) 
       '#weight' => -1,
     ];
   }
+}
+
+/**
+ * Implements hook_validation_constraint_alter().
+ *
+ * Replace core's ProtectedUserFieldConstraint with a decorated version that
+ * skips over the validation if restricted password mangement is enabled.
+ */
+function cas_validation_constraint_alter(array &$definitions) {
+  $definitions['ProtectedUserField']['class'] = 'Drupal\cas\Plugin\Validation\Constraint\CasProtectedUserFieldConstraint';
 }
 
 /**

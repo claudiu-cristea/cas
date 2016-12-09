@@ -216,14 +216,14 @@ class CasUserManager {
   /**
    * Return CAS username for account, or FALSE if it doesn't have one.
    *
-   * @param \Drupal\user\UserInterface $account
-   *   The user account object.
+   * @param int $uid
+   *   The user ID.
    *
    * @return bool|string
    *   The CAS username if it exists, or FALSE otherwise.
    */
-  public function getCasUsernameForAccount(UserInterface $account) {
-    return $this->authmap->get($account->id(), 'cas');
+  public function getCasUsernameForAccount($uid) {
+    return $this->authmap->get($uid, 'cas');
   }
 
   /**

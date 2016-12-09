@@ -31,6 +31,7 @@ user_accounts:
   email_hostname: ''
   email_attribute: ''
   auto_assigned_roles: {}
+  restrict_password_management: false
 debugging:
   log: false
 login_link_enabled: false

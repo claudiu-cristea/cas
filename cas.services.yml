@@ -31,6 +31,11 @@ services:
     class: Drupal\cas\Subscriber\ExternalAuthSubscriber
     tags:
       - { name: 'event_subscriber' }
+  cas.prevent_password_reset_subscriber:
+    class: Drupal\cas\Subscriber\PreventPasswordResetSubscriber
+    arguments: ['@config.factory']
+    tags:
+      - { name: 'event_subscriber' }
   cas.page_cache_response_policy.deny_cas:
     class: Drupal\cas\PageCache\DenyCas
     arguments: ['@config.factory', '@plugin.manager.condition']
