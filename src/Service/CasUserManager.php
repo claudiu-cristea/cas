@@ -197,8 +197,8 @@ class CasUserManager {
     if ($this->settings->get('cas.settings')->get('logout.enable_single_logout') === TRUE) {
       $this->connection->insert('cas_login_data')
         ->fields(
-          array('sid', 'plainsid', 'ticket'),
-          array(Crypt::hashBase64($session_id), $session_id, $ticket)
+          array('sid', 'plainsid', 'ticket', 'created'),
+          array(Crypt::hashBase64($session_id), $session_id, $ticket, time())
         )
         ->execute();
     }

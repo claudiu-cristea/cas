@@ -21,6 +21,7 @@ logout:
   logout_destination: ''
   enable_single_logout: false
   cas_logout: false
+  single_logout_session_lifetime: 25
 proxy:
   initialize: false
   can_be_proxied: false

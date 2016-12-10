@@ -323,6 +323,25 @@ class CasSettings extends ConfigFormBase {
         'CAS server. NOTE: THIS WILL REMOVE A SECURITY HARDENING FEATURE ADDED ' .
         'IN DRUPAL 8! Session IDs to be stored unhashed in the database.'),
     );
+    $form['logout']['single_logout_session_lifetime'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Max lifetime of session mapping data'),
+      '#description' => $this->t('This module stores a mapping of Drupal session IDs ' .
+        'to CAS server session IDs to support single logout. Normally this data is ' .
+        'cleared automatically when a user is logged out, but not always. ' .
+        "To make sure this storage doesn't grow out of control, session mapping " .
+        'data older than the specified amout of days is cleared during cron. ' .
+        'This should be a length of time slightly longer than the session ' .
+        'lifetime of your Drupal site or CAS server.'),
+      '#default_value' => $config->get('logout.single_logout_session_lifetime'),
+      '#field_suffix' => $this->t('days'),
+      '#size' => 4,
+      '#states' => array(
+        'visible' => array(
+          'input[name="logout[enable_single_logout]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
 
     $form['proxy'] = array(
       '#type' => 'details',
@@ -456,7 +475,8 @@ class CasSettings extends ConfigFormBase {
     $config
       ->set('logout.logout_destination', $form_state->getValue(['logout', 'logout_destination']))
       ->set('logout.enable_single_logout', $form_state->getValue(['logout', 'enable_single_logout']))
-      ->set('logout.cas_logout', $form_state->getValue(['logout', 'cas_logout']));
+      ->set('logout.cas_logout', $form_state->getValue(['logout', 'cas_logout']))
+      ->set('logout.single_logout_session_lifetime', $form_state->getValue(['logout', 'single_logout_session_lifetime']));
     $config
       ->set('proxy.initialize', $form_state->getValue(['proxy', 'initialize']))
       ->set('proxy.can_be_proxied', $form_state->getValue(['proxy', 'can_be_proxied']))

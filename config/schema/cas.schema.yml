@@ -89,6 +89,9 @@ cas.settings:
         enable_single_logout:
           type: boolean
           label: 'Enable'
+        single_logout_session_lifetime:
+          type: integer
+          label: 'Single Logout Session Lifetime'
     proxy:
       type: mapping
       label: 'Proxy'
