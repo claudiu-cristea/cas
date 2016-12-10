@@ -42,3 +42,8 @@ services:
     public: false
     tags:
       - { name: page_cache_response_policy }
+  cas.auto_assign_roles_subscriber:
+    class: Drupal\cas\Subscriber\CasAutoAssignRolesSubscriber
+    arguments: ['@config.factory']
+    tags:
+      - { name: 'event_subscriber' }

@@ -127,15 +127,6 @@ class CasUserManager {
     catch (ExternalAuthRegisterException $e) {
       throw new CasLoginException($e->getMessage());
     }
-
-    $auto_assigned_roles = $this->settings->get('cas.settings')->get('user_accounts.auto_assigned_roles');
-    if (!empty($auto_assigned_roles)) {
-      foreach ($auto_assigned_roles as $auto_assigned_role) {
-        $user->addRole($auto_assigned_role);
-      }
-      $user->save();
-    }
-
     return $user;
   }
 

@@ -42,33 +42,6 @@ class CasAdminSettingsTest extends BrowserTestBase {
   }
 
   /**
-   * Tests Standard installation profile.
-   */
-  public function testCasAutoAssignedRoles() {
-    $role_id = $this->drupalCreateRole([]);
-    $role_id_2 = $this->drupalCreateRole([]);
-    $edit = [
-      'user_accounts[auto_register]' => TRUE,
-      'user_accounts[auto_assigned_roles_enable]' => TRUE,
-      'user_accounts[auto_assigned_roles][]' => [$role_id, $role_id_2],
-      'user_accounts[email_hostname]' => 'sample.com',
-    ];
-    $this->drupalPostForm('/admin/config/people/cas', $edit, 'Save configuration');
-
-    $this->assertEquals([$role_id, $role_id_2], $this->config('cas.settings')->get('user_accounts.auto_assigned_roles'));
-
-    $cas_property_bag = new CasPropertyBag('test_cas_user_name');
-    \Drupal::service('cas.user_manager')->login($cas_property_bag, 'fake_ticket_string');
-    $user = user_load_by_name('test_cas_user_name');
-    $this->assertTrue($user->hasRole($role_id), 'The user has the auto assigned role: ' . $role_id);
-    $this->assertTrue($user->hasRole($role_id_2), 'The user has the auto assigned role: ' . $role_id_2);
-
-    Role::load($role_id_2)->delete();
-
-    $this->assertEquals([$role_id], $this->config('cas.settings')->get('user_accounts.auto_assigned_roles'));
-  }
-
-  /**
    * Tests that access to the password reset form is disabled.
    *
    * @dataProvider restrictedPasswordEnabledProvider
