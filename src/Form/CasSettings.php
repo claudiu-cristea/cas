@@ -292,6 +292,12 @@ class CasSettings extends ConfigFormBase {
       '#description' => $this->t('Prevents CAS users from changing their Drupal password by removing the password fields on the user profile form and disabling the "forgot password" functionality. Admins will still be able to change Drupal passwords for CAS users.'),
       '#default_value' => $config->get('user_accounts.restrict_password_management'),
     );
+    $form['user_accounts']['restrict_email_management'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Restrict Email Management'),
+      '#description' => $this->t("Prevents CAS users from changing their email by disabling the email field on the user profile form. Admins will still be able to change email addresses for CAS users. Note that Drupal requires a user enter their current password before changing their email, which your users may not know. Enable the restricted password management feature above to remove this password requirement."),
+      '#default_value' => $config->get('user_accounts.restrict_password_management'),
+    );
 
     $form['logout'] = array(
       '#type' => 'details',
@@ -486,7 +492,8 @@ class CasSettings extends ConfigFormBase {
       ->set('user_accounts.email_assignment_strategy', $form_state->getValue(['user_accounts', 'email_assignment_strategy']))
       ->set('user_accounts.email_hostname', $form_state->getValue(['user_accounts', 'email_hostname']))
       ->set('user_accounts.email_attribute', $form_state->getValue(['user_accounts', 'email_attribute']))
-      ->set('user_accounts.restrict_password_management', $form_state->getValue(['user_accounts', 'restrict_password_management']));
+      ->set('user_accounts.restrict_password_management', $form_state->getValue(['user_accounts', 'restrict_password_management']))
+      ->set('user_accounts.restrict_email_management', $form_state->getValue(['user_accounts', 'restrict_email_management']));
 
     $auto_assigned_roles = [];
     if ($form_state->getValue(['user_accounts', 'auto_assigned_roles_enable'])) {

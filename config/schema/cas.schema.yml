@@ -76,6 +76,9 @@ cas.settings:
         restrict_password_management:
           type: boolean
           label: 'Restrict password management'
+        restrict_email_management:
+          type: boolean
+          label: 'Restrict email management'
     logout:
       type: mapping
       label: 'Logout'

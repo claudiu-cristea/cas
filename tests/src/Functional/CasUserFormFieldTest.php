@@ -123,7 +123,8 @@ class CasAccountAndRegistrationFormTest extends CasBrowserTestBase {
       'current_pass' => 'incorrectpassword',
       'mail' => 'new-noncasuser-email@sample.com',
     ];
-    // First try changing data with wrong password.
+    // First try changing data with wrong password to ensure the protected
+    // password constraint still works.
     $this->drupalPostForm('/user/' . $non_cas_user->id() . '/edit', $form_data, 'Save');
     $this->assertSession()->responseContains(t('Your current password is missing or incorrect'));
     // Now again with the correct current password.
@@ -186,6 +187,82 @@ class CasAccountAndRegistrationFormTest extends CasBrowserTestBase {
     $form_data['current_pass'] = $cas_user->pass_raw;
     $this->drupalPostForm('/user/' . $cas_user->id() . '/edit', $form_data, 'Save');
     $this->assertSession()->responseContains(t('The changes have been saved.'));
+  }
+
+  /**
+   * Tests the restricted email management feature.
+   */
+  public function testRestrictedEmailManagementWorks() {
+    $admin = $this->drupalCreateUser(['administer account settings', 'administer users']);
+    $non_cas_user = $this->drupalCreateUser();
+    $cas_user = $this->drupalCreateUser();
+
+    // Give the second user a CAS username association.
+    $this->container->get('cas.user_manager')->setCasUsernameForAccount($cas_user, 'cas_user');
+
+    // Enable the "restrict email management" feature.
+    $this->drupalLogin($admin);
+    $edit = [
+      'user_accounts[restrict_email_management]' => TRUE,
+    ];
+    $this->drupalPostForm('/admin/config/people/cas', $edit, 'Save configuration');
+    $this->assertEquals(TRUE, $this->config('cas.settings')->get('user_accounts.restrict_email_management'));
+    $this->drupalLogout();
+
+    // The CAS module's modifications to the user account form and validation
+    // should NOT take effect for non-CAS users, so test that such a user is
+    // still able to manage their email as usual.
+    $this->drupalLogin($non_cas_user);
+    $this->drupalGet('/user/' . $non_cas_user->id() . '/edit');
+    $page = $this->getSession()->getPage();
+    $this->assertNotNull($page->findField('mail'));
+    $form_data = [
+      'current_pass' => 'incorrectpassword',
+      'mail' => 'new-noncasuser-email@sample.com',
+    ];
+    // First try changing data with wrong password to ensure the protected
+    // password constraint still works.
+    $this->drupalPostForm('/user/' . $non_cas_user->id() . '/edit', $form_data, 'Save');
+    $this->assertSession()->responseContains(t('Your current password is missing or incorrect'));
+    // Now again with the correct current password.
+    $form_data['current_pass'] = $non_cas_user->pass_raw;
+    $this->drupalPostForm('/user/' . $non_cas_user->id() . '/edit', $form_data, 'Save');
+    $this->assertSession()->responseContains(t('The changes have been saved.'));
+
+    // For CAS users, we modify the user form to disable the email field.
+    $this->drupalLogout();
+    $this->drupalLogin($cas_user);
+    $this->drupalGet('/user/' . $cas_user->id() . '/edit');
+    $page = $this->getSession()->getPage();
+    $email_field = $page->findField('mail');
+    $this->assertNotNull($email_field);
+    $this->assertEquals('disabled', $email_field->getAttribute('disabled'));
+
+    // An admin should not see a disabled email field for that same user.
+    $this->drupalLogout();
+    $this->drupalLogin($admin);
+    $this->drupalGet('/user/' . $cas_user->id() . '/edit');
+    $page = $this->getSession()->getPage();
+    $email_field = $page->findField('mail');
+    $this->assertNotNull($email_field);
+    $this->assertObjectNotHasAttribute('disabled', $email_field);
+
+    // Now disable the "restrict email management" feature.
+    $edit = [
+      'user_accounts[restrict_email_management]' => FALSE,
+    ];
+    $this->drupalPostForm('/admin/config/people/cas', $edit, 'Save configuration');
+    $this->assertEquals(FALSE, $this->config('cas.settings')->get('user_accounts.restrict_email_management'));
+    $this->drupalLogout();
+
+    // And ensure that the email field on the CAS user's profile form is no
+    // longer disabled.
+    $this->drupalLogin($cas_user);
+    $this->drupalGet('/user/' . $cas_user->id() . '/edit');
+    $page = $this->getSession()->getPage();
+    $email_field = $page->findField('mail');
+    $this->assertNotNull($email_field);
+    $this->assertEmpty($email_field->getAttribute('disabled'));
   }
 
 }
