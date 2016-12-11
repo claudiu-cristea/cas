@@ -439,6 +439,10 @@ class CasSettings extends ConfigFormBase {
       elseif ($email_assignment_strategy == CasUserManager::EMAIL_ASSIGNMENT_ATTRIBUTE && empty($form_state->getValue(['user_accounts', 'email_attribute']))) {
         $form_state->setErrorByName('user_accounts][email_attribute', $this->t('You must provide an attribute name for the auto assigned email address.'));
       }
+
+      if ($form_state->getValue(['server', 'version']) == '1.0' && $email_assignment_strategy == CasUserManager::EMAIL_ASSIGNMENT_ATTRIBUTE) {
+        $form_state->setErrorByName('user_accounts][email_assignment_strategy', $this->t("The CAS protocol version you've specified does not support attributes, so you cannot assign user emails from a CAS attribute value."));
+      }
     }
 
     return parent::validateForm($form, $form_state);
