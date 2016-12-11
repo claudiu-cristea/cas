@@ -75,15 +75,17 @@ class CasSettings extends ConfigFormBase {
       '#title' => $this->t('CAS Server'),
       '#open' => TRUE,
       '#tree' => TRUE,
+      '#description' => $this->t('Enter the details of the CAS server to authentication against.'),
     );
     $form['server']['version'] = array(
       '#type' => 'radios',
-      '#title' => $this->t('Version'),
+      '#title' => $this->t('Protocol Version'),
       '#options' => array(
         '1.0' => $this->t('1.0'),
         '2.0' => $this->t('2.0 or higher'),
       ),
       '#default_value' => $config->get('server.version'),
+      '#description' => $this->t('The CAS protocol version your CAS server supports.'),
     );
     $form['server']['hostname'] = array(
       '#type' => 'textfield',
@@ -101,19 +103,19 @@ class CasSettings extends ConfigFormBase {
     );
     $form['server']['path'] = array(
       '#type' => 'textfield',
-      '#title' => $this->t('URI'),
-      '#description' => $this->t('If CAS is not at the root of the host, include a URI (e.g., /cas).'),
+      '#title' => $this->t('Path'),
+      '#description' => $this->t('If the CAS endpoints (like /login) are not at the root of the host, specify the path to the endpoints (e.g., /cas).'),
       '#size' => 30,
       '#default_value' => $config->get('server.path'),
     );
     $form['server']['verify'] = array(
       '#type' => 'radios',
       '#title' => 'SSL Verification',
-      '#description' => $this->t('Choose an appropriate option for verifying the certificate of your CAS server.'),
+      '#description' => $this->t("Choose an appropriate option for verifying the SSL/TLS certificate of your CAS server."),
       '#options' => array(
-        CasHelper::CA_DEFAULT => $this->t("Verify using web server's default certificates."),
-        CasHelper::CA_NONE => $this->t('Do not verify CAS server. (Note: this should NEVER be used in production.)'),
-        CasHelper::CA_CUSTOM => $this->t('Verify using a custom certificate in the local filesystem. Use the field below to provide path.'),
+        CasHelper::CA_DEFAULT => $this->t("Verify using your web server's default certificate authority (CA) chain."),
+        CasHelper::CA_NONE => $this->t('Do not verify. (Note: this should NEVER be used in production.)'),
+        CasHelper::CA_CUSTOM => $this->t('Verify using a specific CA certificate. Use the field below to provide path.'),
       ),
       '#default_value' => $config->get('server.verify'),
     );
@@ -153,60 +155,10 @@ class CasSettings extends ConfigFormBase {
       ),
     );
 
-    $form['gateway'] = array(
-      '#type' => 'details',
-      '#title' => $this->t('Gateway Feature (Auto Login)'),
-      '#open' => FALSE,
-      '#tree' => TRUE,
-      '#description' => $this->t(
-        'This implements the <a href="@cas-gateway">Gateway feature</a> of the CAS Protocol. ' .
-        'When enabled, Drupal will check if a visitor is already logged into your CAS server before ' .
-        'serving a page request. If they have an active CAS session, they will be automatically ' .
-        'logged into the Drupal site. This is done by quickly redirecting them to the CAS server to perform the ' .
-        'active session check, and then redirecting them back to page they initially requested.<br/><br/>' .
-        'If enabled, all pages on your site will trigger this feature. You can instead enable ' .
-        'this feature for only specific pages by listing them below.<br/><br/>' .
-        '<strong>WARNING:</strong> This feature will disable page caching on pages it is active on.',
-        array('@cas-gateway' => 'https://wiki.jasig.org/display/CAS/gateway')
-      ),
-    );
-    $form['gateway']['check_frequency'] = array(
-      '#type' => 'radios',
-      '#title' => $this->t('Check Frequency'),
-      '#default_value' => $config->get('gateway.check_frequency'),
-      '#options' => array(
-        CasHelper::CHECK_NEVER => 'Disable gateway feature',
-        CasHelper::CHECK_ONCE => 'Once per browser session',
-        CasHelper::CHECK_ALWAYS => 'Every page load (not recommended)',
-      ),
-    );
-    $this->gatewayPaths->setConfiguration($config->get('gateway.paths'));
-    $form['gateway']['paths'] = $this->gatewayPaths->buildConfigurationForm(array(), $form_state);
-
-    $form['forced_login'] = array(
-      '#type' => 'details',
-      '#title' => $this->t('Forced Login'),
-      '#open' => FALSE,
-      '#tree' => TRUE,
-      '#description' => $this->t(
-        'Anonymous users will be forced to login through CAS when enabled. ' .
-        'This differs from the "gateway feature" in that it will REQUIRE that a user be logged in to their CAS ' .
-        'account, instead of just checking if they already are.'
-      ),
-    );
-    $form['forced_login']['enabled'] = array(
-      '#type' => 'checkbox',
-      '#title' => $this->t('Enable'),
-      '#description' => $this->t('If enabled, all pages on your site will trigger this feature. You can instead enable this feature for only specific pages by listing them below.'),
-      '#default_value' => $config->get('forced_login.enabled'),
-    );
-    $this->forcedLoginPaths->setConfiguration($config->get('forced_login.paths'));
-    $form['forced_login']['paths'] = $this->forcedLoginPaths->buildConfigurationForm(array(), $form_state);
-
     $form['user_accounts'] = array(
       '#type' => 'details',
       '#title' => $this->t('User Account Handling'),
-      '#open' => FALSE,
+      '#open' => TRUE,
       '#tree' => TRUE,
     );
     $form['user_accounts']['auto_register'] = array(
@@ -299,6 +251,55 @@ class CasSettings extends ConfigFormBase {
       '#default_value' => $config->get('user_accounts.restrict_password_management'),
     );
 
+    $form['gateway'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Gateway Feature (Auto Login)'),
+      '#open' => FALSE,
+      '#tree' => TRUE,
+      '#description' => $this->t(
+        'This implements the <a href="@cas-gateway">Gateway feature</a> of the CAS Protocol. ' .
+        'When enabled, Drupal will check if a visitor is already logged into your CAS server before ' .
+        'serving a page request. If they have an active CAS session, they will be automatically ' .
+        'logged into the Drupal site. This is done by quickly redirecting them to the CAS server to perform the ' .
+        'active session check, and then redirecting them back to page they initially requested.<br/><br/>' .
+        'If enabled, all pages on your site will trigger this feature by default. It is strongly recommended that ' .
+        'you specify specific pages to trigger this feature below.<br/><br/>' .
+        '<strong>WARNING:</strong> This feature will disable page caching on pages it is active on.',
+        array('@cas-gateway' => 'https://wiki.jasig.org/display/CAS/gateway')
+      ),
+    );
+    $form['gateway']['check_frequency'] = array(
+      '#type' => 'radios',
+      '#title' => $this->t('Check Frequency'),
+      '#default_value' => $config->get('gateway.check_frequency'),
+      '#options' => array(
+        CasHelper::CHECK_NEVER => 'Disable gateway feature',
+        CasHelper::CHECK_ONCE => 'Once per browser session',
+        CasHelper::CHECK_ALWAYS => 'Every page load (not recommended)',
+      ),
+    );
+    $this->gatewayPaths->setConfiguration($config->get('gateway.paths'));
+    $form['gateway']['paths'] = $this->gatewayPaths->buildConfigurationForm(array(), $form_state);
+
+    $form['forced_login'] = array(
+      '#type' => 'details',
+      '#title' => $this->t('Forced Login'),
+      '#open' => FALSE,
+      '#tree' => TRUE,
+      '#description' => $this->t(
+        'Anonymous users will be forced to login through CAS when enabled. ' .
+        'This differs from the "gateway feature" in that it will force a user to log in if they are not.'
+      ),
+    );
+    $form['forced_login']['enabled'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Enable'),
+      '#description' => $this->t('If enabled, all pages on your site will trigger this feature. It is strongly recommended that you specify specific pages to trigger this feature below.'),
+      '#default_value' => $config->get('forced_login.enabled'),
+    );
+    $this->forcedLoginPaths->setConfiguration($config->get('forced_login.paths'));
+    $form['forced_login']['paths'] = $this->forcedLoginPaths->buildConfigurationForm(array(), $form_state);
+
     $form['logout'] = array(
       '#type' => 'details',
       '#title' => $this->t('Logout Behavior'),
@@ -326,8 +327,8 @@ class CasSettings extends ConfigFormBase {
       '#default_value' => $config->get('logout.enable_single_logout'),
       '#description' => $this->t('If enabled (and your CAS server supports it), ' .
         'users will be logged out of your Drupal site when they log out of your ' .
-        'CAS server. NOTE: THIS WILL REMOVE A SECURITY HARDENING FEATURE ADDED ' .
-        'IN DRUPAL 8! Session IDs to be stored unhashed in the database.'),
+        'CAS server. <strong>WARNING:</strong> THIS WILL BYPASS A SECURITY HARDENING FEATURE ADDED ' .
+        'IN DRUPAL 8, causing session IDs to be stored unhashed in the database.'),
     );
     $form['logout']['single_logout_session_lifetime'] = array(
       '#type' => 'textfield',
