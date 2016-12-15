@@ -35,11 +35,11 @@ class CasPreRegisterEvent extends Event {
   protected $casPropertyBag;
 
   /**
-   * Whether or not to allow automatic registration of this user.
+   * Determines if this user will be allowed to auto-register or not.
    *
    * @var bool
    */
-  public $denyAutomaticRegistration = FALSE;
+  protected $allowAutomaticRegistration = TRUE;
 
   /**
    * The username that will be assigned to the Drupal user account.
@@ -96,6 +96,31 @@ class CasPreRegisterEvent extends Event {
    */
   public function setDrupalUsername($username) {
     $this->drupalUsername = $username;
+  }
+
+  /**
+   * Sets the allow auto registration proprety.
+   *
+   * @param bool $allow_automatic_registration
+   *   TRUE to allow auto registration, FALSE to deny it.
+   */
+  public function setAllowAutomaticRegistration($allow_automatic_registration) {
+    if ($allow_automatic_registration) {
+      $this->allowAutomaticRegistration = TRUE;
+    }
+    else {
+      $this->allowAutomaticRegistration = FALSE;
+    }
+  }
+
+  /**
+   * Return if this user is allowed to be auto-registered or not.
+   *
+   * @return bool
+   *   TRUE if the user is allowed to be registered, FALSE otherwise.
+   */
+  public function getAllowAutomaticRegistration() {
+    return $this->allowAutomaticRegistration;
   }
 
   /**

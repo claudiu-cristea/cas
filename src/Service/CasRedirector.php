@@ -77,17 +77,17 @@ class CasRedirector {
     if ($force || $data->willRedirect()) {
       // $force implies we are on the /cas url or equivalent, so we
       // always want to redirect and data is always cacheable.
-      if (!$force && !$data->isCacheable) {
+      if (!$force && !$data->getIsCacheable()) {
         return new CasRedirectResponse($login_url);
       }
       else {
         $cacheable_metadata = new CacheableMetadata();
         // Add caching metadata from CasRedirectData.
-        if ($data->cacheTags) {
-          $cacheable_metadata->addCacheTags($data->cacheTags);
+        if (!empty($data->getCacheTags())) {
+          $cacheable_metadata->addCacheTags($data->getCacheTags());
         }
-        if ($data->cacheContexts) {
-          $cacheable_metadata->addCacheContexts($data->cacheContexts);
+        if (!empty($data->getCacheContexts())) {
+          $cacheable_metadata->addCacheContexts($data->getCacheContexts());
         }
         $response = new TrustedRedirectResponse($login_url);
         $response->addCacheableDependency($cacheable_metadata);

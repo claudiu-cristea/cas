@@ -192,7 +192,7 @@ class CasSubscriber extends HttpExceptionSubscriberBase {
       if ($this->handleForcedPath()) {
         $this->casHelper->log('Force Login Requested');
         $redirect_data->setParameter('gateway', NULL);
-        $redirect_data->isCacheable = TRUE;
+        $redirect_data->setIsCacheable(TRUE);
         $redirect_data->forceRedirection();
       };
     }
@@ -364,7 +364,7 @@ class CasSubscriber extends HttpExceptionSubscriberBase {
       if ($this->handleForcedPath()) {
         $this->casHelper->log('Force Login Requested');
         $redirect_data->forceRedirection();
-        $redirect_data->isCacheable = TRUE;
+        $redirect_data->setIsCacheable(TRUE);
       }
       else {
         $redirect_data->preventRedirection();

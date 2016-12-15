@@ -134,7 +134,7 @@ class CasRedirectorTest extends UnitTestCase {
     $this->assertEquals('https://example.com/cas/login?service=http%3A//example.com/casservice%3Freturnto%3Dnode/1', $response->getTargetUrl(), 'Service parameters present');
 
     // Verify proper redirector type.
-    $cas_data->isCacheable = TRUE;
+    $cas_data->setIsCacheable(TRUE);
     /** @var TrustedRedirectResponse $response */
     $response = $cas_redirector->buildRedirectResponse($cas_data);
     $this->assertInstanceOf('\Drupal\core\Routing\TrustedRedirectResponse', $response);
@@ -143,7 +143,7 @@ class CasRedirectorTest extends UnitTestCase {
     $this->assertContains('config:cas.settings', $tags, 'Cache Tags set');
 
     // Verify proper redirector type.
-    $cas_data->isCacheable = FALSE;
+    $cas_data->setIsCacheable(FALSE);
     $response = $cas_redirector->buildRedirectResponse($cas_data);
     $this->assertInstanceOf('\Drupal\cas\CasRedirectResponse', $response, 'Non-cacheable response');
   }

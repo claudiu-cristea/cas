@@ -210,7 +210,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->method('dispatch')
       ->willReturnCallback(function ($event_type, $event) {
         if ($event instanceof CasPreRegisterEvent) {
-          $event->denyAutomaticRegistration = TRUE;
+          $event->setAllowAutomaticRegistration(FALSE);
         }
       });
 
@@ -335,7 +335,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->method('dispatch')
       ->willReturnCallback(function ($event_type, $event) {
         if ($event instanceof CasPreLoginEvent) {
-          $event->allowLogin = FALSE;
+          $event->setAllowLogin(FALSE);
         }
       });
 

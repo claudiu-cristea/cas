@@ -81,10 +81,10 @@ class CasRedirectDataTest extends UnitTestCase {
   public function testCachable() {
     $data = new CasRedirectData();
 
-    $this->assertFalse($data->isCacheable, 'Default Value');
+    $this->assertFalse($data->getIsCacheable(), 'Default Value');
 
-    $data->isCacheable = TRUE;
-    $this->assertTrue($data->isCacheable, 'Modified value');
+    $data->setIsCacheable(TRUE);
+    $this->assertTrue($data->getIsCacheable(), 'Modified value');
   }
 
 }

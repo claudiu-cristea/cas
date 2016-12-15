@@ -157,7 +157,7 @@ class CasUserManager {
         $cas_pre_register_event = new CasPreRegisterEvent($property_bag);
         $cas_pre_register_event->setPropertyValue('mail', $this->getEmailForNewAccount($property_bag));
         $this->eventDispatcher->dispatch(CasHelper::EVENT_PRE_REGISTER, $cas_pre_register_event);
-        if (!$cas_pre_register_event->denyAutomaticRegistration) {
+        if ($cas_pre_register_event->getAllowAutomaticRegistration()) {
           $account = $this->register($cas_pre_register_event->getDrupalUsername(), $cas_pre_register_event->getPropertyValues());
         }
         else {
@@ -177,7 +177,7 @@ class CasUserManager {
     // Save user entity since event listeners may have altered it.
     $account->save();
 
-    if (!$pre_login_event->allowLogin) {
+    if (!$pre_login_event->getAllowLogin()) {
       throw new CasLoginException("Cannot login, an event listener denied access.");
     }
 

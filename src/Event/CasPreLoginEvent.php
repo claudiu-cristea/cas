@@ -42,7 +42,7 @@ class CasPreLoginEvent extends Event {
    *
    * @var bool
    */
-  public $allowLogin = TRUE;
+  protected $allowLogin = TRUE;
 
   /**
    * Constructor.
@@ -75,6 +75,31 @@ class CasPreLoginEvent extends Event {
    */
   public function getAccount() {
     return $this->account;
+  }
+
+  /**
+   * Set the $allowLogin property.
+   *
+   * @param bool $allow_login
+   *   TRUE to allow login, FALSE otherwise.
+   */
+  public function setAllowLogin($allow_login) {
+    if ($allow_login) {
+      $this->allowLogin = TRUE;
+    }
+    else {
+      $this->allowLogin = FALSE;
+    }
+  }
+
+  /**
+   * Return if this user is allowed to login.
+   *
+   * @return bool
+   *   TRUE if the user is allowed to login, FALSE otherwise.
+   */
+  public function getAllowLogin() {
+    return $this->allowLogin;
   }
 
 }

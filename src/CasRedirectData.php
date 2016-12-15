@@ -33,21 +33,21 @@ class CasRedirectData {
    *
    * @var bool
    */
-  public $isCacheable = FALSE;
+  protected $isCacheable = FALSE;
 
   /**
    * Cache tags to apply to cachable redirect responses.
    *
    * @var array
    */
-  public $cacheTags = ['config:cas.settings'];
+  protected $cacheTags = ['config:cas.settings'];
 
   /**
    * Cache contexts to apply to cacheable redirect responses.
    *
    * @var array
    */
-  public $cacheContexts = [];
+  protected $cacheContexts = [];
 
   /**
    * CasRedirectData constructor.
@@ -147,6 +147,31 @@ class CasRedirectData {
   }
 
   /**
+   * Indicate that the redirect response is cacheable.
+   *
+   * @param bool $cacheable
+   *   TRUE to set the redirect as cacheable, FALSE otherwise.
+   */
+  public function setIsCacheable($cacheable) {
+    if ($cacheable) {
+      $this->isCacheable = TRUE;
+    }
+    else {
+      $this->isCacheable = FALSE;
+    }
+  }
+
+  /**
+   * Return if the redirect response is cacheable or not.
+   *
+   * @return bool
+   *   TRUE if the redirect response is cacheable, FALSE otherwise.
+   */
+  public function getIsCacheable() {
+    return $this->isCacheable;
+  }
+
+  /**
    * Check if a redirect is be allowed.
    *
    * @return bool
@@ -169,6 +194,46 @@ class CasRedirectData {
    */
   public function preventRedirection() {
     $this->willRedirect = FALSE;
+  }
+
+  /**
+   * Set the cache tags that will be added to the redirect response.
+   *
+   * @param array $cache_tags
+   *   The cache tags.
+   */
+  public function setCacheTags(array $cache_tags) {
+    $this->cacheTags = $cache_tags;
+  }
+
+  /**
+   * Get the cache tags for the redirect response.
+   *
+   * @return array
+   *   The cache tags.
+   */
+  public function getCacheTags() {
+    return $this->cacheTags;
+  }
+
+  /**
+   * Set the cache contexts for the redirect response.
+   *
+   * @param array $cache_contexts
+   *   The cache contexts.
+   */
+  public function setCacheContexts(array $cache_contexts) {
+    $this->cacheContexts = $cache_contexts;
+  }
+
+  /**
+   * Get the cache contexts for the redirect response.
+   *
+   * @return array
+   *   The cache contexts.
+   */
+  public function getCacheContexts() {
+    return $this->cacheContexts;
   }
 
 }

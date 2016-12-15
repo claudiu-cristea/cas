@@ -53,7 +53,7 @@ class ForceLoginController implements ContainerInjectionInterface {
     // TODO: What if CAS is not configured? need to handle that case.
     $service_url_query_params = $this->requestStack->getCurrentRequest()->query->all();
     $cas_redirect_data = new CasRedirectData($service_url_query_params);
-    $cas_redirect_data->isCacheable = TRUE;
+    $cas_redirect_data->setIsCacheable(TRUE);
     return $this->casRedirector->buildRedirectResponse($cas_redirect_data, TRUE);
   }
 
