@@ -370,16 +370,25 @@ class CasHelper {
       $destination = $this->settings->get('logout.logout_destination');
       if ($destination == '<front>') {
         // If we have '<front>', resolve the path.
-        $params['service'] = $this->urlGenerator->generate($destination, array(), TRUE);
+        $return_url = $this->urlGenerator->generate($destination, array(), TRUE);
       }
       elseif ($this->isExternal($destination)) {
         // If we have an absolute URL, use that.
-        $params['service'] = $destination;
+        $return_url = $destination;
       }
       else {
         // This is a regular Drupal path.
-        $params['service'] = $request->getSchemeAndHttpHost() . '/' . ltrim($destination, '/');
+        $return_url = $request->getSchemeAndHttpHost() . '/' . ltrim($destination, '/');
       }
+
+      // CAS 2.0 uses 'url' param, while newer versions use 'service'.
+      if ($this->getCasProtocolVersion() == '2.0') {
+        $params['url'] = $return_url;
+      }
+      else {
+        $params['service'] = $return_url;
+      }
+
       return $base_url . '?' . UrlHelper::buildQuery($params);
     }
     else {
