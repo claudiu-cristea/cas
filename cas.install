@@ -104,3 +104,14 @@ function cas_update_8001(&$sandbox) {
   $config->set('logout.single_logout_session_lifetime', 25);
   $config->save(TRUE);
 }
+
+/**
+ * Rename the configuration setting for debug log.
+ */
+function cas_update_8002(&$sandbox) {
+  $config_factory = \Drupal::configFactory();
+  $config = $config_factory->getEditable('cas.settings');
+  $config->set('advanced.debug_log', $config->get('debugging.log'));
+  $config->clear('debugging');
+  $config->save();
+}

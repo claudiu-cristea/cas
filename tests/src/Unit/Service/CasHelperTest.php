@@ -492,7 +492,7 @@ class CasHelperTest extends UnitTestCase {
     /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
-        'debugging.log' => TRUE,
+        'advanced.debug_log' => TRUE,
       ),
     ));
     $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory, $this->session);
@@ -511,7 +511,7 @@ class CasHelperTest extends UnitTestCase {
     /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
-        'debugging.log' => FALSE,
+        'advanced.debug_log' => FALSE,
       ),
     ));
     $cas_helper = new CasHelper($config_factory, $this->urlGenerator, $this->connection, $this->loggerFactory, $this->session);

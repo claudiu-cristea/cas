@@ -350,7 +350,7 @@ class CasHelper {
    *   The message to log.
    */
   public function log($message) {
-    if ($this->settings->get('debugging.log') == TRUE) {
+    if ($this->settings->get('advanced.debug_log') == TRUE) {
       $this->loggerChannel->log(RfcLogLevel::DEBUG, $message);
     }
   }
@@ -459,6 +459,16 @@ class CasHelper {
    */
   public function getSingleLogOut() {
     return $this->settings->get('logout.enable_single_logout');
+  }
+
+  /**
+   * The amount of time to allow a connection to the CAS server to take.
+   *
+   * @return int
+   *   The timeout in seconds.
+   */
+  public function getConnectionTimeout() {
+    return $this->settings->get('advanced.connection_timeout');
   }
 
 }

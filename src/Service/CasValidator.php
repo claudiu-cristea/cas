@@ -76,6 +76,8 @@ class CasValidator {
         $options['verify'] = TRUE;
     }
 
+    $options['timeout'] = $this->casHelper->getConnectionTimeout();
+
     $validate_url = $this->casHelper->getServerValidateUrl($ticket, $service_params);
     $this->casHelper->log("Attempting to validate service ticket using URL $validate_url");
     try {

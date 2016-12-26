@@ -34,7 +34,8 @@ user_accounts:
   auto_assigned_roles: {}
   restrict_password_management: false
   restrict_email_management: false
-debugging:
-  log: false
+advanced:
+  debug_log: false
+  connection_timeout: 10
 login_link_enabled: false
 login_link_label: 'CAS Login'

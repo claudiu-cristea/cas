@@ -392,23 +392,28 @@ class CasSettings extends ConfigFormBase {
       '#default_value' => $config->get('proxy.proxy_chains'),
     );
 
-    $form['debugging'] = array(
+    $form['advanced'] = array(
       '#type' => 'details',
-      '#title' => $this->t('Debugging'),
+      '#title' => $this->t('Advanced'),
       '#open' => FALSE,
       '#tree' => TRUE,
-      '#description' => $this->t(
-        'These options are for debugging only, and are not meant to be used ' .
-        'in normal production usage.'),
     );
-    $form['debugging']['log'] = array(
+    $form['advanced']['debug_log'] = array(
       '#type' => 'checkbox',
       '#title' => $this->t('Log debug information?'),
       '#description' => $this->t(
         'This is not meant for production sites! Enable this to log debug ' .
         'information about the interactions with the CAS Server to the ' .
         'Drupal log.'),
-      '#default_value' => $config->get('debugging.log'),
+      '#default_value' => $config->get('advanced.debug_log'),
+    );
+    $form['advanced']['connection_timeout'] = array(
+      '#type' => 'textfield',
+      '#size' => 3,
+      '#title' => $this->t('Connection timeout'),
+      '#field_suffix' => $this->t('seconds'),
+      '#description' => $this->t('This module makes HTTP requests to your CAS server and, if configured as a proxy, to a proxied service. This value determines the maximum amount of time to wait on those requests before canceling them.'),
+      '#default_value' => $config->get('advanced.connection_timeout'),
     );
 
     return parent::buildForm($form, $form_state);
@@ -508,7 +513,8 @@ class CasSettings extends ConfigFormBase {
       ->set('user_accounts.auto_assigned_roles', $auto_assigned_roles);
 
     $config
-      ->set('debugging.log', $form_state->getValue(['debugging', 'log']));
+      ->set('advanced.debug_log', $form_state->getValue(['advanced', 'debug_log']))
+      ->set('advanced.connection_timeout', $form_state->getValue(['advanced', 'connection_timeout']));
 
     $config->save();
     parent::submitForm($form, $form_state);

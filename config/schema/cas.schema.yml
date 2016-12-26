@@ -108,10 +108,13 @@ cas.settings:
         proxy_chains:
           type: string
           label: 'Proxy Chains'
-    debugging:
+    advanced:
       type: mapping
-      label: 'Debugging'
+      label: 'Advanced'
       mapping:
-        log:
+        debug_log:
           type: boolean
           label: 'Log Debug Information'
+        connection_timeout:
+          type: integer
+          label: 'Connection Timeout'
