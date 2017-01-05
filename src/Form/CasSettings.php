@@ -248,7 +248,7 @@ class CasSettings extends ConfigFormBase {
       '#type' => 'checkbox',
       '#title' => t('Restrict Email Management'),
       '#description' => $this->t("Prevents CAS users from changing their email by disabling the email field on the user profile form. Admins will still be able to change email addresses for CAS users. Note that Drupal requires a user enter their current password before changing their email, which your users may not know. Enable the restricted password management feature above to remove this password requirement."),
-      '#default_value' => $config->get('user_accounts.restrict_password_management'),
+      '#default_value' => $config->get('user_accounts.restrict_email_management'),
     );
 
     $form['gateway'] = array(
