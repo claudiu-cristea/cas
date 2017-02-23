@@ -131,12 +131,12 @@ class CasHelper {
    *   The URL generator.
    * @param Connection $database_connection
    *   The database service.
-   * @param LoggerChannelFactory $logger_factory
+   * @param LoggerChannelFactoryInterface $logger_factory
    *   The logger channel factory.
    * @param SessionInterface $session
    *   The session handler.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator, Connection $database_connection, LoggerChannelFactory $logger_factory, SessionInterface $session) {
+  public function __construct(ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator, Connection $database_connection, LoggerChannelFactoryInterface $logger_factory, SessionInterface $session) {
     $this->urlGenerator = $url_generator;
     $this->connection = $database_connection;
     $this->session = $session;
