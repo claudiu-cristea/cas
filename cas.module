@@ -17,7 +17,7 @@ use Drupal\Core\Url;
  */
 function cas_cron() {
   // PGTs older than one hour get discarded.
-  db_delete('cas_pgt_storage')
+  \Drupal::database()->delete('cas_pgt_storage')
     ->condition('timestamp', time() - 3600, '<=')
     ->execute();
 
@@ -26,7 +26,7 @@ function cas_cron() {
   $seconds_in_day = 86400;
   $seconds = $max_days * $seconds_in_day;
   if ($seconds > 0) {
-    db_delete('cas_login_data')
+    \Drupal::database()->delete('cas_login_data')
       ->condition('created', time() - $seconds, '<=')
       ->execute();
   }
@@ -208,7 +208,7 @@ function cas_validation_constraint_alter(array &$definitions) {
  * Remove data from the cas_login_data table for this user's session.
  */
 function cas_user_logout($account) {
-  db_delete('cas_login_data')
+  \Drupal::database()->delete('cas_login_data')
     ->condition('plainsid', \Drupal::service('session')->getId())
     ->execute();
 }
