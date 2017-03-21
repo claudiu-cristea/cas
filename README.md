@@ -7,7 +7,7 @@ single-sign-on protocol for the web. It permits a user to access
 multiple applications while providing their credentials (such as userid 
 and password) only once to a central CAS Server application."
  
-Using a single-sign on service like CAS is a benefitial because it provides:
+Using a single-sign on service like CAS is a beneficial because it provides:
 
 * Convenience. Your users don't need to remember credentials for multiple
   different web services.
@@ -64,7 +64,7 @@ http://yoursite.com/caslogin (/cas will also work)
 
 Users will be redirected to your CAS server to authenticate. If they already
 have an active session with the CAS server, they will immediately be redirected
-back to your site and authenticated seemlessly. If not, they will be prompted
+back to your site and authenticated seamlessly. If not, they will be prompted
 to enter their credentials and then redirected back to your Drupal site and
 authenticated.
 
@@ -86,7 +86,7 @@ be randomly generated and is not revealed to the user.
 
 This module does NOT prevent local Drupal authentication (using the standard
 login form). If a user knew their randomly generated password, or used
-the password reset form, they could bypass CAS authenticaton and login to
+the password reset form, they could bypass CAS authentication and login to
 the Drupal site directly unless Forced Login is properly configured.
 
 ## Forced Login
@@ -96,7 +96,7 @@ authenticate via CAS when they hit all or some of the pages on your site.
 
 If the user does not have an active session with the CAS server, they will
 be forced to enter their credentials before returning to your site. If the
-user does have an active session, they will be seemlessly authenticated
+user does have an active session, they will be seamlessly authenticated
 locally on your Drupal site and shown the page they requested.
 
 ## Gateway Login
@@ -127,7 +127,7 @@ Assuming the SSL cert of your CAS server was signed by a well known
 certificate authority, CAS will use the default certificate chain that
 should be present on your web server and it will "just work". But if you are
 getting errors when authenticating, you may need obtain the PEM certificate
-of the certificate authorirty that signed your CAS server's SSL cert and
+of the certificate authority that signed your CAS server's SSL cert and
 provide the path to that cert.
 
 Further discussion of this topic is beyond the scope of this documentation,
