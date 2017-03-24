@@ -47,7 +47,7 @@ class CasRedirectData {
    *
    * @var array
    */
-  protected $cacheContexts = [];
+  protected $cacheContexts = ['url.site'];
 
   /**
    * CasRedirectData constructor.
