@@ -3,7 +3,6 @@
 namespace Drupal\cas\Service;
 
 use Drupal\cas\CasRedirectData;
-use Drupal\cas\CasRedirectResponse;
 use Drupal\cas\Event\CasPreRedirectEvent;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Cache\CacheableMetadata;
@@ -53,7 +52,7 @@ class CasRedirector {
    *   the ForceRedirectController. False implies redirector is controlled by
    *   the allow_redirect property in the CasRedirectData object.
    *
-   * @return TrustedRedirectResponse|CasRedirectResponse|null
+   * @return TrustedRedirectResponse|null
    *   The RedirectResponse or NULL if a redirect shouldn't be done.
    */
   public function buildRedirectResponse(CasRedirectData $data, $force = FALSE) {
@@ -78,7 +77,11 @@ class CasRedirector {
       // $force implies we are on the /cas url or equivalent, so we
       // always want to redirect and data is always cacheable.
       if (!$force && !$data->getIsCacheable()) {
-        return new CasRedirectResponse($login_url);
+        $response = new TrustedRedirectResponse($login_url);
+        $cacheable_metadata = new CacheableMetadata();
+        $cacheable_metadata->setCacheMaxAge(0);
+        $response->addCacheableDependency($cacheable_metadata);
+        return $response;
       }
       else {
         $cacheable_metadata = new CacheableMetadata();

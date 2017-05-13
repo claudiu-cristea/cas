@@ -109,9 +109,9 @@ class CasSubscriberTest extends UnitTestCase {
   private $route = 'front.page';
 
   /**
-   * The CasRedirectResponse.
+   * The SecuredRedirectResponse.
    *
-   * @var CasRedirectResponse
+   * @var SecuredRedirectResponse
    */
   private $eventResponse;
 
@@ -607,7 +607,10 @@ class CasSubscriberTest extends UnitTestCase {
     $this->condition->result = TRUE;
     $this->assertArrayHasKey('cas_gateway_checked', $this->session->all());
     $this->assertNotNull($this->eventResponse, 'Got a redirector');
-    $this->assertInstanceOf('\Drupal\cas\CasRedirectResponse', $this->eventResponse, 'Not Cacheable');
+    $this->assertInstanceOf('\Drupal\Core\Routing\TrustedRedirectResponse', $this->eventResponse);
+    // Response should not be cacheable.
+    $cache_data = $this->eventResponse->getCacheableMetadata();
+    $this->assertEquals(0, $cache_data->getCacheMaxAge());
     $this->assertContains('gateway=true', $this->eventResponse->getTargetUrl());
     $this->assertContains('returnto', $this->eventResponse->getTargetUrl(), 'Verify returnto');
   }
