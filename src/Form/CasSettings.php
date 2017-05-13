@@ -202,7 +202,7 @@ class CasSettings extends ConfigFormBase {
     $form['user_accounts']['email_attribute'] = array(
       '#type' => 'textfield',
       '#title' => $this->t('Email Attribute'),
-      '#description' => $this->t("The CAS attribute that contains the user's email address."),
+      '#description' => $this->t("The CAS attribute name (case sensitive) that contains the user's email address."),
       '#default_value' => $config->get('user_accounts.email_attribute'),
       '#states' => array(
         'visible' => array(
