@@ -82,7 +82,8 @@ class CasSettings extends ConfigFormBase {
       '#title' => $this->t('Protocol Version'),
       '#options' => array(
         '1.0' => $this->t('1.0'),
-        '2.0' => $this->t('2.0 or higher'),
+        '2.0' => $this->t('2.0'),
+        '3.0' => $this->t('3.0 or higher'),
       ),
       '#default_value' => $config->get('server.version'),
       '#description' => $this->t('The CAS protocol version your CAS server supports.'),
