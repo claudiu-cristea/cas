@@ -7,6 +7,7 @@ use Drupal\cas\Event\CasPreRedirectEvent;
 use Drupal\cas\Service\CasHelper;
 use Drupal\cas\Service\CasRedirector;
 use Drupal\Component\Utility\UrlHelper;
+use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Tests\UnitTestCase;
 use Symfony\Component\DependencyInjection\Container;
 
@@ -157,9 +158,7 @@ class CasRedirectorTest extends UnitTestCase {
     // Verify proper redirector type.
     $cas_data->setIsCacheable(FALSE);
     $response = $cas_redirector->buildRedirectResponse($cas_data);
-    $this->assertInstanceOf('\Drupal\core\Routing\TrustedRedirectResponse', $response);
-    $data = $response->getCacheableMetadata();
-    $this->assertEquals(0, $data->getCacheMaxAge());
+    $this->assertInstanceOf('\Drupal\cas\CasRedirectResponse', $response, 'Non-cacheable response');
   }
 
   /**

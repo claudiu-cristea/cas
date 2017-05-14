@@ -52,7 +52,7 @@ class DenyCas implements ResponsePolicyInterface {
       $condition = $this->conditionManager->createInstance('request_path');
       $condition->setConfiguration($config->get('gateway.paths'));
       if ($this->conditionManager->execute($condition)) {
-        //return static::DENY;
+        return static::DENY;
       }
     }
     return NULL;
