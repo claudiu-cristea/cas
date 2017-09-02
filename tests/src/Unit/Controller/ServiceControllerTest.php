@@ -428,7 +428,7 @@ class ServiceControllerTest extends UnitTestCase {
 
     $map = array();
     if ($logout_request === TRUE) {
-      $map[] = array('logoutRequest', NULL, FALSE, '<foobar/>');
+      $map[] = array('logoutRequest', NULL, '<foobar/>');
     }
     if (!empty($map)) {
       $this->requestBag->expects($this->any())
@@ -447,10 +447,10 @@ class ServiceControllerTest extends UnitTestCase {
 
     $map = array();
     if ($returnto === TRUE) {
-      $map[] = array('returnto', NULL, FALSE, 'node/1');
+      $map[] = array('returnto', NULL, 'node/1');
     }
     if ($ticket === TRUE) {
-      $map[] = array('ticket', NULL, FALSE, 'ST-foobar');
+      $map[] = array('ticket', NULL, 'ST-foobar');
     }
     if (!empty($map)) {
       $this->queryBag->expects($this->any())
