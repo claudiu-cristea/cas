@@ -24,7 +24,7 @@ services:
     arguments: ['@http_client', '@cas.helper', '@session']
   cas.route_enhancer:
     class: Drupal\cas\Routing\CasRouteEnhancer
-    arguments: ['@cas.helper']
+    arguments: ['@config.factory']
     tags:
       - { name: route_enhancer }
   cas.external_auth_subscriber:

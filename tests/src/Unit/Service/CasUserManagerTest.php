@@ -85,7 +85,6 @@ class CasUserManagerTest extends UnitTestCase {
       ->getMock();
     $this->session = $this->getMockBuilder('\Symfony\Component\HttpFoundation\Session\Session')
       ->setConstructorArgs(array($storage))
-      ->setMethods(NULL)
       ->getMock();
     $this->session->start();
     $this->connection = $this->getMockBuilder('\Drupal\Core\Database\Connection')
@@ -427,6 +426,11 @@ class CasUserManagerTest extends UnitTestCase {
     $this->externalAuth
       ->expects($this->once())
       ->method('userLoginFinalize');
+
+    $this->session
+      ->expects($this->once())
+      ->method('set')
+      ->with('is_cas_user', TRUE);
 
     $cas_user_manager->login(new CasPropertyBag('test'), 'ticket');
   }

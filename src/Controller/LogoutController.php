@@ -2,10 +2,10 @@
 
 namespace Drupal\cas\Controller;
 
+use Drupal\cas\CasRedirectResponse;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\cas\Service\CasHelper;
-use Drupal\Core\Routing\TrustedRedirectResponse;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -63,7 +63,8 @@ class LogoutController implements ContainerInjectionInterface {
     $this->casHelper->log("Drupal session terminated; redirecting to CAS logout at: $logout_url");
 
     // Redirect the user to the CAS logout screen.
-    return new TrustedRedirectResponse($logout_url, 302);
+    // We use our custom non-cacheable redirect class.
+    return new CasRedirectResponse($logout_url, 302);
   }
 
   /**

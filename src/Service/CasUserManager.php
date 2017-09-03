@@ -183,6 +183,7 @@ class CasUserManager {
 
     $this->externalAuth->userLoginFinalize($account, $property_bag->getUsername(), $this->provider);
     $this->storeLoginSessionData($this->session->getId(), $ticket);
+    $this->session->set('is_cas_user', TRUE);
   }
 
   /**
