@@ -42,7 +42,7 @@ class CasRouteEnhancer implements RouteEnhancerInterface {
     // in using CAS and if we're configured to perform a CAS server logout
     // during normal Drupal logouts. Overriding the controller allows us to
     // redirect the user to the CAS server logout after logging out locally.
-    if ($this->settings->get('logout.cas_logout') && $request->getSession()->get('is_cas_user')) {
+    if ($this->settings->get('logout.cas_logout') && $request->getSession() && $request->getSession()->get('is_cas_user')) {
       $defaults['_controller'] = '\Drupal\cas\Controller\LogoutController::logout';
     }
 
