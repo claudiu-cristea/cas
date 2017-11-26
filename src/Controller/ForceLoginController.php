@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
  * Class ForceLoginController.
  */
 class ForceLoginController implements ContainerInjectionInterface {
+
   /**
    * The cas helper to get config settings from.
    *

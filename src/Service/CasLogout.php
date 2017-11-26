@@ -3,6 +3,7 @@
 namespace Drupal\cas\Service;
 
 use Drupal\cas\Exception\CasSloException;
+use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
 
 /**
@@ -25,16 +26,26 @@ class CasLogout {
   protected $connection;
 
   /**
+   * Stores settings object.
+   *
+   * @var \Drupal\Core\Config\Config
+   */
+  protected $settings;
+
+  /**
    * CasLogout constructor.
    *
    * @param \Drupal\cas\Service\CasHelper $cas_helper
    *   The CAS helper.
    * @param \Drupal\Core\Database\Connection $database_connection
    *   The database connection.
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The config factory.
    */
-  public function __construct(CasHelper $cas_helper, Connection $database_connection) {
+  public function __construct(CasHelper $cas_helper, Connection $database_connection, ConfigFactoryInterface $config_factory) {
     $this->casHelper = $cas_helper;
     $this->connection = $database_connection;
+    $this->settings = $config_factory->get('cas.settings');
   }
 
   /**
@@ -47,7 +58,7 @@ class CasLogout {
     $this->casHelper->log("Attempting to handle SLO request.");
 
     // Only look up tickets if they were stored to begin with.
-    if (!$this->casHelper->getSingleLogOut()) {
+    if (!$this->settings->get('logout.enable_single_logout')) {
       $this->casHelper->log("Aborting; SLO is not enabled in CAS settings.");
       return;
     }

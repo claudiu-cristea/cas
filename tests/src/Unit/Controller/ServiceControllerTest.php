@@ -28,6 +28,13 @@ class ServiceControllerTest extends UnitTestCase {
   protected $casHelper;
 
   /**
+   * The mocked CasProxyHelper.
+   *
+   * @var \Drupal\cas\Service\CasProxyHelper|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $casProxyHelper;
+
+  /**
    * The mocked Request Stack.
    *
    * @var \Symfony\Component\HttpFoundation\RequestStack|\PHPUnit_Framework_MockObject_MockObject
@@ -62,7 +69,7 @@ class ServiceControllerTest extends UnitTestCase {
    */
   protected $urlGenerator;
 
-  protected $serviceController;
+  protected $configFactory;
 
   protected $requestBag;
 
@@ -79,6 +86,9 @@ class ServiceControllerTest extends UnitTestCase {
     $this->casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
       ->disableOriginalConstructor()
       ->getMock();
+    $this->casProxyHelper = $this->getMockBuilder('\Drupal\cas\Service\CasProxyHelper')
+      ->disableOriginalConstructor()
+      ->getMock();
     $this->casValidator = $this->getMockBuilder('\Drupal\cas\Service\CasValidator')
       ->disableOriginalConstructor()
       ->getMock();
@@ -88,6 +98,13 @@ class ServiceControllerTest extends UnitTestCase {
     $this->casLogout = $this->getMockBuilder('\Drupal\cas\Service\CasLogout')
       ->disableOriginalConstructor()
       ->getMock();
+    $this->configFactory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example-server.com',
+        'server.port' => 443,
+        'server.path' => '/cas',
+      ),
+    ));
     $this->requestStack = $this->getMock('\Symfony\Component\HttpFoundation\RequestStack');
     $this->urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
@@ -108,35 +125,8 @@ class ServiceControllerTest extends UnitTestCase {
 
     $this->requestObject->setSession($session);
 
-
-    $this->serviceController = new TestServiceController(
-        $this->casHelper,
-        $this->casValidator,
-        $this->casUserManager,
-        $this->casLogout,
-        $this->requestStack,
-        $this->urlGenerator
-    );
     $this->requestBag = $request_bag;
     $this->queryBag = $query_bag;
-  }
-
-  /**
-   * Tests the static create method.
-   */
-  public function testCreate() {
-    $container = $this->getMock('Symfony\Component\DependencyInjection\ContainerInterface');
-    $container->expects($this->any())
-      ->method('get')
-      ->will($this->onConsecutiveCalls(
-        $this->casHelper,
-        $this->casValidator,
-        $this->casUserManager,
-        $this->casLogout,
-        $this->requestStack,
-        $this->urlGenerator
-      ));
-    $this->assertInstanceOf('\Drupal\cas\Controller\ServiceController', ServiceController::create($container));
   }
 
   /**
@@ -162,7 +152,17 @@ class ServiceControllerTest extends UnitTestCase {
       ->method('handleSlo')
       ->with($this->equalTo('<foobar/>'));
 
-    $response = $this->serviceController->handle();
+    $serviceController = new TestServiceController(
+      $this->casHelper,
+      $this->casProxyHelper,
+      $this->casValidator,
+      $this->casUserManager,
+      $this->casLogout,
+      $this->requestStack,
+      $this->urlGenerator,
+      $this->configFactory
+    );
+    $response = $serviceController->handle();
     $this->assertEquals(200, $response->getStatusCode());
     $this->assertEquals('', $response->getContent());
   }
@@ -190,7 +190,18 @@ class ServiceControllerTest extends UnitTestCase {
       $this->assertDestinationSetFromReturnTo();
     }
 
-    $this->assertRedirectedToFrontPageOnHandle();
+    $serviceController = new TestServiceController(
+      $this->casHelper,
+      $this->casProxyHelper,
+      $this->casValidator,
+      $this->casUserManager,
+      $this->casLogout,
+      $this->requestStack,
+      $this->urlGenerator,
+      $this->configFactory
+    );
+
+    $this->assertRedirectedToFrontPageOnHandle($serviceController);
   }
 
   /**
@@ -225,7 +236,18 @@ class ServiceControllerTest extends UnitTestCase {
       ->method('login')
       ->with($this->equalTo($validation_data), $this->equalTo('ST-foobar'));
 
-    $this->assertRedirectedToFrontPageOnHandle();
+    $serviceController = new TestServiceController(
+      $this->casHelper,
+      $this->casProxyHelper,
+      $this->casValidator,
+      $this->casUserManager,
+      $this->casLogout,
+      $this->requestStack,
+      $this->urlGenerator,
+      $this->configFactory
+    );
+
+    $this->assertRedirectedToFrontPageOnHandle($serviceController);
   }
 
   /**
@@ -251,11 +273,6 @@ class ServiceControllerTest extends UnitTestCase {
       $this->assertDestinationSetFromReturnTo();
     }
 
-    // Cas Helper should indicate Drupal is a proxy.
-    $this->casHelper->expects($this->once())
-      ->method('isProxy')
-      ->will($this->returnValue(TRUE));
-
     $this->assertSuccessfulValidation($returnto, TRUE);
 
     $validation_data = new CasPropertyBag('testuser');
@@ -267,11 +284,31 @@ class ServiceControllerTest extends UnitTestCase {
       ->with($this->equalTo($validation_data), $this->equalTo('ST-foobar'));
 
     // PGT should be saved.
-    $this->casHelper->expects($this->once())
+    $this->casProxyHelper->expects($this->once())
       ->method('storePGTSession')
       ->with($this->equalTo('testpgt'));
 
-    $this->assertRedirectedToFrontPageOnHandle();
+    $configFactory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example-server.com',
+        'server.port' => 443,
+        'server.path' => '/cas',
+        'proxy.initialize' => TRUE,
+      ),
+    ));
+
+    $serviceController = new TestServiceController(
+      $this->casHelper,
+      $this->casProxyHelper,
+      $this->casValidator,
+      $this->casUserManager,
+      $this->casLogout,
+      $this->requestStack,
+      $this->urlGenerator,
+      $configFactory
+    );
+
+    $this->assertRedirectedToFrontPageOnHandle($serviceController);
   }
 
   /**
@@ -306,7 +343,18 @@ class ServiceControllerTest extends UnitTestCase {
     $this->casUserManager->expects($this->never())
       ->method('login');
 
-    $this->assertRedirectedToFrontPageOnHandle();
+    $serviceController = new TestServiceController(
+      $this->casHelper,
+      $this->casProxyHelper,
+      $this->casValidator,
+      $this->casUserManager,
+      $this->casLogout,
+      $this->requestStack,
+      $this->urlGenerator,
+      $this->configFactory
+    );
+
+    $this->assertRedirectedToFrontPageOnHandle($serviceController);
   }
 
   /**
@@ -339,7 +387,18 @@ class ServiceControllerTest extends UnitTestCase {
       ->method('login')
       ->will($this->throwException(new CasLoginException()));
 
-    $this->assertRedirectedToFrontPageOnHandle();
+    $serviceController = new TestServiceController(
+      $this->casHelper,
+      $this->casProxyHelper,
+      $this->casValidator,
+      $this->casUserManager,
+      $this->casLogout,
+      $this->requestStack,
+      $this->urlGenerator,
+      $this->configFactory
+    );
+
+    $this->assertRedirectedToFrontPageOnHandle($serviceController);
   }
 
   /**
@@ -361,13 +420,14 @@ class ServiceControllerTest extends UnitTestCase {
   /**
    * Assert user redirected to homepage when controller invoked.
    */
-  private function assertRedirectedToFrontPageOnHandle() {
+  private function assertRedirectedToFrontPageOnHandle($serviceController) {
     // URL Generator will generate a path to the homepage.
     $this->urlGenerator->expects($this->once())
       ->method('generate')
       ->with('<front>')
       ->will($this->returnValue('http://example.com/front'));
-    $response = $this->serviceController->handle();
+
+    $response = $serviceController->handle();
     $this->assertTrue($response->isRedirect('http://example.com/front'));
   }
 

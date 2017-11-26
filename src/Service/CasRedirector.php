@@ -10,6 +10,7 @@ use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Routing\TrustedRedirectResponse;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Drupal\Core\Routing\UrlGeneratorInterface;
 
 /**
  * Class CasRedirector.
@@ -31,16 +32,26 @@ class CasRedirector {
   protected $eventDispatcher;
 
   /**
+   * Stores URL generator.
+   *
+   * @var \Drupal\Core\Routing\UrlGeneratorInterface
+   */
+  protected $urlGenerator;
+
+  /**
    * CasRedirector constructor.
    *
    * @param \Drupal\cas\Service\CasHelper $cas_helper
    *   The CasHelper service.
    * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
    *   The EventDispatcher service.
+   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
+   *   The URL generator service.
    */
-  public function __construct(CasHelper $cas_helper, EventDispatcherInterface $event_dispatcher) {
+  public function __construct(CasHelper $cas_helper, EventDispatcherInterface $event_dispatcher, UrlGeneratorInterface $url_generator) {
     $this->casHelper = $cas_helper;
     $this->eventDispatcher = $event_dispatcher;
+    $this->urlGenerator = $url_generator;
   }
 
   /**
@@ -69,7 +80,7 @@ class CasRedirector {
     // Determine the service URL.
     $service_parameters = $data->getAllServiceParameters();
     $parameters = $data->getAllParameters();
-    $parameters['service'] = $this->casHelper->getCasServiceUrl($service_parameters);
+    $parameters['service'] = $this->urlGenerator->generate('cas.service', $service_parameters, UrlGeneratorInterface::ABSOLUTE_URL);
 
     $login_url .= '?' . UrlHelper::buildQuery($parameters);
 

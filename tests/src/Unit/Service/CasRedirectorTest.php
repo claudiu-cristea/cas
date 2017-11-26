@@ -30,6 +30,13 @@ class CasRedirectorTest extends UnitTestCase {
   protected $casHelper;
 
   /**
+   * Mock URL Generator.
+   *
+   * @var \Drupal\Core\Routing\UrlGeneratorInterface|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $urlGenerator;
+
+  /**
    * The mocked event dispatcher.
    *
    * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface|\PHPUnit_Framework_MockObject_MockObject
@@ -56,12 +63,11 @@ class CasRedirectorTest extends UnitTestCase {
 
     $this->casHelper
       ->method('getServerBaseUrl')
-      ->willReturn('https://example.com/cas/');
+      ->willReturn('https://example-server.com/cas/');
 
-    $this->casHelper
-      ->method('getCasServiceUrl')
-      ->willReturnCallback([$this, 'getServiceUrl']
-      );
+    $this->urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
+    $this->urlGenerator->method('generate')
+      ->willReturnCallback([$this, 'getServiceUrl']);
 
     // Mock event dispatcher to dispatch events.
     $this->eventDispatcher = $this->getMockBuilder('\Symfony\Component\EventDispatcher\EventDispatcherInterface')
@@ -90,7 +96,7 @@ class CasRedirectorTest extends UnitTestCase {
    * @return string
    *   The constructed service URL.
    */
-  public function getServiceUrl(array $parameters = NULL) {
+  public function getServiceUrl($route, array $parameters = NULL) {
     if ($parameters) {
       return 'http://example.com/casservice?' . UrlHelper::buildQuery($parameters);
     }
@@ -118,12 +124,13 @@ class CasRedirectorTest extends UnitTestCase {
    * Test buildRedirectResponse.
    */
   public function testBuildRedirectResponse() {
-    $cas_redirector = new CasRedirector($this->casHelper, $this->eventDispatcher);
+    $cas_redirector = new CasRedirector($this->casHelper, $this->eventDispatcher, $this->urlGenerator);
     $cas_data = new CasRedirectData();
     $cas_data->forceRedirection();
+
     $response = $cas_redirector->buildRedirectResponse($cas_data, TRUE);
-    // Make sure that are url begins iwth the login redirection.
-    $this->assertEquals('https://example.com/cas/login?service=http%3A//example.com/casservice', $response->getTargetUrl());
+    // Make sure that are url begins with the login redirection.
+    $this->assertEquals('https://example-server.com/cas/login?service=http%3A//example.com/casservice', $response->getTargetUrl());
     $this->assertInstanceOf('\Drupal\core\Routing\TrustedRedirectResponse', $response);
 
     // Validate redirection control.
@@ -138,13 +145,13 @@ class CasRedirectorTest extends UnitTestCase {
     // Make sure setting of normal parameters works.
     $cas_data->setParameter('strong_auth', 'true');
     $response = $cas_redirector->buildRedirectResponse($cas_data);
-    $this->assertEquals('https://example.com/cas/login?strong_auth=true&service=http%3A//example.com/casservice', $response->getTargetUrl(), 'Target URL with parameters');
+    $this->assertEquals('https://example-server.com/cas/login?strong_auth=true&service=http%3A//example.com/casservice', $response->getTargetUrl(), 'Target URL with parameters');
     $cas_data->setParameter('strong_auth', NULL);
 
     // Verfiy setting of gateway parameters.
     $cas_data->setServiceParameter('returnto', 'node/1');
     $response = $cas_redirector->buildRedirectResponse($cas_data);
-    $this->assertEquals('https://example.com/cas/login?service=http%3A//example.com/casservice%3Freturnto%3Dnode/1', $response->getTargetUrl(), 'Service parameters present');
+    $this->assertEquals('https://example-server.com/cas/login?service=http%3A//example.com/casservice%3Freturnto%3Dnode/1', $response->getTargetUrl(), 'Service parameters present');
 
     // Verify proper redirector type.
     $cas_data->setIsCacheable(TRUE);
@@ -174,13 +181,13 @@ class CasRedirectorTest extends UnitTestCase {
     $this->events = [];
 
     // Fire the redirection event.
-    $cas_redirector = new CasRedirector($this->casHelper, $this->eventDispatcher);
+    $cas_redirector = new CasRedirector($this->casHelper, $this->eventDispatcher, $this->urlGenerator);
     $cas_data = new CasRedirectData();
     $response = $cas_redirector->buildRedirectResponse($cas_data);
 
     // Verfiy that the event fired and the redirector was appropriately altered.
     $this->assertEquals(1, count($this->events), 'One Event was fired');
-    $this->assertEquals('https://example.com/cas/login?strong_auth=true&service=http%3A//example.com/casservice', $response->getTargetUrl(), 'Altered parameters');
+    $this->assertEquals('https://example-server.com/cas/login?strong_auth=true&service=http%3A//example.com/casservice', $response->getTargetUrl(), 'Altered parameters');
   }
 
 }

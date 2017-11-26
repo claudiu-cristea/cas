@@ -3,6 +3,9 @@
 namespace Drupal\cas\Service;
 
 use Drupal\cas\Exception\CasValidateException;
+use Drupal\Component\Utility\UrlHelper;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Routing\UrlGeneratorInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Drupal\cas\CasPropertyBag;
@@ -27,16 +30,36 @@ class CasValidator {
   protected $casHelper;
 
   /**
+   * Stores settings object.
+   *
+   * @var \Drupal\Core\Config\Config
+   */
+  protected $settings;
+
+  /**
+   * Stores URL generator.
+   *
+   * @var \Drupal\Core\Routing\UrlGeneratorInterface
+   */
+  protected $urlGenerator;
+
+  /**
    * Constructor.
    *
    * @param Client $http_client
    *   The HTTP Client library.
    * @param CasHelper $cas_helper
    *   The CAS Helper service.
+   * @param ConfigFactoryInterface $config_factory
+   *   The configuration factory.
+   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
+   *   The URL generator.
    */
-  public function __construct(Client $http_client, CasHelper $cas_helper) {
+  public function __construct(Client $http_client, CasHelper $cas_helper, ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator) {
     $this->httpClient = $http_client;
     $this->casHelper = $cas_helper;
+    $this->settings = $config_factory->get('cas.settings');
+    $this->urlGenerator = $url_generator;
   }
 
   /**
@@ -59,10 +82,10 @@ class CasValidator {
    */
   public function validateTicket($ticket, $service_params = array()) {
     $options = array();
-    $verify = $this->casHelper->getSslVerificationMethod();
+    $verify = $this->settings->get('server.verify');
     switch ($verify) {
       case CasHelper::CA_CUSTOM:
-        $cert = $this->casHelper->getCertificateAuthorityPem();
+        $cert = $this->settings->get('server.cert');
         $options['verify'] = $cert;
         break;
 
@@ -76,9 +99,9 @@ class CasValidator {
         $options['verify'] = TRUE;
     }
 
-    $options['timeout'] = $this->casHelper->getConnectionTimeout();
+    $options['timeout'] = $this->settings->get('advanced.connection_timeout');
 
-    $validate_url = $this->casHelper->getServerValidateUrl($ticket, $service_params);
+    $validate_url = $this->getServerValidateUrl($ticket, $service_params);
     $this->casHelper->log("Attempting to validate service ticket using URL $validate_url");
     try {
       $response = $this->httpClient->get($validate_url, $options);
@@ -89,7 +112,7 @@ class CasValidator {
       throw new CasValidateException("Error with request to validate ticket: " . $e->getMessage());
     }
 
-    $protocol_version = $this->casHelper->getCasProtocolVersion();
+    $protocol_version = $this->settings->get('server.version');
     switch ($protocol_version) {
       case "1.0":
         return $this->validateVersion1($response_data);
@@ -187,11 +210,11 @@ class CasValidator {
 
     // Look for a proxy chain, and if it exists, validate it against config.
     $proxy_chain = $success_element->getElementsByTagName("proxy");
-    if ($this->casHelper->canBeProxied() && $proxy_chain->length > 0) {
+    if ($this->settings->get('proxy.can_be_proxied') && $proxy_chain->length > 0) {
       $this->verifyProxyChain($proxy_chain);
     }
 
-    if ($this->casHelper->isProxy()) {
+    if ($this->settings->get('proxy.initialize')) {
       // Extract the PGTIOU from the XML.
       $pgt_element = $success_element->getElementsByTagName("proxyGrantingTicket");
       if ($pgt_element->length == 0) {
@@ -217,7 +240,7 @@ class CasValidator {
    *   Thrown if the proxy chain did not match the allowed list from settings.
    */
   private function verifyProxyChain(\DOMNodeList $proxy_chain) {
-    $allowed_proxy_chains_raw = $this->casHelper->getProxyChains();
+    $allowed_proxy_chains_raw = $this->settings->get('proxy.proxy_chains');
     $allowed_proxy_chains = $this->parseAllowedProxyChains($allowed_proxy_chains_raw);
     $server_chain = $this->parseServerProxyChain($proxy_chain);
     $this->casHelper->log("Attempting to verify supplied proxy chain: " . print_r($server_chain, TRUE));
@@ -322,6 +345,71 @@ class CasValidator {
     }
     $this->casHelper->log("Parsed out attributes: " . print_r($attributes, TRUE));
     return $attributes;
+  }
+
+  /**
+   * Return the validation URL used to validate the provided ticket.
+   *
+   * @param string $ticket
+   *   The ticket to validate.
+   * @param array $service_params
+   *   An array of query string parameters to add to the service URL.
+   *
+   * @return string
+   *   The fully constructed validation URL.
+   */
+  public function getServerValidateUrl($ticket, $service_params = array()) {
+    $validate_url = $this->casHelper->getServerBaseUrl();
+    $path = '';
+    switch ($this->settings->get('server.version')) {
+      case "1.0":
+        $path = 'validate';
+        break;
+
+      case "2.0":
+        if ($this->settings->get('proxy.can_be_proxied')) {
+          $path = 'proxyValidate';
+        }
+        else {
+          $path = 'serviceValidate';
+        }
+        break;
+
+      case "3.0":
+        if ($this->settings->get('proxy.can_be_proxied')) {
+          $path = 'p3/proxyValidate';
+        }
+        else {
+          $path = 'p3/serviceValidate';
+        }
+        break;
+    }
+    $validate_url .= $path;
+
+    $params = array();
+    $params['service'] = $this->urlGenerator->generate('cas.service', $service_params, UrlGeneratorInterface::ABSOLUTE_URL);
+    $params['ticket'] = $ticket;
+    if ($this->settings->get('proxy.initialize')) {
+      $params['pgtUrl'] = $this->formatProxyCallbackUrl();
+    }
+    return $validate_url . '?' . UrlHelper::buildQuery($params);
+  }
+
+  /**
+   * Format the pgtCallbackURL parameter for use with proxying.
+   *
+   * We have to do a str_replace to force https for the proxy callback URL,
+   * because it must use https, and setting the option 'https => TRUE' in the
+   * options array won't force https if the user accessed the login route over
+   * http and mixed-mode sessions aren't allowed.
+   *
+   * @return string
+   *   The pgtCallbackURL, fully formatted.
+   */
+  private function formatProxyCallbackUrl() {
+    return str_replace('http://', 'https://', $this->urlGenerator->generateFromRoute('cas.proxyCallback', array(), array(
+      'absolute' => TRUE,
+    )));
   }
 
 }

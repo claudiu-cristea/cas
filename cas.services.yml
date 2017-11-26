@@ -6,22 +6,22 @@ services:
       - { name: 'event_subscriber' }
   cas.helper:
     class: Drupal\cas\Service\CasHelper
-    arguments: ['@config.factory', '@url_generator.non_bubbling', '@database', '@logger.factory', '@session']
+    arguments: ['@config.factory', '@logger.factory']
   cas.redirector:
     class: Drupal\cas\Service\CasRedirector
-    arguments: ['@cas.helper', '@event_dispatcher']
+    arguments: ['@cas.helper', '@event_dispatcher', '@url_generator.non_bubbling']
   cas.validator:
     class: Drupal\cas\Service\CasValidator
-    arguments: ['@http_client', '@cas.helper']
+    arguments: ['@http_client', '@cas.helper', '@config.factory', '@url_generator.non_bubbling']
   cas.user_manager:
     class: Drupal\cas\Service\CasUserManager
     arguments: ['@externalauth.externalauth', '@externalauth.authmap', '@config.factory', '@session', '@database', '@event_dispatcher']
   cas.logout:
     class: Drupal\cas\Service\CasLogout
-    arguments: ['@cas.helper', '@database']
+    arguments: ['@cas.helper', '@database', '@config.factory']
   cas.proxy_helper:
     class: Drupal\cas\Service\CasProxyHelper
-    arguments: ['@http_client', '@cas.helper', '@session']
+    arguments: ['@http_client', '@cas.helper', '@session', '@config.factory', '@database']
   cas.route_enhancer:
     class: Drupal\cas\Routing\CasRouteEnhancer
     arguments: ['@config.factory']
