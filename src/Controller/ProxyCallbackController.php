@@ -13,6 +13,7 @@ use Drupal\cas\Service\CasHelper;
  * Class ProxyCallbackController.
  */
 class ProxyCallbackController implements ContainerInjectionInterface {
+
   /**
    * Used when inserting the CAS PGT into the database.
    *
@@ -37,11 +38,11 @@ class ProxyCallbackController implements ContainerInjectionInterface {
   /**
    * Constructor.
    *
-   * @param Connection $database_connection
+   * @param \Drupal\Core\Database\Connection $database_connection
    *   The database service.
-   * @param RequestStack $request_stack
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The Symfony request stack.
-   * @param CasHelper $cas_helper
+   * @param \Drupal\cas\Service\CasHelper $cas_helper
    *   The CasHelper.
    */
   public function __construct(Connection $database_connection, RequestStack $request_stack, CasHelper $cas_helper) {
@@ -54,8 +55,6 @@ class ProxyCallbackController implements ContainerInjectionInterface {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    // This needs to get the necessary __construct requirements from
-    // the container.
     return new static($container->get('database'), $container->get('request_stack'), $container->get('cas.helper'));
   }
 
@@ -69,6 +68,7 @@ class ProxyCallbackController implements ContainerInjectionInterface {
     // @TODO: Check that request is coming from configured CAS server to avoid
     // filling up the table with bogus pgt values.
     $request = $this->requestStack->getCurrentRequest();
+
     // Check for both a pgtIou and pgtId parameter. If either is not present,
     // inform CAS Server of an error.
     if (!($request->query->get('pgtId') && $request->query->get('pgtIou'))) {

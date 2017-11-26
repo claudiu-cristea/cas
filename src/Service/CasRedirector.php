@@ -8,7 +8,6 @@ use Drupal\cas\Event\CasPreRedirectEvent;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Routing\TrustedRedirectResponse;
-use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 
@@ -27,7 +26,7 @@ class CasRedirector {
   /**
    * The EventDispatcher.
    *
-   * @var EventDispatcher
+   * @var \Symfony\Component\EventDispatcher\EventDispatcher
    */
   protected $eventDispatcher;
 
@@ -57,14 +56,14 @@ class CasRedirector {
   /**
    * Determine login URL response.
    *
-   * @param CasRedirectData $data
+   * @param \Drupal\cas\CasRedirectData $data
    *   Data used to generate redirector.
    * @param bool $force
    *   True implies that you always want to generate a redirector as occurs with
    *   the ForceRedirectController. False implies redirector is controlled by
    *   the allow_redirect property in the CasRedirectData object.
    *
-   * @return TrustedRedirectResponse|CasRedirectResponse|null
+   * @return \Drupal\Core\Routing\TrustedRedirectResponse|\Drupal\cas\CasRedirectResponse|null
    *   The RedirectResponse or NULL if a redirect shouldn't be done.
    */
   public function buildRedirectResponse(CasRedirectData $data, $force = FALSE) {

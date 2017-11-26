@@ -114,7 +114,7 @@ class CasSubscriber extends HttpExceptionSubscriberBase {
    *   The condition manager.
    * @param \Drupal\cas\Service\CasHelper $cas_helper
    *   The CAS Helper service.
-   * @param CasRedirector $cas_redirector
+   * @param \Drupal\cas\Service\CasRedirector $cas_redirector
    *   The CAS Redirector Service.
    */
   public function __construct(RequestStack $request_stack, RouteMatchInterface $route_matcher, ConfigFactoryInterface $config_factory, AccountInterface $current_user, ConditionManager $condition_manager, CasHelper $cas_helper, CasRedirector $cas_redirector) {
@@ -146,7 +146,7 @@ class CasSubscriber extends HttpExceptionSubscriberBase {
   /**
    * The entry point for our subscriber.
    *
-   * @param GetResponseEvent $event
+   * @param \Symfony\Component\HttpKernel\Event\GetResponseEvent $event
    *   The response event from the kernel.
    */
   public function handle(GetResponseEvent $event) {

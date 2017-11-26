@@ -46,11 +46,11 @@ class CasValidator {
   /**
    * Constructor.
    *
-   * @param Client $http_client
+   * @param \GuzzleHttp\Client $http_client
    *   The HTTP Client library.
    * @param CasHelper $cas_helper
    *   The CAS Helper service.
-   * @param ConfigFactoryInterface $config_factory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The configuration factory.
    * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
    *   The URL generator.
@@ -73,14 +73,14 @@ class CasValidator {
    * @param array $service_params
    *   An array of query string parameters to add to the service URL.
    *
-   * @return CasPropertyBag
+   * @return \Drupal\cas\CasPropertyBag
    *   Contains user info from the CAS server.
    *
    * @throws CasValidateException
    *   Thrown if there was a problem making the validation request or
    *   if there was a local configuration issue.
    */
-  public function validateTicket($ticket, $service_params = array()) {
+  public function validateTicket($ticket, array $service_params = array()) {
     $options = array();
     $verify = $this->settings->get('server.verify');
     switch ($verify) {
@@ -131,7 +131,7 @@ class CasValidator {
    * @param string $data
    *   The raw validation response data from CAS server.
    *
-   * @return CasPropertyBag
+   * @return \Drupal\cas\CasPropertyBag
    *   Contains user info from the CAS server.
    *
    * @throws CasValidateException
@@ -158,7 +158,7 @@ class CasValidator {
    * @param string $data
    *   The raw validation response data from CAS server.
    *
-   * @return CasPropertyBag
+   * @return \Drupal\cas\CasPropertyBag
    *   Contains user info from the CAS server.
    *
    * @throws CasValidateException
@@ -358,7 +358,7 @@ class CasValidator {
    * @return string
    *   The fully constructed validation URL.
    */
-  public function getServerValidateUrl($ticket, $service_params = array()) {
+  public function getServerValidateUrl($ticket, array $service_params = array()) {
     $validate_url = $this->casHelper->getServerBaseUrl();
     $path = '';
     switch ($this->settings->get('server.version')) {

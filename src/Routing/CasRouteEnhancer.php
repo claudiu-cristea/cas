@@ -27,7 +27,7 @@ class CasRouteEnhancer implements RouteEnhancerInterface {
   /**
    * Constructor.
    *
-   * @param ConfigFactoryInterface $config_factory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
    */
   public function __construct(ConfigFactoryInterface $config_factory) {

@@ -7,7 +7,6 @@ use Drupal\cas\Event\CasPreRedirectEvent;
 use Drupal\cas\Service\CasHelper;
 use Drupal\cas\Service\CasRedirector;
 use Drupal\Component\Utility\UrlHelper;
-use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Tests\UnitTestCase;
 use Symfony\Component\DependencyInjection\Container;
 
@@ -25,7 +24,7 @@ class CasRedirectorTest extends UnitTestCase {
   /**
    * Mock Cas Helper.
    *
-   * @var CasHelper|\PHPUnit_Framework_MockObject_MockObject
+   * @var \Drupal\cas\Service\CasHelper|\PHPUnit_Framework_MockObject_MockObject
    */
   protected $casHelper;
 
@@ -90,6 +89,8 @@ class CasRedirectorTest extends UnitTestCase {
   /**
    * Get a service URL.
    *
+   * @param string $route
+   *   The route name.
    * @param array $parameters
    *   The service URL parameters.
    *
@@ -155,7 +156,7 @@ class CasRedirectorTest extends UnitTestCase {
 
     // Verify proper redirector type.
     $cas_data->setIsCacheable(TRUE);
-    /** @var TrustedRedirectResponse $response */
+    /** @var \Drupal\Core\Routing\TrustedRedirectResponse $response */
     $response = $cas_redirector->buildRedirectResponse($cas_data);
     $this->assertInstanceOf('\Drupal\core\Routing\TrustedRedirectResponse', $response);
     $data = $response->getCacheableMetadata();

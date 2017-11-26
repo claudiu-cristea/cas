@@ -68,7 +68,7 @@ class CasValidatorTest extends UnitTestCase {
 
     $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator);
 
-    $property_bag = $casValidator->validateTicket($version, $ticket);
+    $property_bag = $casValidator->validateTicket($ticket);
 
     $this->assertEquals($username, $property_bag->getUsername());
 
@@ -215,7 +215,9 @@ class CasValidatorTest extends UnitTestCase {
    */
   public function testValidateTicketException($version, $response, $is_proxy, $can_be_proxied, $proxy_chains, $exception, $exception_message, $http_client_exception) {
     if ($http_client_exception) {
-      $mock = new MockHandler([new RequestException($exception_message, new Request('GET', 'test'))]);
+      $mock = new MockHandler([
+        new RequestException($exception_message, new Request('GET', 'test')),
+      ]);
     }
     else {
       $mock = new MockHandler([new Response(200, array(), $response)]);
@@ -224,8 +226,8 @@ class CasValidatorTest extends UnitTestCase {
     $httpClient = new Client(['handler' => $handler]);
 
     $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
-                      ->disableOriginalConstructor()
-                      ->getMock();
+      ->disableOriginalConstructor()
+      ->getMock();
 
     $configFactory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
@@ -267,7 +269,16 @@ class CasValidatorTest extends UnitTestCase {
     /* The first exception is actually a 'recasting' of an http client
      * exception.
      */
-    $params[] = array('2.0', '', FALSE, FALSE, '', $exception_type, 'External http client exception', TRUE);
+    $params[] = array(
+      '2.0',
+      '',
+      FALSE,
+      FALSE,
+      '',
+      $exception_type,
+      'External http client exception',
+      TRUE,
+    );
 
     /* Protocol version 1 can throw two exceptions: 'no' text is found, or
      * 'yes' text is not found (in that order).
@@ -496,7 +507,7 @@ class CasValidatorTest extends UnitTestCase {
    *
    * @dataProvider getServerValidateUrlDataProvider
    */
-  public function testGetServerValidateUrl($ticket, $service_params, $return, $is_proxy, $can_be_proxied, $protocol) {
+  public function testGetServerValidateUrl($ticket, array $service_params, $return, $is_proxy, $can_be_proxied, $protocol) {
     /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $configFactory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(

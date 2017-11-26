@@ -21,7 +21,7 @@ class CasLogout {
   /**
    * The database connection used to find the user's session ID.
    *
-   * @var Connection
+   * @var \Drupal\Core\Database\Connection
    */
   protected $connection;
 

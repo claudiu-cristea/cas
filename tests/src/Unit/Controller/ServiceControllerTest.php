@@ -6,8 +6,6 @@ use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Exception\CasValidateException;
 use Drupal\cas\Exception\CasLoginException;
 use Drupal\cas\CasPropertyBag;
-use Drupal\Tests\cas\Unit\Controller\TestServiceController;
-use Drupal\cas\Controller\ServiceController;
 use Symfony\Component\HttpFoundation\Request;
 
 /**

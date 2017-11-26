@@ -14,6 +14,8 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * Class LogoutController.
+ *
+ * Logs a user out of Drupal then logs them out of the CAS server.
  */
 class LogoutController implements ContainerInjectionInterface {
 
@@ -27,7 +29,7 @@ class LogoutController implements ContainerInjectionInterface {
   /**
    * The request stack to get the request object from.
    *
-   * @var \Symfony\Component\HttpFoundation\RequestStack;
+   * @var \Symfony\Component\HttpFoundation\RequestStack
    */
   protected $requestStack;
 
@@ -48,9 +50,9 @@ class LogoutController implements ContainerInjectionInterface {
   /**
    * Constructor.
    *
-   * @param CasHelper $cas_helper
+   * @param \Drupal\cas\Service\CasHelper $cas_helper
    *   The CasHelper to get the logout Url from.
-   * @param RequestStack $request_stack
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
    *   The current request stack, to provide context.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
@@ -68,8 +70,6 @@ class LogoutController implements ContainerInjectionInterface {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    // This needs to get the necessary __construct requirements from
-    // the container.
     return new static($container->get('cas.helper'), $container->get('request_stack'), $container->get('config.factory'), $container->get('url_generator.non_bubbling'));
   }
 
@@ -77,18 +77,14 @@ class LogoutController implements ContainerInjectionInterface {
    * Logs a user out of Drupal, then redirects them to the CAS server logout.
    */
   public function logout() {
-    // Get the CAS server logout Url.
-    $logout_url = $this->getServerLogoutUrl($this->requestStack->getCurrentRequest());
+    // First log the user out of Drupal.
+    user_logout();
 
-    // Log the user out. This invokes hook_user_logout and destroys the
-    // session.
-    $this->userLogout();
+    $cas_server_logout_url = $this->getServerLogoutUrl($this->requestStack->getCurrentRequest());
+    $this->casHelper->log("Drupal session terminated; redirecting to CAS logout at: $cas_server_logout_url");
 
-    $this->casHelper->log("Drupal session terminated; redirecting to CAS logout at: $logout_url");
-
-    // Redirect the user to the CAS logout screen.
-    // We use our custom non-cacheable redirect class.
-    return new CasRedirectResponse($logout_url, 302);
+    // Redirect the user to the CAS server for logging out there as well.
+    return new CasRedirectResponse($cas_server_logout_url, 302);
   }
 
   /**
@@ -102,7 +98,11 @@ class LogoutController implements ContainerInjectionInterface {
    */
   public function getServerLogoutUrl(Request $request) {
     $base_url = $this->casHelper->getServerBaseUrl() . 'logout';
-    if ($this->settings->get('logout.logout_destination') != '') {
+
+    // CAS servers can redirect a user to some other URL after they end
+    // the user session. Check if we're configured to send along this
+    // destination parameter and pass it along if so.
+    if (!empty($this->settings->get('logout.logout_destination'))) {
       $destination = $this->settings->get('logout.logout_destination');
       if ($destination == '<front>') {
         // If we have '<front>', resolve the path.
@@ -130,15 +130,6 @@ class LogoutController implements ContainerInjectionInterface {
     else {
       return $base_url;
     }
-  }
-
-  /**
-   * Encapsulate user_logout().
-   *
-   * @codeCoverageIgnore
-   */
-  protected function userLogout() {
-    user_logout();
   }
 
 }

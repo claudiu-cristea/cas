@@ -133,7 +133,7 @@ class CasUserManager {
   /**
    * Attempts to log the user in to the Drupal site.
    *
-   * @param CasPropertyBag $property_bag
+   * @param \Drupal\cas\CasPropertyBag $property_bag
    *   CasPropertyBag containing username and attributes from CAS.
    * @param string $ticket
    *   The service ticket.

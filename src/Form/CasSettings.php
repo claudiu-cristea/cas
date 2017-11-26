@@ -36,9 +36,9 @@ class CasSettings extends ConfigFormBase {
   /**
    * Constructs a \Drupal\cas\Form\CasSettings object.
    *
-   * @param ConfigFactoryInterface $config_factory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The factory for configuration objects.
-   * @param FactoryInterface $plugin_factory
+   * @param \Drupal\Component\Plugin\Factory\FactoryInterface $plugin_factory
    *   The condition plugin factory.
    */
   public function __construct(ConfigFactoryInterface $config_factory, FactoryInterface $plugin_factory) {

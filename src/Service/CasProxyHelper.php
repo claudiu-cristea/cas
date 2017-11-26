@@ -54,13 +54,13 @@ class CasProxyHelper {
   /**
    * Constructor.
    *
-   * @param Client $http_client
+   * @param \GuzzleHttp\Client $http_client
    *   The HTTP Client library.
-   * @param CasHelper $cas_helper
+   * @param \Drupal\cas\Service\CasHelper $cas_helper
    *   The CAS Helper service.
-   * @param SessionInterface $session
+   * @param \Symfony\Component\HttpFoundation\Session\SessionInterface $session
    *   The session manager.
-   * @param ConfigFactoryInterface $config_factory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
    * @param \Drupal\Core\Database\Connection $database_connection
    *   The database connection.

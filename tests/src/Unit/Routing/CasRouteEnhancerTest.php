@@ -116,7 +116,7 @@ class CasRouteEnhancerTest extends UnitTestCase {
       ->willReturn($session);
 
     $enhancer = new CasRouteEnhancer($this->getConfigFactoryStub([
-      'cas.settings' => ['logout.cas_logout' => $cas_logout_enabled]
+      'cas.settings' => ['logout.cas_logout' => $cas_logout_enabled],
     ]));
 
     $defaults = $enhancer->enhance([], $this->request);

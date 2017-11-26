@@ -28,7 +28,7 @@ class ServiceController implements ContainerInjectionInterface {
   use StringTranslationTrait;
 
   /**
-   * Used for misc. services required.
+   * CAS Helper.
    *
    * @var \Drupal\cas\Service\CasHelper
    */
@@ -86,19 +86,21 @@ class ServiceController implements ContainerInjectionInterface {
   /**
    * Constructor.
    *
-   * @param CasHelper $cas_helper
+   * @param \Drupal\cas\Service\CasHelper $cas_helper
    *   The CAS Helper service.
-   * @param CasProxyHelper $cas_proxy_helper
+   * @param \Drupal\cas\Service\CasProxyHelper $cas_proxy_helper
    *   The CAS Proxy helper.
-   * @param CasValidator $cas_validator
+   * @param \Drupal\cas\Service\CasValidator $cas_validator
    *   The CAS Validator service.
-   * @param CasUserManager $cas_user_manager
+   * @param \Drupal\cas\Service\CasUserManager $cas_user_manager
    *   The CAS User Manager service.
-   * @param CasLogout $cas_logout
+   * @param \Drupal\cas\Service\CasLogout $cas_logout
    *   The CAS Logout service.
-   * @param UrlGeneratorInterface $url_generator
+   * @param \Symfony\Component\HttpFoundation\RequestStack $request_stack
+   *   The request stack.
+   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
    *   The URL generator.
-   * @param ConfigFactoryInterface $config_factory
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
    */
   public function __construct(CasHelper $cas_helper, CasProxyHelper $cas_proxy_helper, CasValidator $cas_validator, CasUserManager $cas_user_manager, CasLogout $cas_logout, RequestStack $request_stack, UrlGeneratorInterface $url_generator, ConfigFactoryInterface $config_factory) {
@@ -169,9 +171,10 @@ class ServiceController implements ContainerInjectionInterface {
     // to the Drupal site so we can authenticate the user locally using the
     // ticket.
     $ticket = $request->query->get('ticket');
+
     // Our CAS service will need to reconstruct the original service URL
     // when validating the ticket. We always know what the base URL for
-    // the service URL (it's this page), but there may be some query params
+    // the service URL is (it's this page), but there may be some query params
     // attached as well (like a destination param) that we need to pass in
     // as well. So, detach the ticket param, and pass the rest off.
     $service_params = $request->query->all();
@@ -229,7 +232,7 @@ class ServiceController implements ContainerInjectionInterface {
    * we can then convert it back to a "destination" parameter and let Drupal
    * do it's thing when redirecting.
    *
-   * @param Request $request
+   * @param \Symfony\Component\HttpFoundation\Request $request
    *   The Symfony request object.
    */
   private function handleReturnToParameter(Request $request) {
