@@ -11,6 +11,7 @@ use Drupal\cas\Service\CasUserManager;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
+use Psr\Log\LogLevel;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\cas\Service\CasValidator;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -139,7 +140,7 @@ class ServiceController implements ContainerInjectionInterface {
         $this->casLogout->handleSlo($request->request->get('logoutRequest'));
       }
       catch (CasSloException $e) {
-        $this->casHelper->log($e->getMessage());
+        $this->casHelper->log(LogLevel::ERROR, $e->getMessage());
       }
       // Always return a 200 code. CAS Server doesn’t care either way what
       // happens here, since it is a fire-and-forget approach taken.
@@ -162,7 +163,7 @@ class ServiceController implements ContainerInjectionInterface {
      * In either case, we just want to redirect them away from this controller.
      */
     if (!$request->query->has('ticket')) {
-      $this->casHelper->log("No ticket detected, move along.");
+      $this->casHelper->log(LogLevel::DEBUG, "No CAS ticket found in request to service controller; backing out.");
       $this->handleReturnToParameter($request);
       return RedirectResponse::create($this->urlGenerator->generate('<front>'));
     }
@@ -184,7 +185,7 @@ class ServiceController implements ContainerInjectionInterface {
     }
     catch (CasValidateException $e) {
       // Validation failed, redirect to homepage and set message.
-      $this->casHelper->log($e->getMessage());
+      $this->casHelper->log(LogLevel::ERROR, $e->getMessage());
       $this->setMessage($this->t('There was a problem validating your login, please contact a site administrator.'), 'error');
       $this->handleReturnToParameter($request);
       return RedirectResponse::create($this->urlGenerator->generate('<front>'));
@@ -195,13 +196,13 @@ class ServiceController implements ContainerInjectionInterface {
     try {
       $this->casUserManager->login($cas_validation_info, $ticket);
       if ($this->settings->get('proxy.initialize') && $cas_validation_info->getPgt()) {
-        $this->casHelper->log("Storing PGT information for this session.");
+        $this->casHelper->log(LogLevel::DEBUG, "Storing PGT information for this session.");
         $this->casProxyHelper->storePgtSession($cas_validation_info->getPgt());
       }
       $this->setMessage($this->t('You have been logged in.'));
     }
     catch (CasLoginException $e) {
-      $this->casHelper->log($e->getMessage());
+      $this->casHelper->log(LogLevel::ERROR, $e->getMessage());
       $this->setMessage($this->t('There was a problem logging in, please contact a site administrator.'), 'error');
     }
 
@@ -237,7 +238,7 @@ class ServiceController implements ContainerInjectionInterface {
    */
   private function handleReturnToParameter(Request $request) {
     if ($request->query->has('returnto')) {
-      $this->casHelper->log("Converting returnto parameter to destination.");
+      $this->casHelper->log(LogLevel::DEBUG, "Converting returnto parameter to destination.");
       $request->query->set('destination', $request->query->get('returnto'));
     }
   }

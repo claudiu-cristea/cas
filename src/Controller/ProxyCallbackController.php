@@ -3,6 +3,7 @@
 namespace Drupal\cas\Controller;
 
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
+use Psr\Log\LogLevel;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\Database\Connection;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -72,7 +73,7 @@ class ProxyCallbackController implements ContainerInjectionInterface {
     // Check for both a pgtIou and pgtId parameter. If either is not present,
     // inform CAS Server of an error.
     if (!($request->query->get('pgtId') && $request->query->get('pgtIou'))) {
-      $this->casHelper->log("Missing necessary parameters for PGT.");
+      $this->casHelper->log(LogLevel::ERROR, "Missing necessary parameters for PGT.");
       return Response::create('Missing necessary parameters', 400);
     }
     else {
@@ -80,7 +81,11 @@ class ProxyCallbackController implements ContainerInjectionInterface {
       $pgt_id = $request->query->get('pgtId');
       $pgt_iou = $request->query->get('pgtIou');
       $this->storePgtMapping($pgt_iou, $pgt_id);
-      $this->casHelper->log("Storing pgtId $pgt_id with pgtIou $pgt_iou");
+      $this->casHelper->log(
+        LogLevel::DEBUG,
+        "Storing pgtId %pgt_id with pgtIou %pgt_iou",
+        array('%pgt_id' => $pgt_id, '%pgt_iou' => $pgt_iou)
+      );
       // PGT stored properly, tell CAS Server to proceed.
       return Response::create('OK', 200);
     }

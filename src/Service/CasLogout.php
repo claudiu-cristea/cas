@@ -5,6 +5,7 @@ namespace Drupal\cas\Service;
 use Drupal\cas\Exception\CasSloException;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
+use Psr\Log\LogLevel;
 
 /**
  * Class CasLogout.
@@ -55,11 +56,11 @@ class CasLogout {
    *   The raw data posted to us from the CAS server.
    */
   public function handleSlo($data) {
-    $this->casHelper->log("Attempting to handle SLO request.");
+    $this->casHelper->log(LogLevel::DEBUG, "Attempting to handle single-log-out request.");
 
     // Only look up tickets if they were stored to begin with.
     if (!$this->settings->get('logout.enable_single_logout')) {
-      $this->casHelper->log("Aborting; SLO is not enabled in CAS settings.");
+      $this->casHelper->log(LogLevel::DEBUG, "Aborting single-log-out handling; it's not enabled in the CAS settings.");
       return;
     }
 
@@ -75,7 +76,7 @@ class CasLogout {
     $this->destroySession($sid);
     $this->removeSessionMapping($sid);
 
-    $this->casHelper->log("SLO request completed successfully.");
+    $this->casHelper->log(LogLevel::DEBUG, "Single-log-out request completed successfully.");
   }
 
   /**

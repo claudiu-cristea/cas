@@ -8,6 +8,7 @@ use Drupal\cas\Event\CasPreRedirectEvent;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Cache\CacheableMetadata;
 use Drupal\Core\Routing\TrustedRedirectResponse;
+use Psr\Log\LogLevel;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 
@@ -102,7 +103,7 @@ class CasRedirector {
         $response = new TrustedRedirectResponse($login_url);
         $response->addCacheableDependency($cacheable_metadata);
       }
-      $this->casHelper->log("Cas redirecting to: $login_url");
+      $this->casHelper->log(LogLevel::DEBUG, "Cas redirecting to %url", array('%url' => $login_url));
     }
     return $response;
   }

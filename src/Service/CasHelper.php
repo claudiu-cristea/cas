@@ -4,7 +4,7 @@ namespace Drupal\cas\Service;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
-use Drupal\Core\Logger\RfcLogLevel;
+use Psr\Log\LogLevel;
 
 /**
  * Class CasHelper.
@@ -127,18 +127,25 @@ class CasHelper {
   }
 
   /**
-   * Log information to the logger.
+   * Wrap Drupal's normal logger.
    *
-   * Only log supplied information to the logger if module is configured to do
-   * so, otherwise do nothing.
+   * This allows us to only log debug messages if configured to do so.
    *
-   * @param string $message
+   * @param mixed $level
    *   The message to log.
+   * @param string $message
+   *   The error message.
+   * @param array $context
+   *   The context.
    */
-  public function log($message) {
-    if ($this->settings->get('advanced.debug_log') == TRUE) {
-      $this->loggerChannel->log(RfcLogLevel::DEBUG, $message);
+  public function log($level, $message, array $context = []) {
+    // Back out of logging if it's a debug message and we're not configured
+    // to log those types of messages. This helps keep the drupal log clean
+    // on busy sites.
+    if ($level == LogLevel::DEBUG && !$this->settings->get('advanced.debug_log')) {
+      return;
     }
+    $this->loggerChannel->log($level, $message, $context);
   }
 
 }

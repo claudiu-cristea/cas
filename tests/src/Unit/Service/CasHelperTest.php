@@ -4,6 +4,7 @@ namespace Drupal\Tests\cas\Unit\Service;
 
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Service\CasHelper;
+use Psr\Log\LogLevel;
 
 /**
  * CasHelper unit tests.
@@ -121,7 +122,7 @@ class CasHelperTest extends UnitTestCase {
    * @covers ::log
    * @covers ::__construct
    */
-  public function testLoggingOn() {
+  public function testLogWhenDebugTurnedOn() {
     /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
@@ -129,18 +130,22 @@ class CasHelperTest extends UnitTestCase {
       ),
     ));
     $cas_helper = new CasHelper($config_factory, $this->loggerFactory);
-    $this->loggerChannel->expects($this->once())
+
+    // The actual logger should be called twice.
+    $this->loggerChannel->expects($this->exactly(2))
       ->method('log');
-    $cas_helper->log('This is a test.');
+
+    $cas_helper->log(LogLevel::DEBUG, 'This is a debug log');
+    $cas_helper->log(LogLevel::ERROR, 'This is an error log');
   }
 
   /**
-   * Test to make sure we don't log when we're not configured to.
+   * Test our log wrapper when debug logging is off.
    *
    * @covers ::log
    * @covers ::__construct
    */
-  public function testLoggingOff() {
+  public function testLogWhenDebugTurnedOff() {
     /** @var \Drupal\Core\Config\ConfigFactory $config_factory */
     $config_factory = $this->getConfigFactoryStub(array(
       'cas.settings' => array(
@@ -148,9 +153,13 @@ class CasHelperTest extends UnitTestCase {
       ),
     ));
     $cas_helper = new CasHelper($config_factory, $this->loggerFactory);
-    $this->loggerChannel->expects($this->never())
+
+    // The actual logger should only called once, when we log an error.
+    $this->loggerChannel->expects($this->once())
       ->method('log');
-    $cas_helper->log('This is a test, but should not be logged as such.');
+
+    $cas_helper->log(LogLevel::DEBUG, 'This is a debug log');
+    $cas_helper->log(LogLevel::ERROR, 'This is an error log');
   }
 
 }

@@ -8,6 +8,7 @@ use GuzzleHttp\Exception\ClientException;
 use Drupal\Component\Utility\UrlHelper;
 use GuzzleHttp\Cookie\CookieJar;
 use Drupal\cas\Exception\CasProxyException;
+use Psr\Log\LogLevel;
 use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Drupal\Core\Database\Connection;
 
@@ -117,7 +118,7 @@ class CasProxyHelper {
       }
       $domain = $cookie['Domain'];
       $jar = CookieJar::fromArray($cookies, $domain);
-      $this->casHelper->log("$target_service already proxied. Returning information from session.");
+      $this->casHelper->log(LogLevel::DEBUG, "%target_service already proxied. Returning information from session.", array('%target_service' => $target_service));
       return $jar;
     }
 
@@ -129,15 +130,14 @@ class CasProxyHelper {
     // Make request to CAS server to retrieve a proxy ticket for this service.
     $cas_url = $this->getServerProxyUrl($target_service);
     try {
-      $this->casHelper->log("Retrieving proxy ticket from: $cas_url");
+      $this->casHelper->log(LogLevel::DEBUG, "Retrieving proxy ticket from %cas_url", array('%cas_url' => $cas_url));
       $response = $this->httpClient->get($cas_url, ['timeout' => $this->settings->get('advanced.connection_timeout')]);
-      $this->casHelper->log("Received: " . htmlspecialchars($response->getBody()->__toString()));
     }
     catch (ClientException $e) {
       throw new CasProxyException($e->getMessage());
     }
     $proxy_ticket = $this->parseProxyTicket($response->getBody());
-    $this->casHelper->log("Extracted proxy ticket: $proxy_ticket");
+    $this->casHelper->log(LogLevel::DEBUG, "Extracted proxy ticket %ticket", array('%ticket' => $proxy_ticket));
 
     // Make request to target service with our new proxy ticket.
     // The target service will validate this ticket against the CAS server
@@ -146,7 +146,7 @@ class CasProxyHelper {
     $service_url = $target_service . "?" . UrlHelper::buildQuery($params);
     $cookie_jar = new CookieJar();
     try {
-      $this->casHelper->log("Contacting service: $service_url");
+      $this->casHelper->log(LogLevel::DEBUG, "Contacting service: %service", array('%service' => $service_url));
       $this->httpClient->get($service_url, ['cookies' => $cookie_jar, 'timeout' => $this->settings->get('advanced.connection_timeout')]);
     }
     catch (ClientException $e) {
@@ -155,7 +155,7 @@ class CasProxyHelper {
     // Store in session storage for later reuse.
     $cas_proxy_helper[$target_service] = $cookie_jar->toArray();
     $this->session->set('cas_proxy_helper', $cas_proxy_helper);
-    $this->casHelper->log("Stored cookies from $target_service in session.");
+    $this->casHelper->log(LogLevel::DEBUG, "Stored cookies from %service in session.", array('%service' => $target_service));
     return $cookie_jar;
   }
 

@@ -9,6 +9,7 @@ use Drupal\Core\Routing\UrlGeneratorInterface;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Drupal\cas\CasPropertyBag;
+use Psr\Log\LogLevel;
 
 /**
  * Class CasValidator.
@@ -102,11 +103,11 @@ class CasValidator {
     $options['timeout'] = $this->settings->get('advanced.connection_timeout');
 
     $validate_url = $this->getServerValidateUrl($ticket, $service_params);
-    $this->casHelper->log("Attempting to validate service ticket using URL $validate_url");
+    $this->casHelper->log(LogLevel::DEBUG, "Attempting to validate service ticket using URL %url", ['%url' => $validate_url]);
     try {
       $response = $this->httpClient->get($validate_url, $options);
       $response_data = $response->getBody()->__toString();
-      $this->casHelper->log("Validation response received from CAS server: " . htmlspecialchars($response_data));
+      $this->casHelper->log(LogLevel::DEBUG, "Validation response received from CAS server: %data", ['%data' => $response_data]);
     }
     catch (RequestException $e) {
       throw new CasValidateException("Error with request to validate ticket: " . $e->getMessage());
@@ -148,7 +149,7 @@ class CasValidator {
     // Ticket is valid, need to extract the username.
     $arr = preg_split('/\n/', $data);
     $user = trim($arr[1]);
-    $this->casHelper->log("Extracted user: $user");
+    $this->casHelper->log(LogLevel::DEBUG, "Extracted user: %user", ['%user' => $user]);
     return new CasPropertyBag($user);
   }
 
@@ -198,7 +199,7 @@ class CasValidator {
       throw new CasValidateException("No user found in ticket validation response.");
     }
     $username = $user_element->item(0)->nodeValue;
-    $this->casHelper->log("Extracted user: $username");
+    $this->casHelper->log(LogLevel::DEBUG, "Extracted user: ", ['%user' => $username]);
     $property_bag = new CasPropertyBag($username);
 
     // If the server provided any attributes, parse them out into the property
@@ -221,7 +222,7 @@ class CasValidator {
         throw new CasValidateException("Proxy initialized, but no PGTIOU provided in response.");
       }
       $pgt = $pgt_element->item(0)->nodeValue;
-      $this->casHelper->log("Extracted PGT: $pgt");
+      $this->casHelper->log(LogLevel::DEBUG, "Extracted PGT: %pgt", ['%pgt' => $pgt]);
       $property_bag->setPgt($pgt);
     }
     return $property_bag;
@@ -243,7 +244,7 @@ class CasValidator {
     $allowed_proxy_chains_raw = $this->settings->get('proxy.proxy_chains');
     $allowed_proxy_chains = $this->parseAllowedProxyChains($allowed_proxy_chains_raw);
     $server_chain = $this->parseServerProxyChain($proxy_chain);
-    $this->casHelper->log("Attempting to verify supplied proxy chain: " . print_r($server_chain, TRUE));
+    $this->casHelper->log(LogLevel::DEBUG, "Attempting to verify supplied proxy chain: %chain", ['%chain' => print_r($server_chain, TRUE)]);
 
     // Loop through the allowed chains, checking the supplied chain for match.
     foreach ($allowed_proxy_chains as $chain) {
@@ -258,14 +259,22 @@ class CasValidator {
         if (preg_match('/^\/.*\/[ixASUXu]*$/s', $regex)) {
           if (!(preg_match($regex, $server_chain[$index]))) {
             $flag = FALSE;
-            $this->casHelper->log("Failed to match $regex with supplied " . $server_chain[$index]);
+            $this->casHelper->log(
+              LogLevel::DEBUG,
+              "Failed to match %regex with supplied %chain",
+              ['%regex' => $regex, '%chain' => $server_chain[$index]]
+            );
             break;
           }
         }
         else {
           if (!(strncasecmp($regex, $server_chain[$index], strlen($regex)) == 0)) {
             $flag = FALSE;
-            $this->casHelper->log("Failed to match $regex with supplied " . $server_chain[$index]);
+            $this->casHelper->log(
+              LogLevel::DEBUG,
+              "Failed to match %regex with supplied %chain",
+              ['%regex' => $regex, '%chain' => $server_chain[$index]]
+            );
             break;
           }
         }
@@ -273,7 +282,11 @@ class CasValidator {
 
       // If we have a match, return.
       if ($flag == TRUE) {
-        $this->casHelper->log("Matched allowed chain: " . print_r($chain, TRUE));
+        $this->casHelper->log(
+          LogLevel::DEBUG,
+          "Matched allowed chain: %chain",
+          ['%chain' => print_r($chain, TRUE)]
+        );
         return;
       }
     }
@@ -343,7 +356,11 @@ class CasValidator {
       $value = $child->nodeValue;
       $attributes[$name][] = $value;
     }
-    $this->casHelper->log("Parsed out attributes: " . print_r($attributes, TRUE));
+    $this->casHelper->log(
+      LogLevel::DEBUG,
+      "Parsed out attributes: %attributes",
+      ['%attributes' => print_r($attributes, TRUE)]
+    );
     return $attributes;
   }
 
