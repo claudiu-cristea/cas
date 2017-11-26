@@ -66,6 +66,8 @@ class ProxyCallbackController implements ContainerInjectionInterface {
    * the incoming response from the CAS Server can be looked up.
    */
   public function callback() {
+    $this->casHelper->log(LogLevel::DEBUG, 'Proxy callback processing started.');
+
     // @TODO: Check that request is coming from configured CAS server to avoid
     // filling up the table with bogus pgt values.
     $request = $this->requestStack->getCurrentRequest();
@@ -73,7 +75,7 @@ class ProxyCallbackController implements ContainerInjectionInterface {
     // Check for both a pgtIou and pgtId parameter. If either is not present,
     // inform CAS Server of an error.
     if (!($request->query->get('pgtId') && $request->query->get('pgtIou'))) {
-      $this->casHelper->log(LogLevel::ERROR, "Missing necessary parameters for PGT.");
+      $this->casHelper->log(LogLevel::ERROR, "Either pgtId or pgtIou parameters are missing from the request.");
       return Response::create('Missing necessary parameters', 400);
     }
     else {

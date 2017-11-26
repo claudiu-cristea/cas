@@ -103,7 +103,12 @@ class CasValidator {
     $options['timeout'] = $this->settings->get('advanced.connection_timeout');
 
     $validate_url = $this->getServerValidateUrl($ticket, $service_params);
-    $this->casHelper->log(LogLevel::DEBUG, "Attempting to validate service ticket using URL %url", ['%url' => $validate_url]);
+    $this->casHelper->log(
+      LogLevel::DEBUG,
+      'Attempting to validate service ticket %ticket by making request to URL %url',
+      ['%ticket' => $ticket, '%url' => $validate_url]
+    );
+
     try {
       $response = $this->httpClient->get($validate_url, $options);
       $response_data = $response->getBody()->__toString();
@@ -149,7 +154,11 @@ class CasValidator {
     // Ticket is valid, need to extract the username.
     $arr = preg_split('/\n/', $data);
     $user = trim($arr[1]);
-    $this->casHelper->log(LogLevel::DEBUG, "Extracted user: %user", ['%user' => $user]);
+    $this->casHelper->log(
+      LogLevel::DEBUG,
+      "Extracted username %user from validation response data.",
+      ['%user' => $user]
+    );
     return new CasPropertyBag($user);
   }
 
@@ -178,7 +187,7 @@ class CasValidator {
 
     $failure_elements = $dom->getElementsByTagName('authenticationFailure');
     if ($failure_elements->length > 0) {
-      // Failed validation, extract the message and toss exception.
+      // Failed validation, extract the message and throw exception.
       $failure_element = $failure_elements->item(0);
       $error_code = $failure_element->getAttribute('code');
       $error_msg = $failure_element->nodeValue;
@@ -199,7 +208,11 @@ class CasValidator {
       throw new CasValidateException("No user found in ticket validation response.");
     }
     $username = $user_element->item(0)->nodeValue;
-    $this->casHelper->log(LogLevel::DEBUG, "Extracted user: ", ['%user' => $username]);
+    $this->casHelper->log(
+      LogLevel::DEBUG,
+      "Extracted username %user from validation response.",
+      ['%user' => $username]
+    );
     $property_bag = new CasPropertyBag($username);
 
     // If the server provided any attributes, parse them out into the property
@@ -222,7 +235,11 @@ class CasValidator {
         throw new CasValidateException("Proxy initialized, but no PGTIOU provided in response.");
       }
       $pgt = $pgt_element->item(0)->nodeValue;
-      $this->casHelper->log(LogLevel::DEBUG, "Extracted PGT: %pgt", ['%pgt' => $pgt]);
+      $this->casHelper->log(
+        LogLevel::DEBUG,
+        "Extracted PGT %pgt from validation response.",
+        ['%pgt' => $pgt]
+      );
       $property_bag->setPgt($pgt);
     }
     return $property_bag;
@@ -358,7 +375,7 @@ class CasValidator {
     }
     $this->casHelper->log(
       LogLevel::DEBUG,
-      "Parsed out attributes: %attributes",
+      "Parsed the following attributes from the validation response: %attributes",
       ['%attributes' => print_r($attributes, TRUE)]
     );
     return $attributes;

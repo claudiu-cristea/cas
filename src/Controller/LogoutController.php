@@ -6,7 +6,6 @@ use Drupal\cas\CasRedirectResponse;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
-use Drupal\Core\Logger\RfcLogLevel;
 use Psr\Log\LogLevel;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\cas\Service\CasHelper;
@@ -85,8 +84,8 @@ class LogoutController implements ContainerInjectionInterface {
     $cas_server_logout_url = $this->getServerLogoutUrl($this->requestStack->getCurrentRequest());
     $this->casHelper->log(
       LogLevel::DEBUG,
-      "Drupal session terminated; redirecting to CAS logout at @url",
-      array('@url' => $cas_server_logout_url)
+      "Drupal session terminated; redirecting to CAS server logout at %url",
+      ['%url' => $cas_server_logout_url]
     );
 
     // Redirect the user to the CAS server for logging out there as well.

@@ -69,6 +69,8 @@ class CasUserManagerTest extends UnitTestCase {
    */
   protected $userManager;
 
+  protected $casHelper;
+
   /**
    * {@inheritdoc}
    */
@@ -91,6 +93,9 @@ class CasUserManagerTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
     $this->eventDispatcher = $this->getMockBuilder('\Symfony\Component\EventDispatcher\EventDispatcherInterface')
+      ->disableOriginalConstructor()
+      ->getMock();
+    $this->casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
       ->disableOriginalConstructor()
       ->getMock();
   }
@@ -126,6 +131,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->session,
         $this->connection,
         $this->eventDispatcher,
+        $this->casHelper,
       ))
       ->getMock();
 
@@ -155,6 +161,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->session,
         $this->connection,
         $this->eventDispatcher,
+        $this->casHelper,
       ))
       ->getMock();
 
@@ -198,6 +205,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->session,
         $this->connection,
         $this->eventDispatcher,
+        $this->casHelper,
       ))
       ->getMock();
 
@@ -252,6 +260,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->session,
         $this->connection,
         $this->eventDispatcher,
+        $this->casHelper,
       ))
       ->getMock();
 
@@ -319,6 +328,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->session,
         $this->connection,
         $this->eventDispatcher,
+        $this->casHelper,
       ))
       ->getMock();
 
@@ -366,6 +376,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->session,
         $this->connection,
         $this->eventDispatcher,
+        $this->casHelper,
       ))
       ->getMock();
 
@@ -408,6 +419,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->session,
         $this->connection,
         $this->eventDispatcher,
+        $this->casHelper,
       ))
       ->getMock();
 

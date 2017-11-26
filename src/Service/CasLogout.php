@@ -65,11 +65,21 @@ class CasLogout {
     }
 
     $service_ticket = $this->getServiceTicketFromData($data);
+    $this->casHelper->log(
+      LogLevel::DEBUG,
+      'Service ticket %ticket extracted from single-log-out request.',
+      ['%ticket' => $service_ticket]
+    );
 
     // Look up the session ID by the service ticket, then load up that
     // session and destroy it.
     $sid = $this->lookupSessionIdByServiceTicket($service_ticket);
     if (!$sid) {
+      $this->casHelper->log(
+        LogLevel::DEBUG,
+        'No matching session found for %ticket',
+        ['%ticket' => $service_ticket]
+      );
       return;
     }
 

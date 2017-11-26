@@ -140,15 +140,19 @@ class ServiceController implements ContainerInjectionInterface {
         $this->casLogout->handleSlo($request->request->get('logoutRequest'));
       }
       catch (CasSloException $e) {
-        $this->casHelper->log(LogLevel::ERROR, $e->getMessage());
+        $this->casHelper->log(
+          LogLevel::ERROR,
+          'Error when handling single-log-out request: %error',
+          ['%error' => $e->getMessage()]
+        );
       }
-      // Always return a 200 code. CAS Server doesn’t care either way what
+      // Always return a 200 response. CAS Server doesn’t care either way what
       // happens here, since it is a fire-and-forget approach taken.
       return Response::create('', 200);
     }
 
     // We will be redirecting the user below. To prevent the CasSubscriber from
-    // initiating an automatic authentiation on the that request (like forced
+    // initiating an automatic authentiation on that request (like forced
     // auth or gateway auth) and potentially creating an authentication loop,
     // we set a session variable instructing the CasSubscriber skip auto auth
     // for that request.
@@ -185,7 +189,11 @@ class ServiceController implements ContainerInjectionInterface {
     }
     catch (CasValidateException $e) {
       // Validation failed, redirect to homepage and set message.
-      $this->casHelper->log(LogLevel::ERROR, $e->getMessage());
+      $this->casHelper->log(
+        LogLevel::ERROR,
+        'Error when validating ticket: %error',
+        ['%error' => $e->getMessage()]
+      );
       $this->setMessage($this->t('There was a problem validating your login, please contact a site administrator.'), 'error');
       $this->handleReturnToParameter($request);
       return RedirectResponse::create($this->urlGenerator->generate('<front>'));
@@ -238,7 +246,7 @@ class ServiceController implements ContainerInjectionInterface {
    */
   private function handleReturnToParameter(Request $request) {
     if ($request->query->has('returnto')) {
-      $this->casHelper->log(LogLevel::DEBUG, "Converting returnto parameter to destination.");
+      $this->casHelper->log(LogLevel::DEBUG, "Converting query parameter 'returnto' to 'destination'.");
       $request->query->set('destination', $request->query->get('returnto'));
     }
   }
