@@ -140,7 +140,7 @@ class CasSettings extends ConfigFormBase {
     );
     $form['general']['login_link_enabled'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Login link lnabled'),
+      '#title' => $this->t('Login link Enabled'),
       '#description' => $this->t('Display a link to login via CAS above the user login form.'),
       '#default_value' => $config->get('login_link_enabled'),
     );
