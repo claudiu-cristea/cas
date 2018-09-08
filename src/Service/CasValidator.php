@@ -2,6 +2,7 @@
 
 namespace Drupal\cas\Service;
 
+use Drupal\cas\Event\CasPostValidateEvent;
 use Drupal\cas\Exception\CasValidateException;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -10,6 +11,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Drupal\cas\CasPropertyBag;
 use Psr\Log\LogLevel;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Class CasValidator.
@@ -29,6 +31,13 @@ class CasValidator {
    * @var \Drupal\cas\Service\CasHelper
    */
   protected $casHelper;
+
+  /**
+   * The EventDispatcher.
+   *
+   * @var \Symfony\Component\EventDispatcher\EventDispatcher
+   */
+  protected $eventDispatcher;
 
   /**
    * Stores settings object.
@@ -55,12 +64,15 @@ class CasValidator {
    *   The configuration factory.
    * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
    *   The URL generator.
+  *  @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
+   *   The EventDispatcher service.
    */
-  public function __construct(Client $http_client, CasHelper $cas_helper, ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator) {
+  public function __construct(Client $http_client, CasHelper $cas_helper, ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator, EventDispatcherInterface $event_dispatcher) {
     $this->httpClient = $http_client;
     $this->casHelper = $cas_helper;
     $this->settings = $config_factory->get('cas.settings');
     $this->urlGenerator = $url_generator;
+    $this->eventDispatcher = $event_dispatcher;
   }
 
   /**
@@ -121,14 +133,23 @@ class CasValidator {
     $protocol_version = $this->settings->get('server.version');
     switch ($protocol_version) {
       case "1.0":
-        return $this->validateVersion1($response_data);
+        $cas_property_bag = $this->validateVersion1($response_data);
+        break;
 
       case "2.0":
       case "3.0":
-        return $this->validateVersion2($response_data);
+        $cas_property_bag = $this->validateVersion2($response_data);
+        break;
+
+    }
+    if (empty($cas_property_bag)) {
+      throw new CasValidateException('Unknown CAS protocol version specified: ' . $protocol_version);
     }
 
-    throw new CasValidateException('Unknown CAS protocol version specified: ' . $protocol_version);
+    // Dispatch an event that allows others to alter the Cas property bag.
+    $event = new CasPostValidateEvent($response_data, $cas_property_bag);
+    $this->eventDispatcher->dispatch(CasHelper::EVENT_POST_VALIDATE, $event);
+    return $event->getCasPropertyBag();
   }
 
   /**

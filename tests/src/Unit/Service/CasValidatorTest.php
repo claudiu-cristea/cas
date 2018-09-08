@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\cas\Unit\Service;
 
+use Drupal\cas\Event\CasPostValidateEvent;
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Service\CasValidator;
 use Drupal\cas\CasPropertyBag;
@@ -23,6 +24,46 @@ use Drupal\cas\Service\CasHelper;
  * @coversDefaultClass \Drupal\cas\Service\CasValidator
  */
 class CasValidatorTest extends UnitTestCase {
+
+  /**
+   * The mocked event dispatcher.
+   *
+   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface|\PHPUnit_Framework_MockObject_MockObject
+   */
+  protected $eventDispatcher;
+
+  /**
+   * Storage for events during tests.
+   *
+   * @var array
+   */
+  protected $events;
+
+  /**
+   * {@inheritdoc}
+   */
+  public function setUp() {
+    parent::setUp();
+
+    // Mock event dispatcher to dispatch events.
+    $this->eventDispatcher = $this->getMockBuilder('\Symfony\Component\EventDispatcher\EventDispatcherInterface')
+      ->disableOriginalConstructor()
+      ->getMock();
+  }
+
+  /**
+   * Dispatch an event.
+   *
+   * @param string $event_name
+   *   Name of event fired.
+   * @param \Drupal\cas\Event\CasPostValidateEvent $event
+   *   Event fired.
+   */
+  public function dispatchEvent($event_name, CasPostValidateEvent $event) {
+    $this->events[$event_name] = $event;
+    $propertyBag = $event->getCasPropertyBag();
+    $propertyBag->setAttribute('email', ['modified@example.com']);
+  }
 
   /**
    * Test validation of Cas tickets.
@@ -66,7 +107,7 @@ class CasValidatorTest extends UnitTestCase {
 
     $urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
-    $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator);
+    $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator, $this->eventDispatcher);
 
     $property_bag = $casValidator->validateTicket($ticket);
 
@@ -243,7 +284,7 @@ class CasValidatorTest extends UnitTestCase {
 
     $urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
-    $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator);
+    $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator, $this->eventDispatcher);
 
     $this->setExpectedException($exception, $exception_message);
     $ticket = $this->randomMachineName(24);
@@ -475,10 +516,61 @@ class CasValidatorTest extends UnitTestCase {
 
     $urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
-    $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator);
+    $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator, $this->eventDispatcher);
     $expected_bag = new CasPropertyBag('username');
     $expected_bag->setAttributes(array(
       'email' => array('foo@example.com'),
+      'memberof' => array('cn=foo,o=example', 'cn=bar,o=example'),
+    ));
+    $actual_bag = $casValidator->validateTicket($ticket, $service_params);
+    $this->assertEquals($expected_bag, $actual_bag);
+  }
+
+  /**
+   * Tests the events dispatched by the listener.
+   *
+   * @covers ::validateTicket
+   */
+  public function testEventsDispatched() {
+    // Mock up listener on dispatched event.
+    $this->eventDispatcher
+      ->method('dispatch')
+      ->willReturnCallback([$this, 'dispatchEvent']);
+    $this->events = [];
+
+    $ticket = $this->randomMachineName(8);
+    $service_params = array();
+    $response = "<cas:serviceResponse xmlns:cas='http://example.com/cas'>
+        <cas:authenticationSuccess>
+          <cas:user>username</cas:user>
+          <cas:attributes>
+            <cas:email>foo@example.com</cas:email>
+            <cas:memberof>cn=foo,o=example</cas:memberof>
+            <cas:memberof>cn=bar,o=example</cas:memberof>
+          </cas:attributes>
+        </cas:authenticationSuccess>
+       </cas:serviceResponse>";
+    $mock = new MockHandler([new Response(200, array(), $response)]);
+    $handler = HandlerStack::create($mock);
+    $httpClient = new Client(['handler' => $handler]);
+
+    $configFactory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example.com',
+        'server.version' => '2.0',
+      ),
+    ));
+
+    $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+      ->disableOriginalConstructor()
+      ->getMock();
+
+    $urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
+
+    $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator, $this->eventDispatcher);
+    $expected_bag = new CasPropertyBag('username');
+    $expected_bag->setAttributes(array(
+      'email' => array('modified@example.com'),
       'memberof' => array('cn=foo,o=example', 'cn=bar,o=example'),
     ));
     $actual_bag = $casValidator->validateTicket($ticket, $service_params);
@@ -548,7 +640,7 @@ class CasValidatorTest extends UnitTestCase {
     $casHelper->method('getServerBaseUrl')
       ->willReturn('https://example-server.com/cas/');
 
-    $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator);
+    $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator, $this->eventDispatcher);
     $this->assertEquals($return, $casValidator->getServerValidateUrl($ticket, $service_params));
 
   }

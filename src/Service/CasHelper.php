@@ -82,6 +82,13 @@ class CasHelper {
   const EVENT_PRE_REDIRECT = 'cas.pre_redirect';
 
   /**
+   * Event type identifier for events fired after service validation.
+   *
+   * @var string
+   */
+  const EVENT_POST_VALIDATE = 'cas.post_validate';
+
+  /**
    * Stores settings object.
    *
    * @var \Drupal\Core\Config\Config
