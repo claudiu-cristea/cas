@@ -129,11 +129,15 @@ class CasHelper {
    *   The base URL.
    */
   public function getServerBaseUrl() {
-    $url = 'https://' . $this->settings->get('server.hostname');
+    $protocol = $this->settings->get('server.protocol');
+    $url = $protocol . '://' . $this->settings->get('server.hostname');
+
+    // Only append port if it's non standard.
     $port = $this->settings->get('server.port');
-    if (!empty($port) && $port != 443) {
+    if (($protocol == 'http' && $port != 80) || ($protocol == 'https' && $port != 443)) {
       $url .= ':' . $this->settings->get('server.port');
     }
+
     $url .= $this->settings->get('server.path');
     $url = rtrim($url, '/') . '/';
 
