@@ -2,7 +2,6 @@
 
 namespace Drupal\Tests\cas\Unit\Service;
 
-use Drupal\cas\Event\CasPostValidateEvent;
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Service\CasValidator;
 use Drupal\cas\CasPropertyBag;
@@ -14,6 +13,7 @@ use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Middleware;
 use Drupal\cas\Service\CasHelper;
+use Symfony\Component\EventDispatcher\Event;
 
 /**
  * CasValidator unit tests.
@@ -56,13 +56,21 @@ class CasValidatorTest extends UnitTestCase {
    *
    * @param string $event_name
    *   Name of event fired.
-   * @param \Drupal\cas\Event\CasPostValidateEvent $event
+   * @param \Symfony\Component\EventDispatcher\Event $event
    *   Event fired.
    */
-  public function dispatchEvent($event_name, CasPostValidateEvent $event) {
+  public function dispatchEvent($event_name, Event $event) {
     $this->events[$event_name] = $event;
-    $propertyBag = $event->getCasPropertyBag();
-    $propertyBag->setAttribute('email', ['modified@example.com']);
+    switch ($event_name) {
+      case CasHelper::EVENT_PRE_VALIDATE:
+        $event->setValidationPath("customPath");
+        $event->setParameter("foo", "bar");
+        break;
+      case CasHelper::EVENT_POST_VALIDATE:
+        $propertyBag = $event->getCasPropertyBag();
+        $propertyBag->setAttribute('email', ['modified@example.com']);
+        break;
+    }
   }
 
   /**
@@ -527,11 +535,11 @@ class CasValidatorTest extends UnitTestCase {
   }
 
   /**
-   * Tests the events dispatched by the listener.
+   * Tests the post validation event dispatched by the listener.
    *
    * @covers ::validateTicket
    */
-  public function testEventsDispatched() {
+  public function testPostValidateEvent() {
     // Mock up listener on dispatched event.
     $this->eventDispatcher
       ->method('dispatch')
@@ -575,6 +583,42 @@ class CasValidatorTest extends UnitTestCase {
     ));
     $actual_bag = $casValidator->validateTicket($ticket, $service_params);
     $this->assertEquals($expected_bag, $actual_bag);
+  }
+
+  /**
+   * Tests the pre validation event dispatched by the listener.
+   *
+   * @covers ::validateTicket
+   */
+  public function testPreValidateEvent() {
+    // Mock up listener on dispatched event.
+    $this->eventDispatcher
+      ->method('dispatch')
+      ->willReturnCallback([$this, 'dispatchEvent']);
+    $this->events = [];
+
+    $ticket = $this->randomMachineName(8);
+    $mock = new MockHandler([new Response(200, array(), "")]);
+    $handler = HandlerStack::create($mock);
+    $httpClient = new Client(['handler' => $handler]);
+
+    $configFactory = $this->getConfigFactoryStub(array(
+      'cas.settings' => array(
+        'server.hostname' => 'example.com',
+        'server.version' => '2.0',
+      ),
+    ));
+
+    $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
+      ->disableOriginalConstructor()
+      ->getMock();
+
+    $urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
+
+    $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator, $this->eventDispatcher);
+    $expected_url = "customPath?service&ticket=" . $ticket . '&foo=bar';
+    $actual_url = $casValidator->getServerValidateUrl($ticket);
+    $this->assertEquals($expected_url, $actual_url);
   }
 
   /**

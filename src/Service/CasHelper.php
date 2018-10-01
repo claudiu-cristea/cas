@@ -82,6 +82,13 @@ class CasHelper {
   const EVENT_PRE_REDIRECT = 'cas.pre_redirect';
 
   /**
+   * Event type identifier for pre validation events.
+   *
+   * @var string
+   */
+  const EVENT_PRE_VALIDATE = 'cas.pre_validate';
+
+  /**
    * Event type identifier for events fired after service validation.
    *
    * @var string

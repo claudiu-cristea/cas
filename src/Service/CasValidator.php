@@ -3,6 +3,7 @@
 namespace Drupal\cas\Service;
 
 use Drupal\cas\Event\CasPostValidateEvent;
+use Drupal\cas\Event\CasPreValidateEvent;
 use Drupal\cas\Exception\CasValidateException;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
@@ -439,7 +440,7 @@ class CasValidator {
         }
         break;
     }
-    $validate_url .= $path;
+
 
     $params = array();
     $params['service'] = $this->urlGenerator->generate('cas.service', $service_params, UrlGeneratorInterface::ABSOLUTE_URL);
@@ -447,7 +448,13 @@ class CasValidator {
     if ($this->settings->get('proxy.initialize')) {
       $params['pgtUrl'] = $this->formatProxyCallbackUrl();
     }
-    return $validate_url . '?' . UrlHelper::buildQuery($params);
+
+    // Dispatch an event that allows modules to alter the validation path or
+    // URL parameters.
+    $pre_validate_event = new CasPreValidateEvent($path, $params);
+    $this->eventDispatcher->dispatch(CasHelper::EVENT_PRE_VALIDATE, $pre_validate_event);
+    $validate_url .= $pre_validate_event->getValidationPath();
+    return $validate_url . '?' . UrlHelper::buildQuery($pre_validate_event->getParameters());
   }
 
   /**
