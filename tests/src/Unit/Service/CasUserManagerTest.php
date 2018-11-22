@@ -153,7 +153,7 @@ class CasUserManagerTest extends UnitTestCase {
     ));
 
     $cas_user_manager = $this->getMockBuilder('Drupal\cas\Service\CasUserManager')
-      ->setMethods(array('storeLoginSessionData'))
+      ->setMethods(array('storeLoginSessionData', 'register'))
       ->setConstructorArgs(array(
         $this->externalAuth,
         $this->authmap,
@@ -197,7 +197,7 @@ class CasUserManagerTest extends UnitTestCase {
     ));
 
     $cas_user_manager = $this->getMockBuilder('Drupal\cas\Service\CasUserManager')
-      ->setMethods(array('storeLoginSessionData'))
+      ->setMethods(array('storeLoginSessionData', 'register'))
       ->setConstructorArgs(array(
         $this->externalAuth,
         $this->authmap,
