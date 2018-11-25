@@ -26,7 +26,7 @@ class CasPropertyBag {
    *
    * @var array
    */
-  protected $attributes;
+  protected $attributes = [];
 
   /**
    * Contructor.

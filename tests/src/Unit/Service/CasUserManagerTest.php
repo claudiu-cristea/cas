@@ -439,12 +439,18 @@ class CasUserManagerTest extends UnitTestCase {
       ->expects($this->once())
       ->method('userLoginFinalize');
 
+    $attributes = ['attr1' => 'foo', 'attr2' => 'bar'];
     $this->session
-      ->expects($this->once())
       ->method('set')
-      ->with('is_cas_user', TRUE);
+      ->withConsecutive(
+        ['is_cas_user', TRUE],
+        ['cas_attributes', $attributes]
+      );
 
-    $cas_user_manager->login(new CasPropertyBag('test'), 'ticket');
+    $propertyBag = new CasPropertyBag('test');
+    $propertyBag->setAttributes($attributes);
+
+    $cas_user_manager->login($propertyBag, 'ticket');
   }
 
 }
