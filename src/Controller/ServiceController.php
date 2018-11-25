@@ -130,7 +130,7 @@ class ServiceController implements ContainerInjectionInterface {
    * {@inheritdoc}
    */
   public static function create(ContainerInterface $container) {
-    return new static($container->get('cas.helper'), $container->get('cas.proxy_helper'), $container->get('cas.validator'), $container->get('cas.user_manager'), $container->get('cas.logout'), $container->get('request_stack'), $container->get('url_generator'), $container->get('config.factory'));
+    return new static($container->get('cas.helper'), $container->get('cas.proxy_helper'), $container->get('cas.validator'), $container->get('cas.user_manager'), $container->get('cas.logout'), $container->get('request_stack'), $container->get('url_generator'), $container->get('config.factory'), $container->get('messenger'));
   }
 
   /**
