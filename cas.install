@@ -89,7 +89,7 @@ function cas_schema() {
 /**
  * Adds the 'created' field to the cas_login_data table and new related config.
  */
-function cas_update_8001(&$sandbox) {
+function cas_update_8001() {
   $created_spec = array(
     'type' => 'int',
     'description' => 'The timestamp when this user session was created.',
@@ -108,7 +108,7 @@ function cas_update_8001(&$sandbox) {
 /**
  * Rename the configuration setting for debug log.
  */
-function cas_update_8002(&$sandbox) {
+function cas_update_8002() {
   $config_factory = \Drupal::configFactory();
   $config = $config_factory->getEditable('cas.settings');
   $config->set('advanced.debug_log', $config->get('debugging.log'));

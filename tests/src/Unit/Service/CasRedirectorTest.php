@@ -4,7 +4,6 @@ namespace Drupal\Tests\cas\Unit\Service;
 
 use Drupal\cas\CasRedirectData;
 use Drupal\cas\Event\CasPreRedirectEvent;
-use Drupal\cas\Service\CasHelper;
 use Drupal\cas\Service\CasRedirector;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Tests\UnitTestCase;
@@ -64,7 +63,7 @@ class CasRedirectorTest extends UnitTestCase {
       ->method('getServerBaseUrl')
       ->willReturn('https://example-server.com/cas/');
 
-    $this->urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
+    $this->urlGenerator = $this->createMock('\Drupal\Core\Routing\UrlGeneratorInterface');
     $this->urlGenerator->method('generate')
       ->willReturnCallback([$this, 'getServiceUrl']);
 

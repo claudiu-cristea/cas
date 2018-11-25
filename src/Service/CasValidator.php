@@ -8,6 +8,8 @@ use Drupal\cas\Exception\CasValidateException;
 use Drupal\Component\Utility\UrlHelper;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
+use DOMXPath;
+use Drupal\Component\Uuid\Php;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Drupal\cas\CasPropertyBag;
@@ -55,6 +57,13 @@ class CasValidator {
   protected $urlGenerator;
 
   /**
+   * UUID Generator.
+   *
+   * @var \Drupal\Component\Uuid\Php
+   */
+  protected $uuid_generator;
+
+  /**
    * Constructor.
    *
    * @param \GuzzleHttp\Client $http_client
@@ -65,15 +74,18 @@ class CasValidator {
    *   The configuration factory.
    * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
    *   The URL generator.
-  *  @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
+   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
    *   The EventDispatcher service.
+   * @param \Drupal\Component\Uuid\Php $uuid_generator
+   *   The UUID generator.
    */
-  public function __construct(Client $http_client, CasHelper $cas_helper, ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator, EventDispatcherInterface $event_dispatcher) {
+  public function __construct(Client $http_client, CasHelper $cas_helper, ConfigFactoryInterface $config_factory, UrlGeneratorInterface $url_generator, EventDispatcherInterface $event_dispatcher, Php $uuid_generator) {
     $this->httpClient = $http_client;
     $this->casHelper = $cas_helper;
     $this->settings = $config_factory->get('cas.settings');
     $this->urlGenerator = $url_generator;
     $this->eventDispatcher = $event_dispatcher;
+    $this->uuid_generator = $uuid_generator;
   }
 
   /**
@@ -95,25 +107,25 @@ class CasValidator {
    *   if there was a local configuration issue.
    */
   public function validateTicket($ticket, array $service_params = array()) {
-    $options = array();
+    $request_options = array();
     $verify = $this->settings->get('server.verify');
     switch ($verify) {
       case CasHelper::CA_CUSTOM:
         $cert = $this->settings->get('server.cert');
-        $options['verify'] = $cert;
+        $request_options['verify'] = $cert;
         break;
 
       case CasHelper::CA_NONE:
-        $options['verify'] = FALSE;
+        $request_options['verify'] = FALSE;
         break;
 
       case CasHelper::CA_DEFAULT:
       default:
         // This triggers for CasHelper::CA_DEFAULT.
-        $options['verify'] = TRUE;
+        $request_options['verify'] = TRUE;
     }
 
-    $options['timeout'] = $this->settings->get('advanced.connection_timeout');
+    $request_options['timeout'] = $this->settings->get('advanced.connection_timeout');
 
     $validate_url = $this->getServerValidateUrl($ticket, $service_params);
     $this->casHelper->log(
@@ -122,8 +134,32 @@ class CasValidator {
       ['%ticket' => $ticket, '%url' => $validate_url]
     );
 
+    // For SAML support, we need to send a POST request with a SOAP payload
+    // containing the ticket. For all other protocol versions, we just send
+    // a normal GET request with the ticket passed as a query string param.
+    $protocol_version = $this->settings->get('server.version');
+    if ($protocol_version == 'SAML 1.1') {
+      $date = date(DATE_W3C);
+      $request_id = $this->uuid_generator->generate();
+      $assertion_artifact = htmlspecialchars($ticket, ENT_XML1, 'UTF-8');
+      $request_method = 'post';
+      $request_options['body'] = <<<BODY
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+<SOAP-ENV:Header/>
+<SOAP-ENV:Body>
+<samlp:Request xmlns:samlp="urn:oasis:names:tc:SAML:1.0:protocol" MajorVersion="1" MinorVersion="1" RequestID="$request_id" IssueInstant="$date">
+<samlp:AssertionArtifact>$assertion_artifact</samlp:AssertionArtifact>
+</samlp:Request>
+</SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+BODY;
+    }
+    else {
+      $request_method = 'get';
+    }
+
     try {
-      $response = $this->httpClient->get($validate_url, $options);
+      $response = $this->httpClient->request($request_method, $validate_url, $request_options);
       $response_data = $response->getBody()->__toString();
       $this->casHelper->log(LogLevel::DEBUG, "Validation response received from CAS server: %data", ['%data' => $response_data]);
     }
@@ -131,7 +167,6 @@ class CasValidator {
       throw new CasValidateException("Error with request to validate ticket: " . $e->getMessage());
     }
 
-    $protocol_version = $this->settings->get('server.version');
     switch ($protocol_version) {
       case "1.0":
         $cas_property_bag = $this->validateVersion1($response_data);
@@ -142,8 +177,12 @@ class CasValidator {
         $cas_property_bag = $this->validateVersion2($response_data);
         break;
 
+      case "SAML 1.1":
+        $cas_property_bag = $this->validateSaml($response_data);
+        break;
+
     }
-    if (empty($cas_property_bag)) {
+    if (!isset($cas_property_bag)) {
       throw new CasValidateException('Unknown CAS protocol version specified: ' . $protocol_version);
     }
 
@@ -264,6 +303,52 @@ class CasValidator {
       );
       $property_bag->setPgt($pgt);
     }
+    return $property_bag;
+  }
+
+  /**
+   * Validation of a service ticket for Version 1.1 of the SAML protocol.
+   *
+   * @param string $data
+   *   The raw validation response data from CAS server.
+   *
+   * @return \Drupal\cas\CasPropertyBag
+   *   A CasPropertyBag containing the response from the server.
+   *
+   * @throws \Drupal\cas\Exception\CasValidateException
+   */
+  private function validateSaml($data) {
+    $dom = new \DOMDocument();
+
+    // Suppress errors from this function, as we intend to throw our own
+    // exception.
+    if (@$dom->loadXML($data) === FALSE) {
+      throw new CasValidateException("XML from CAS server is not valid.");
+    }
+
+    // Read the root node of the XML tree
+    if (!($tree_response = $dom->documentElement)) {
+      throw new CasValidateException("XML from CAS server is not valid.");
+    }
+    elseif ($tree_response->localName != 'Envelope') {
+      // Ensure that tag name is 'Envelope'
+      throw new CasValidateException("Bad XML root node (expecting `Envelope` but found `$tree_response->localName` instead)");
+    }
+    elseif ($tree_response->getElementsByTagName("NameIdentifier")->length != 0) {
+      // Check for the NameIdentifier tag in the SAML response
+      $success_elements = $tree_response->getElementsByTagName("NameIdentifier");
+      $user = trim($success_elements->item(0)->nodeValue);
+    }
+    else {
+      throw new CasValidateException("No <NameIdentifier> (user) tag found in SAML payload");
+    }
+
+    $property_bag = new CasPropertyBag($user);
+
+    // If the server provided any attributes, parse them out into the property
+    // bag.
+    $property_bag->setAttributes($this->parseSamlAttributes($dom));
+
     return $property_bag;
   }
 
@@ -414,12 +499,16 @@ class CasValidator {
    * @return string
    *   The fully constructed validation URL.
    */
-  public function getServerValidateUrl($ticket, array $service_params = array()) {
+  public function getServerValidateUrl($ticket, array $service_params = []) {
     $validate_url = $this->casHelper->getServerBaseUrl();
     $path = '';
+    $params = [];
+    $service_url = $this->urlGenerator->generate('cas.service', $service_params, UrlGeneratorInterface::ABSOLUTE_URL);
     switch ($this->settings->get('server.version')) {
       case "1.0":
         $path = 'validate';
+        $params['service'] = $service_url;
+        $params['ticket'] = $ticket;
         break;
 
       case "2.0":
@@ -429,6 +518,8 @@ class CasValidator {
         else {
           $path = 'serviceValidate';
         }
+        $params['service'] = $service_url;
+        $params['ticket'] = $ticket;
         break;
 
       case "3.0":
@@ -438,13 +529,16 @@ class CasValidator {
         else {
           $path = 'p3/serviceValidate';
         }
+        $params['service'] = $service_url;
+        $params['ticket'] = $ticket;
+        break;
+
+      case "SAML 1.1":
+        $path = 'samlValidate';
+        $params['TARGET'] = $service_url;
         break;
     }
 
-
-    $params = array();
-    $params['service'] = $this->urlGenerator->generate('cas.service', $service_params, UrlGeneratorInterface::ABSOLUTE_URL);
-    $params['ticket'] = $ticket;
     if ($this->settings->get('proxy.initialize')) {
       $params['pgtUrl'] = $this->formatProxyCallbackUrl();
     }
@@ -469,9 +563,46 @@ class CasValidator {
    *   The pgtCallbackURL, fully formatted.
    */
   private function formatProxyCallbackUrl() {
-    return str_replace('http://', 'https://', $this->urlGenerator->generateFromRoute('cas.proxyCallback', array(), array(
+    return str_replace('http://', 'https://', $this->urlGenerator->generateFromRoute('cas.proxyCallback', [], [
       'absolute' => TRUE,
-    )));
+    ]));
+  }
+
+  /**
+   * Parses the SAML 1.1 response from the CAS server for attributes.
+   *
+   * This method is heavily borrowed from phpCAS.
+   *
+   * @param \DOMDocument $dom
+   *   The SAML payload DOM.
+   *
+   * @return array
+   *   An associative array of attributes.
+   */
+  private function parseSamlAttributes(\DOMDocument $dom) {
+    $attributes = array();
+    $xPath = new DOMXpath($dom);
+    $xPath->registerNamespace('samlp', 'urn:oasis:names:tc:SAML:1.0:protocol');
+    $xPath->registerNamespace('saml', 'urn:oasis:names:tc:SAML:1.0:assertion');
+    $nodelist = $xPath->query("//saml:Attribute");
+    if ($nodelist) {
+      foreach ($nodelist as $node) {
+        $xres = $xPath->query("saml:AttributeValue", $node);
+        $name = $node->getAttribute("AttributeName");
+        $value_array = array();
+        foreach ($xres as $node2) {
+          $value_array[] = $node2->nodeValue;
+        }
+        $attributes[$name] = $value_array;
+      }
+    }
+    $this->casHelper->log(
+      LogLevel::DEBUG,
+      'Parsed the following attributes from SAML validation response: %attributes',
+      ['%attributes' => print_r($attributes, TRUE)]
+    );
+
+    return $attributes;
   }
 
 }

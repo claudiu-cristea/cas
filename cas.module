@@ -51,7 +51,7 @@ function cas_user_role_delete(RoleInterface $role) {
  *
  * Alters the user entity form.
  */
-function cas_form_user_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+function cas_form_user_form_alter(&$form, FormStateInterface $form_state) {
   _cas_add_cas_username_to_user_form($form);
 
   $cas_user_manager = \Drupal::service('cas.user_manager');
@@ -89,14 +89,14 @@ function cas_form_user_form_alter(&$form, FormStateInterface $form_state, $form_
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function cas_form_user_register_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+function cas_form_user_register_form_alter(&$form) {
   _cas_add_cas_username_to_user_form($form);
 }
 
 /**
  * Implements hook_form_FORM_ID_alter().
  */
-function cas_form_user_pass_alter(&$form, FormStateInterface $form_state) {
+function cas_form_user_pass_alter(&$form) {
   if (\Drupal::config('cas.settings')->get('user_accounts.restrict_password_management')) {
     $form['#validate'][] = '_cas_validate_user_pass_form';
   }
@@ -202,7 +202,7 @@ function _cas_user_form_submit(array $form, FormStateInterface $form_state) {
  *
  * Modify the user login form.
  */
-function cas_form_user_login_form_alter(&$form, FormStateInterface $form_state) {
+function cas_form_user_login_form_alter(&$form) {
   $config = Drupal::config('cas.settings');
 
   // Cached form must be busted if we alter CAS settings.
@@ -263,7 +263,7 @@ function cas_validation_constraint_alter(array &$definitions) {
  *
  * Remove data from the cas_login_data table for this user's session.
  */
-function cas_user_logout($account) {
+function cas_user_logout() {
   \Drupal::database()->delete('cas_login_data')
     ->condition('plainsid', \Drupal::service('session')->getId())
     ->execute();
@@ -272,7 +272,7 @@ function cas_user_logout($account) {
 /**
  * Implements hook_help().
  */
-function cas_help($route_name, RouteMatchInterface $route_match) {
+function cas_help($route_name) {
   switch ($route_name) {
     case 'help.page.cas':
       $text = file_get_contents(dirname(__FILE__) . '/README.md');

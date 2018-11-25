@@ -43,7 +43,7 @@ class CasHelperTest extends UnitTestCase {
   protected function setUp() {
     parent::setUp();
 
-    $this->loggerFactory = $this->getMock('\Drupal\Core\Logger\LoggerChannelFactory');
+    $this->loggerFactory = $this->createMock('\Drupal\Core\Logger\LoggerChannelFactory');
     $this->loggerChannel = $this->getMockBuilder('\Drupal\Core\Logger\LoggerChannel')
       ->disableOriginalConstructor()
       ->getMock();
