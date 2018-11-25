@@ -31,6 +31,13 @@
     "source": "http://cgit.drupalcode.org/cas"
   },
   "license": "GPL-2.0+",
-  "minimum-stability": "dev"
+  "minimum-stability": "dev",
+  "extra": {
+    "drush": {
+      "services": {
+        "drush.services.yml": "^9"
+      }
+    }
+  }
 }
 
