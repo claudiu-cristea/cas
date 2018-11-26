@@ -113,7 +113,7 @@ class CasValidatorTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
 
-    $urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
+    $urlGenerator = $this->createMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
     $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator, $this->eventDispatcher);
 
@@ -144,7 +144,7 @@ class CasValidatorTest extends UnitTestCase {
    * @return array
    *   Parameters and return values.
    *
-   * @see \Drupal\Tests\cas\Service\CasValidatorTest::testValidateTicket
+   * @see \Drupal\Tests\cas\Unit\Service\CasValidatorTest::testValidateTicket
    */
   public function validateTicketDataProvider() {
     // First test case: protocol version 1.
@@ -290,7 +290,7 @@ class CasValidatorTest extends UnitTestCase {
       ),
     ));
 
-    $urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
+    $urlGenerator = $this->createMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
     $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator, $this->eventDispatcher);
 
@@ -305,7 +305,7 @@ class CasValidatorTest extends UnitTestCase {
    * @return array
    *   Parameters and return values.
    *
-   * @see \Drupal\Tests\cas\Service\CasValidatorTest::testValidateTicketException
+   * @see \Drupal\Tests\cas\Unit\Service\CasValidatorTest::testValidateTicketException
    */
   public function validateTicketExceptionDataProvider() {
     /* There are nine different exception messages that can occur. We test for
@@ -522,7 +522,7 @@ class CasValidatorTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
 
-    $urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
+    $urlGenerator = $this->createMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
     $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator, $this->eventDispatcher);
     $expected_bag = new CasPropertyBag('username');
@@ -573,7 +573,7 @@ class CasValidatorTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
 
-    $urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
+    $urlGenerator = $this->createMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
     $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator, $this->eventDispatcher);
     $expected_bag = new CasPropertyBag('username');
@@ -613,7 +613,7 @@ class CasValidatorTest extends UnitTestCase {
       ->disableOriginalConstructor()
       ->getMock();
 
-    $urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
+    $urlGenerator = $this->createMock('\Drupal\Core\Routing\UrlGeneratorInterface');
 
     $casValidator = new CasValidator($httpClient, $casHelper, $configFactory, $urlGenerator, $this->eventDispatcher);
     $expected_url = "customPath?service&ticket=" . $ticket . '&foo=bar';
@@ -667,7 +667,7 @@ class CasValidatorTest extends UnitTestCase {
       $return_value = 'https://example.com/client';
     }
 
-    $urlGenerator = $this->getMock('\Drupal\Core\Routing\UrlGeneratorInterface');
+    $urlGenerator = $this->createMock('\Drupal\Core\Routing\UrlGeneratorInterface');
     $urlGenerator->expects($this->once())
       ->method('generate')
       ->will($this->returnValue($return_value));
@@ -675,7 +675,7 @@ class CasValidatorTest extends UnitTestCase {
       ->method('generateFromRoute')
       ->will($this->returnValue('https://example.com/casproxycallback'));
 
-    $httpClient = $this->getMock('GuzzleHttp\Client');
+    $httpClient = $this->createMock('GuzzleHttp\Client');
 
     $casHelper = $this->getMockBuilder('\Drupal\cas\Service\CasHelper')
       ->disableOriginalConstructor()
