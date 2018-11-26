@@ -84,7 +84,6 @@ class CasSettings extends ConfigFormBase {
         '1.0' => $this->t('1.0'),
         '2.0' => $this->t('2.0'),
         '3.0' => $this->t('3.0 or higher'),
-        'SAML 1.1' => $this->t('SAML 1.1'),
       ),
       '#default_value' => $config->get('server.version'),
       '#description' => $this->t('The CAS protocol version your CAS server supports.'),

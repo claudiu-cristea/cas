@@ -10,7 +10,6 @@ use Drupal\cas\Service\CasProxyHelper;
 use Drupal\cas\Service\CasUserManager;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
-use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
 use Psr\Log\LogLevel;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -86,13 +85,6 @@ class ServiceController implements ContainerInjectionInterface {
   protected $settings;
 
   /**
-   * Stores a Messenger object.
-   *
-   * @var \Drupal\Core\Messenger\MessengerInterface
-   */
-  protected $messenger;
-
-  /**
    * Constructor.
    *
    * @param \Drupal\cas\Service\CasHelper $cas_helper
@@ -111,10 +103,8 @@ class ServiceController implements ContainerInjectionInterface {
    *   The URL generator.
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    *   The config factory.
-   * @param \Drupal\Core\Messenger\MessengerInterface $messenger
-   *   The messenger.
    */
-  public function __construct(CasHelper $cas_helper, CasProxyHelper $cas_proxy_helper, CasValidator $cas_validator, CasUserManager $cas_user_manager, CasLogout $cas_logout, RequestStack $request_stack, UrlGeneratorInterface $url_generator, ConfigFactoryInterface $config_factory, MessengerInterface $messenger) {
+  public function __construct(CasHelper $cas_helper, CasProxyHelper $cas_proxy_helper, CasValidator $cas_validator, CasUserManager $cas_user_manager, CasLogout $cas_logout, RequestStack $request_stack, UrlGeneratorInterface $url_generator, ConfigFactoryInterface $config_factory) {
     $this->casHelper = $cas_helper;
     $this->casProxyHelper = $cas_proxy_helper;
     $this->casValidator = $cas_validator;
@@ -123,7 +113,6 @@ class ServiceController implements ContainerInjectionInterface {
     $this->requestStack = $request_stack;
     $this->urlGenerator = $url_generator;
     $this->settings = $config_factory->get('cas.settings');
-    $this->messenger = $messenger;
   }
 
   /**
@@ -205,7 +194,7 @@ class ServiceController implements ContainerInjectionInterface {
         'Error when validating ticket: %error',
         ['%error' => $e->getMessage()]
       );
-      $this->messenger->addError($this->t('There was a problem validating your login, please contact a site administrator.'));
+      $this->setMessage($this->t('There was a problem validating your login, please contact a site administrator.'), 'error');
       $this->handleReturnToParameter($request);
       return RedirectResponse::create($this->urlGenerator->generate('<front>'));
     }
@@ -218,11 +207,11 @@ class ServiceController implements ContainerInjectionInterface {
         $this->casHelper->log(LogLevel::DEBUG, "Storing PGT information for this session.");
         $this->casProxyHelper->storePgtSession($cas_validation_info->getPgt());
       }
-      $this->messenger->addStatus($this->t('You have been logged in.'));
+      $this->setMessage($this->t('You have been logged in.'));
     }
     catch (CasLoginException $e) {
       $this->casHelper->log(LogLevel::ERROR, $e->getMessage());
-      $this->messenger->addStatus($this->t('There was a problem logging in, please contact a site administrator.'), 'error');
+      $this->setMessage($this->t('There was a problem logging in, please contact a site administrator.'), 'error');
     }
 
     // And finally redirect the user to the homepage, or so a specific
@@ -260,6 +249,26 @@ class ServiceController implements ContainerInjectionInterface {
       $this->casHelper->log(LogLevel::DEBUG, "Converting query parameter 'returnto' to 'destination'.");
       $request->query->set('destination', $request->query->get('returnto'));
     }
+  }
+
+  /**
+   * Encapsulation of drupal_set_message.
+   *
+   * See https://www.drupal.org/node/2278383 for discussion about converting
+   * drupal_set_message to a service. In the meantime, in order to unit test
+   * the error handling here, we have to encapsulate the call in a method.
+   *
+   * @param string $message
+   *   The message text to set.
+   * @param string $type
+   *   The message type.
+   * @param bool $repeat
+   *   Whether identical messages should all be shown.
+   *
+   * @codeCoverageIgnore
+   */
+  public function setMessage($message, $type = 'status', $repeat = FALSE) {
+    drupal_set_message($message, $type, $repeat);
   }
 
 }
