@@ -222,7 +222,7 @@ class ServiceController implements ContainerInjectionInterface {
     }
     catch (CasLoginException $e) {
       $this->casHelper->log(LogLevel::ERROR, $e->getMessage());
-      $this->messenger->addStatus($this->t('There was a problem logging in, please contact a site administrator.'), 'error');
+      $this->messenger->addError($this->t('There was a problem logging in, please contact a site administrator.'), 'error');
     }
 
     // And finally redirect the user to the homepage, or so a specific
