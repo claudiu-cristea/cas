@@ -19,9 +19,11 @@ function cas_token_info() {
       ],
     ],
     'tokens' => [
-      'username' => [
-        'name' => t('Username'),
-        'description' => t('On my sites this is the same as the Drupal username.'),
+      'cas' => [
+        'username' => [
+          'name' => t('Username'),
+          'description' => t('On most sites this is the same as the Drupal username.'),
+        ],
       ],
     ],
   ];
