@@ -444,7 +444,7 @@ class CasUserManagerTest extends UnitTestCase {
       ->method('set')
       ->withConsecutive(
         ['is_cas_user', TRUE],
-        ['cas_attributes', $attributes]
+        ['cas_username', 'test']
       );
 
     $propertyBag = new CasPropertyBag('test');

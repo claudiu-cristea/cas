@@ -96,6 +96,11 @@ class CasHelper {
   const EVENT_POST_VALIDATE = 'cas.post_validate';
 
   /**
+   * Event type identifier for events fired after login has completed.
+   */
+  const EVENT_POST_LOGIN = 'cas.post_login';
+
+  /**
    * Stores settings object.
    *
    * @var \Drupal\Core\Config\Config
