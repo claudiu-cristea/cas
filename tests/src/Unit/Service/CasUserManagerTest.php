@@ -72,7 +72,7 @@ class CasUserManagerTest extends UnitTestCase {
   /**
    * The mocked Cas Helper service.
    *
-   * @var \Drupal\cas\Service\CasHelper.
+   * @var \Drupal\cas\Service\CasHelper
    */
   protected $casHelper;
 
@@ -465,50 +465,51 @@ class CasUserManagerTest extends UnitTestCase {
     $cas_user_manager->login($propertyBag, 'ticket');
   }
 
-    /**
-     * A user is able to login when their account exists.
-     *
-     * @covers ::login
-     */
-    public function testBlockedAccountIsNotLoggedIn() {
-      $cas_user_manager = $this->getMockBuilder('Drupal\cas\Service\CasUserManager')
-          ->setMethods(array('storeLoginSessionData'))
-          ->setConstructorArgs(array(
-              $this->externalAuth,
-              $this->authmap,
-              $this->getConfigFactoryStub(),
-              $this->session,
-              $this->connection,
-              $this->eventDispatcher,
-              $this->casHelper,
-          ))
-          ->getMock();
+  /**
+   * Blockers users cannot log in.
+   *
+   * @covers ::login
+   */
+  public function testBlockedAccountIsNotLoggedIn() {
+    $cas_user_manager = $this->getMockBuilder('Drupal\cas\Service\CasUserManager')
+      ->setMethods(array('storeLoginSessionData'))
+      ->setConstructorArgs(array(
+        $this->externalAuth,
+        $this->authmap,
+        $this->getConfigFactoryStub(),
+        $this->session,
+        $this->connection,
+        $this->eventDispatcher,
+        $this->casHelper,
+      ))
+      ->getMock();
 
-      $this->account
-          ->method('isactive')
-          ->willReturn(FALSE);
-      $this->account
-        ->method('getaccountname')
-        ->willReturn('user');
+    $this->account
+      ->method('isactive')
+      ->willReturn(FALSE);
+    $this->account
+      ->method('getaccountname')
+      ->willReturn('user');
 
-      $this->externalAuth
-          ->method('load')
-          ->willReturn($this->account);
+    $this->externalAuth
+      ->method('load')
+      ->willReturn($this->account);
 
-      $this->externalAuth
-        ->expects($this->never())
-        ->method('userLoginFinalize');
+    $this->externalAuth
+      ->expects($this->never())
+      ->method('userLoginFinalize');
 
-      $this->setExpectedException('Drupal\cas\Exception\CasLoginException', 'The username user has not been activated or is blocked.');
+    $this->setExpectedException('Drupal\cas\Exception\CasLoginException', 'The username user has not been activated or is blocked.');
 
-      $this->session
-          ->method('set')
-          ->withConsecutive(
-              ['is_cas_user', TRUE],
-              ['cas_username', 'test']
-          );
+    $this->session
+      ->method('set')
+      ->withConsecutive(
+          ['is_cas_user', TRUE],
+          ['cas_username', 'test']
+      );
 
-      $propertyBag = new CasPropertyBag('test');
-      $cas_user_manager->login($propertyBag, 'ticket');
+    $propertyBag = new CasPropertyBag('test');
+    $cas_user_manager->login($propertyBag, 'ticket');
   }
+
 }
