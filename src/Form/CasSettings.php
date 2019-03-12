@@ -87,7 +87,7 @@ class CasSettings extends ConfigFormBase {
       '#title' => $this->t('CAS server'),
       '#open' => TRUE,
       '#tree' => TRUE,
-      '#description' => $this->t('Enter the details of the CAS server to authentication against.'),
+      '#description' => $this->t('Enter the details of your CAS server.'),
     );
     $form['server']['version'] = array(
       '#type' => 'radios',
@@ -98,7 +98,7 @@ class CasSettings extends ConfigFormBase {
         '3.0' => $this->t('3.0 or higher'),
       ),
       '#default_value' => $config->get('server.version'),
-      '#description' => $this->t('The CAS protocol version your CAS server supports.'),
+      '#description' => $this->t('The CAS protocol version your CAS server supports. If unsure, ask your CAS server administrator.'),
     );
     $form['server']['protocol'] = array(
       '#type' => 'radios',
@@ -108,7 +108,7 @@ class CasSettings extends ConfigFormBase {
         'https' => $this->t('HTTPS (secure)'),
       ),
       '#default_value' => $config->get('server.protocol'),
-      '#description' => $this->t('HTTP protocol of the CAS server. WARNING: Do not use HTTP on production environments!'),
+      '#description' => $this->t('HTTP protocol type of the CAS server. WARNING: Do not use HTTP on production environments!'),
     );
     $form['server']['hostname'] = array(
       '#type' => 'textfield',
@@ -127,7 +127,7 @@ class CasSettings extends ConfigFormBase {
     $form['server']['path'] = array(
       '#type' => 'textfield',
       '#title' => $this->t('Path'),
-      '#description' => $this->t('If the CAS endpoints (like /login) are not at the root of the host, specify the path to the endpoints (e.g., /cas).'),
+      '#description' => $this->t('If the CAS server paths (like /login) are not at the root of the host, specify the base path (e.g., /cas).'),
       '#size' => 30,
       '#default_value' => $config->get('server.path'),
     );
@@ -138,7 +138,7 @@ class CasSettings extends ConfigFormBase {
       '#options' => array(
         CasHelper::CA_DEFAULT => $this->t("Verify using your web server's default certificate authority (CA) chain."),
         CasHelper::CA_NONE => $this->t('Do not verify. (Note: this should NEVER be used in production.)'),
-        CasHelper::CA_CUSTOM => $this->t('Verify using a specific CA certificate. Use the field below to provide path.'),
+        CasHelper::CA_CUSTOM => $this->t('Verify using a specific CA certificate. Use the field below to provide path (recommended).'),
       ),
       '#default_value' => $config->get('server.verify'),
     );
@@ -162,14 +162,13 @@ class CasSettings extends ConfigFormBase {
     );
     $form['general']['login_link_enabled'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Login link Enabled'),
-      '#description' => $this->t('Display a link to login via CAS above the user login form.'),
+      '#title' => $this->t('Place a link to log in via CAS on the standard /user/login form'),
+      '#description' => $this->t('Note that even when enabled, the CAS module will not hide the standard Drupal login. If CAS is the primary way your users will log in, it is recommended to alter the login page in a custom module to hide the standard form.'),
       '#default_value' => $config->get('login_link_enabled'),
     );
     $form['general']['login_link_label'] = array(
       '#type' => 'textfield',
-      '#title' => $this->t('Login link label'),
-      '#description' => $this->t('The text that makes up the login link to this CAS server.'),
+      '#title' => $this->t('Login link text'),
       '#default_value' => $config->get('login_link_label'),
       '#states' => array(
         'visible' => array(
@@ -184,30 +183,44 @@ class CasSettings extends ConfigFormBase {
       '#open' => TRUE,
       '#tree' => TRUE,
     );
-
-
-    if (!$this->moduleHandler->moduleExists('cas_attributes')) {
-      $form['user_accounts']['cas_attributes_callout'] = [
-        '#prefix' => '<p class="messages messages--status">',
-        '#markup' => $this->t('If your CAS server supports <a href="@attributes" target="_blank">attributes</a>, you can install the <a href="@module" target="_blank">CAS Attributes</a> module to map them to user fields and roles.', ['@attributes' => 'https://apereo.github.io/cas/5.1.x/protocol/CAS-Protocol-Specification.html#255-attributes-cas-30', '@module' => 'https://drupal.org/project/cas_attributes']),
-        '#suffix' => '</p>',
-      ];
-    }
-
+    $form['user_accounts']['prevent_normal_login'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Prevent normal login for CAS users (recommended)'),
+      '#description' => $this->t('Prevents any user associated with CAS from authenticating using the normal login form. If attempted, users will be presented with an error message and a link to login via CAS instead.'),
+      '#default_value' => $config->get('user_accounts.prevent_normal_login'),
+    );
+    $form['user_accounts']['restrict_password_management'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Restrict password management (recommended)'),
+      '#description' => $this->t('Prevents CAS users from changing their Drupal password by removing the password fields on the user profile form and disabling the "forgot password" functionality. Admins will still be able to change Drupal passwords for CAS users.'),
+      '#default_value' => $config->get('user_accounts.restrict_password_management'),
+    );
+    $form['user_accounts']['restrict_email_management'] = array(
+      '#type' => 'checkbox',
+      '#title' => $this->t('Restrict email management (recommended)'),
+      '#description' => $this->t("Prevents CAS users from changing their email by disabling the email field on the user profile form. Admins will still be able to change email addresses for CAS users. Note that Drupal requires a user enter their current password before changing their email, which your users may not know. Enable the restricted password management feature above to remove this password requirement."),
+      '#default_value' => $config->get('user_accounts.restrict_email_management'),
+    );
     $form['user_accounts']['auto_register'] = array(
       '#type' => 'checkbox',
-      '#title' => $this->t('Auto register users'),
+      '#title' => $this->t('Automatically register users'),
       '#description' => $this->t(
         'Enable to automatically create local Drupal accounts for first-time CAS logins. ' .
         'If disabled, users must be pre-registered before being allowed to log in.'
       ),
       '#default_value' => $config->get('user_accounts.auto_register'),
     );
-
+    if (!$this->moduleHandler->moduleExists('cas_attributes')) {
+      $form['user_accounts']['cas_attributes_callout'] = [
+        '#prefix' => '<p class="messages messages--status">',
+        '#markup' => $this->t('If your CAS server supports <a href="@attributes" target="_blank">attributes</a>, you can install the <a href="@module" target="_blank">CAS Attributes</a> module to map them to user fields and roles during login and auto-registration.', ['@attributes' => 'https://apereo.github.io/cas/5.1.x/protocol/CAS-Protocol-Specification.html#255-attributes-cas-30', '@module' => 'https://drupal.org/project/cas_attributes']),
+        '#suffix' => '</p>',
+      ];
+    }
     $form['user_accounts']['email_assignment_strategy'] = array(
       '#type' => 'radios',
-      '#title' => t('Email address assignment'),
-      '#description' => t("Drupal requires every user have an email address. Select how you'd like to assign an email to automatically registered users."),
+      '#title' => $this->t('Email address assignment'),
+      '#description' => $this->t("Drupal requires every user have an email address. Select how you'd like to assign an email to automatically registered users."),
       '#default_value' => $config->get('user_accounts.email_assignment_strategy'),
       '#options' => array(
         CasUserManager::EMAIL_ASSIGNMENT_STANDARD => $this->t('Use the CAS username combined with a custom domain name you specify.'),
@@ -235,7 +248,7 @@ class CasSettings extends ConfigFormBase {
     $form['user_accounts']['email_attribute'] = array(
       '#type' => 'textfield',
       '#title' => $this->t('Email attribute'),
-      '#description' => $this->t("The CAS attribute name (case sensitive) that contains the user's email address."),
+      '#description' => $this->t("The CAS attribute name (case sensitive) that contains the user's email address. If unsure, check with your CAS server administrator to see a list of attributes that are returned during login."),
       '#default_value' => $config->get('user_accounts.email_attribute'),
       '#states' => array(
         'visible' => array(
@@ -244,11 +257,11 @@ class CasSettings extends ConfigFormBase {
         ),
       ),
     );
-
     $auto_assigned_roles = $config->get('user_accounts.auto_assigned_roles');
     $form['user_accounts']['auto_assigned_roles_enable'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Automatically assign roles on user registration'),
+      '#title' => $this->t('Automatically assign roles on user registration'),
+      '#description' => $this->t('To provide role mappings based on CAS attributes, install and configure the optional <a href="@module" target="_blank">CAS Attributes</a> module.', ['@module' => 'https://drupal.org/project/cas_attributes']),
       '#default_value' => count($auto_assigned_roles) > 0,
       '#states' => array(
         'invisible' => array(
@@ -261,8 +274,8 @@ class CasSettings extends ConfigFormBase {
     $form['user_accounts']['auto_assigned_roles'] = array(
       '#type' => 'select',
       '#multiple' => TRUE,
-      '#title' => t('Roles'),
-      '#description' => t('The selected roles will be automatically assigned to each CAS user on login. Use this to automatically give CAS users additional privileges or to identify CAS users to other modules.'),
+      '#title' => $this->t('Roles'),
+      '#description' => $this->t('The selected roles will be automatically assigned to each CAS user on login. Use this to automatically give CAS users additional privileges or to identify CAS users to other modules.'),
       '#default_value' => $auto_assigned_roles,
       '#options' => $roles,
       '#states' => array(
@@ -270,27 +283,6 @@ class CasSettings extends ConfigFormBase {
           'input[name="user_accounts[auto_assigned_roles_enable]"]' => array('checked' => FALSE),
         ),
       ),
-    );
-    $form['user_accounts']['prevent_normal_login'] = array(
-      '#type' => 'checkbox',
-      '#title' => $this->t('Prevent normal login for CAS users'),
-      '#description' => $this->t(
-        'If enabled, this will prevent any user associated with CAS from authenticating using the normal login form. ' .
-        'If attempted, users will be presented with an error message and a link to login via CAS instead.'
-      ),
-      '#default_value' => $config->get('user_accounts.prevent_normal_login'),
-    );
-    $form['user_accounts']['restrict_password_management'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Restrict password management'),
-      '#description' => $this->t('Prevents CAS users from changing their Drupal password by removing the password fields on the user profile form and disabling the "forgot password" functionality. Admins will still be able to change Drupal passwords for CAS users.'),
-      '#default_value' => $config->get('user_accounts.restrict_password_management'),
-    );
-    $form['user_accounts']['restrict_email_management'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Restrict email management'),
-      '#description' => $this->t("Prevents CAS users from changing their email by disabling the email field on the user profile form. Admins will still be able to change email addresses for CAS users. Note that Drupal requires a user enter their current password before changing their email, which your users may not know. Enable the restricted password management feature above to remove this password requirement."),
-      '#default_value' => $config->get('user_accounts.restrict_email_management'),
     );
 
     $form['gateway'] = array(
