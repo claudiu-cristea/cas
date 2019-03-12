@@ -11,6 +11,7 @@ use Drupal\cas\Service\CasUserManager;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\DependencyInjection\ContainerInjectionInterface;
 use Drupal\Core\Routing\UrlGeneratorInterface;
+use Drupal\Core\Url;
 use Psr\Log\LogLevel;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\cas\Service\CasValidator;
@@ -206,8 +207,8 @@ class ServiceController implements ContainerInjectionInterface {
         ['%error' => $e->getMessage()]
       );
       $this->messenger->addError($this->t('There was a problem validating your login, please contact a site administrator.'));
-      $this->handleReturnToParameter($request);
-      return RedirectResponse::create($this->urlGenerator->generate('<front>'));
+
+      return $this->createRedirectResponse($request, TRUE);
     }
 
     // Now that the ticket has been validated, we can use the information from
@@ -223,13 +224,36 @@ class ServiceController implements ContainerInjectionInterface {
     catch (CasLoginException $e) {
       $this->casHelper->log(LogLevel::ERROR, $e->getMessage());
       $this->messenger->addError($this->t('There was a problem logging in, please contact a site administrator.'), 'error');
+
+      return $this->createRedirectResponse($request, TRUE);
     }
 
-    // And finally redirect the user to the homepage, or so a specific
-    // destination found in the destination param (like the page they were on
-    // prior to initiating authentication).
-    $this->handleReturnToParameter($request);
-    return RedirectResponse::create($this->urlGenerator->generate('<front>'));
+    return $this->createRedirectResponse($request);
+  }
+
+  /**
+   * Create a redirect response that sends users somewhere after login.
+   *
+   * @param \Symfony\Component\HttpFoundation\Request $request
+   *   The request.
+   * @param bool $login_failed
+   *   Indicates if the login failed or not.
+   *
+   * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *   The redirect response.
+   */
+  private function createRedirectResponse(Request $request, $login_failed = FALSE) {
+    // If login failed, we may have a special page to send them to.
+    if ($login_failed && $this->settings->get('error_handling.login_failure_page')) {
+      return RedirectResponse::create(Url::fromUserInput($this->settings->get('error_handling.login_failure_page'))->toString());
+    }
+    // Otherwise, send them to the homepage, or to the previous page they were
+    // on when login was initiated (which will be represented by the 'returnto'
+    // parameter).
+    else {
+      $this->handleReturnToParameter($request);
+      return RedirectResponse::create($this->urlGenerator->generate('<front>'));
+    }
   }
 
   /**

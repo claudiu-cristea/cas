@@ -85,6 +85,13 @@ cas.settings:
         restrict_email_management:
           type: boolean
           label: 'Restrict email management'
+    error_handling:
+      type: mapping
+      label: 'Error Handling'
+      mapping:
+        login_failure_page:
+          type: string
+          label: 'Login Failure Page'
     logout:
       type: mapping
       label: 'Logout'

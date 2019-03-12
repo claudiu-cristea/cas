@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\cas\Unit\Controller;
 
+use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\Exception\CasValidateException;
 use Drupal\cas\Exception\CasLoginException;
@@ -104,6 +105,7 @@ class ServiceControllerTest extends UnitTestCase {
         'server.hostname' => 'example-server.com',
         'server.port' => 443,
         'server.path' => '/cas',
+        'error_handling.login_failure_page' => '/user/login',
       ),
     ));
     $this->requestStack = $this->createMock('\Symfony\Component\HttpFoundation\RequestStack');
@@ -342,10 +344,6 @@ class ServiceControllerTest extends UnitTestCase {
       ->method('getCurrentRequest')
       ->will($this->returnValue($this->requestObject));
 
-    if ($returnto) {
-      $this->assertDestinationSetFromReturnTo();
-    }
-
     // Validation should throw an exception.
     $this->casValidator->expects($this->once())
       ->method('validateTicket')
@@ -368,7 +366,7 @@ class ServiceControllerTest extends UnitTestCase {
     );
     $serviceController->setStringTranslation($this->getStringTranslationStub());
 
-    $this->assertRedirectedToFrontPageOnHandle($serviceController);
+    $this->assertRedirectedToSpecialPageOnLoginFailure($serviceController);
   }
 
   /**
@@ -390,10 +388,6 @@ class ServiceControllerTest extends UnitTestCase {
       ->method('getCurrentRequest')
       ->will($this->returnValue($this->requestObject));
 
-    if ($returnto) {
-      $this->assertDestinationSetFromReturnTo();
-    }
-
     $this->assertSuccessfulValidation($returnto);
 
     // Login should throw an exception.
@@ -414,7 +408,30 @@ class ServiceControllerTest extends UnitTestCase {
     );
     $serviceController->setStringTranslation($this->getStringTranslationStub());
 
-    $this->assertRedirectedToFrontPageOnHandle($serviceController);
+    $this->assertRedirectedToSpecialPageOnLoginFailure($serviceController);
+  }
+
+  /**
+   * Asserts that user is redirected to a special page on login failure.
+   */
+  private function assertRedirectedToSpecialPageOnLoginFailure($serviceController) {
+    // Service controller calls Url:: methods directly, since there's no
+    // existing service class to use instead of that. This makes unit testing
+    // hard. We need to place mock services that Url:: uses in the container.
+    $path_validator = $this->getMock('Drupal\Core\Path\PathValidatorInterface');
+    $unrouted_url_assember = $this->getMock('Drupal\Core\Utility\UnroutedUrlAssemblerInterface');
+    $unrouted_url_assember
+      ->expects($this->atLeastOnce())
+      ->method('assemble')
+      ->will($this->returnValue('/user/login'));
+    $container_builder = new ContainerBuilder();
+    $container_builder->set('path.validator', $path_validator);
+    $container_builder->set('unrouted_url_assembler', $unrouted_url_assember);
+
+    \Drupal::setContainer($container_builder);
+
+    $response = $serviceController->handle();
+    $this->assertTrue($response->isRedirect('/user/login'));
   }
 
   /**

@@ -285,6 +285,18 @@ class CasSettings extends ConfigFormBase {
       ),
     );
 
+    $form['error_handling'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Error Handling'),
+      '#tree' => TRUE,
+    ];
+    $form['error_handling']['login_failure_page'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Login failure page'),
+      '#description' => $this->t('If CAS login fails for any reason (e.g. validation failure, or some other module prevents login), redirect the user to this page. If empty, users will be redirected to the homepage or to the original page they were on when initiating a login sequence. If your site is configured to automatically log users in via CAS when accessing a restricted page, you should set this to a page that does not require authentication to view. Otherwise you will create a redirect loop for users that that experience login failures as CAS continuously attempts to log them in as it returns them to the restricted page.'),
+      '#default_value' => $config->get('error_handling.login_failure_page'),
+    ];
+
     $form['gateway'] = array(
       '#type' => 'details',
       '#title' => $this->t('Gateway Feature (Auto Login)'),
@@ -485,6 +497,14 @@ class CasSettings extends ConfigFormBase {
       }
     }
 
+    $error_page_val = $form_state->getValue(['error_handling', 'login_failure_page']);
+    if ($error_page_val) {
+      $error_page_val = trim($error_page_val);
+      if (strpos($error_page_val, '/') !== 0) {
+        $form_state->setErrorByName('error_handling][login_failure_page', $this->t('Path must begin with a forward slash.'));
+      }
+    }
+
     return parent::validateForm($form, $form_state);
   }
 
@@ -547,6 +567,8 @@ class CasSettings extends ConfigFormBase {
     }
     $config
       ->set('user_accounts.auto_assigned_roles', $auto_assigned_roles);
+
+    $config->set('error_handling.login_failure_page', trim($form_state->getValue(['error_handling', 'login_failure_page'])));
 
     $config
       ->set('advanced.debug_log', $form_state->getValue(['advanced', 'debug_log']))
