@@ -206,7 +206,10 @@ class ServiceController implements ContainerInjectionInterface {
         'Error when validating ticket: %error',
         ['%error' => $e->getMessage()]
       );
-      $this->messenger->addError($this->t('There was a problem validating your login, please contact a site administrator.'));
+      $message_validation_failure = $this->settings->get('error_handling.message_validation_failure');
+      if (!empty($message_validation_failure)) {
+        $this->messenger->addError($message_validation_failure);
+      }
 
       return $this->createRedirectResponse($request, TRUE);
     }
@@ -219,11 +222,18 @@ class ServiceController implements ContainerInjectionInterface {
         $this->casHelper->log(LogLevel::DEBUG, "Storing PGT information for this session.");
         $this->casProxyHelper->storePgtSession($cas_validation_info->getPgt());
       }
-      $this->messenger->addStatus($this->t('You have been logged in.'));
+
+      $login_success_message = $this->settings->get('login_success_message');
+      if (!empty($login_success_message)) {
+        $this->messenger->addStatus($login_success_message);
+      }
     }
     catch (CasLoginException $e) {
       $this->casHelper->log(LogLevel::ERROR, $e->getMessage());
-      $this->messenger->addError($this->t('There was a problem logging in, please contact a site administrator.'), 'error');
+      $login_error_message = $this->getLoginErrorMessage($e);
+      if ($login_error_message) {
+        $this->messenger->addError($login_error_message, 'error');
+      }
 
       return $this->createRedirectResponse($request, TRUE);
     }
@@ -284,6 +294,51 @@ class ServiceController implements ContainerInjectionInterface {
       $this->casHelper->log(LogLevel::DEBUG, "Converting query parameter 'returnto' to 'destination'.");
       $request->query->set('destination', $request->query->get('returnto'));
     }
+  }
+
+  /**
+   * Get the error message to display when there is a login exception.
+   *
+   * @param \Drupal\cas\Exception\CasLoginException $e
+   *   The login exception.
+   *
+   * @return array|\Drupal\Core\StringTranslation\TranslatableMarkup|string
+   *   The error message.
+   */
+  private function getLoginErrorMessage(CasLoginException $e) {
+    $code = $e->getCode();
+    switch ($code) {
+      case CasLoginException::NO_LOCAL_ACCOUNT:
+        $msgKey = 'message_no_local_account';
+        break;
+
+      case CasLoginException::SUBSCRIBER_DENIED_REG:
+        $msgKey = 'message_subscriber_denied_reg';
+        break;
+
+      case CasLoginException::ACCOUNT_BLOCKED:
+        $msgKey = 'message_account_blocked';
+        break;
+
+      case CasLoginException::SUBSCRIBER_DENIED_LOGIN:
+        $msgKey = 'message_subscriber_denied_login';
+        break;
+
+      case CasLoginException::ATTRIBUTE_PARSING_ERROR:
+        // Re-use the normal validation error message.
+        $msgKey = 'message_validation_failure';
+        break;
+
+      case CasLoginException::USERNAME_ALREADY_EXISTS:
+        $msgKey = 'message_username_already_exists';
+        break;
+    }
+
+    if (!empty($msgKey)) {
+      return $this->settings->get('error_handling.' . $msgKey);
+    }
+
+    return $this->t('There was a problem logging in. Please contact a site administrator.');
   }
 
 }

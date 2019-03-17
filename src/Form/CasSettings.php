@@ -176,6 +176,12 @@ class CasSettings extends ConfigFormBase {
         ),
       ),
     );
+    $form['general']['login_success_message'] = array(
+      '#type' => 'textfield',
+      '#title' => $this->t('Login success message'),
+      '#description' => $this->t('The message to output to users upon successful login. Leave blank to output no message.'),
+      '#default_value' => $config->get('login_success_message'),
+    );
 
     $form['user_accounts'] = array(
       '#type' => 'details',
@@ -293,8 +299,48 @@ class CasSettings extends ConfigFormBase {
     $form['error_handling']['login_failure_page'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Login failure page'),
-      '#description' => $this->t('If CAS login fails for any reason (e.g. validation failure, or some other module prevents login), redirect the user to this page. If empty, users will be redirected to the homepage or to the original page they were on when initiating a login sequence. If your site is configured to automatically log users in via CAS when accessing a restricted page, you should set this to a page that does not require authentication to view. Otherwise you will create a redirect loop for users that that experience login failures as CAS continuously attempts to log them in as it returns them to the restricted page.'),
+      '#description' => $this->t('If CAS login fails for any reason (e.g. validation failure or some other module prevents login), redirect the user to this page. If empty, users will be redirected to the homepage or to the original page they were on when initiating a login sequence. If your site is configured to automatically log users in via CAS when accessing a restricted page, you should set this to a page that does not require authentication to view. Otherwise you will create a redirect loop for users that that experience login failures as CAS continuously attempts to log them in as it returns them to the restricted page.'),
       '#default_value' => $config->get('error_handling.login_failure_page'),
+    ];
+    $form['error_handling']['messages'] = [
+      '#type' => 'fieldset',
+      '#title' => $this->t('Error messages'),
+    ];
+    $form['error_handling']['messages']['message_validation_failure'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Ticket validation failure'),
+      '#description' => $this->t('During the CAS authentication process, the CAS server provides Drupal with a "ticket" which is then exchanged for user details (e.g. username and other attributes). This message will be displayed if there is a problem during this process.'),
+      '#default_value' => $config->get('error_handling.message_validation_failure'),
+    ];
+    $form['error_handling']['messages']['message_no_local_account'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Local account does not exist'),
+      '#description' => $this->t('Displayed when a new user attempts to login via CAS and automatic registration is disabled.'),
+      '#default_value' => $config->get('error_handling.message_no_local_account'),
+    ];
+    $form['error_handling']['messages']['message_subscriber_denied_reg'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Denied registration'),
+      '#description' => $this->t('Displayed when some other module (like CAS Attributes) denies automatic registration of a new user.'),
+      '#default_value' => $config->get('error_handling.message_subscriber_denied_reg'),
+    ];
+    $form['error_handling']['messages']['message_subscriber_denied_login'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Denied login'),
+      '#description' => $this->t('Displayed when some other module (like CAS Attributes) denies login of a user.'),
+      '#default_value' => $config->get('error_handling.message_subscriber_denied_login'),
+    ];
+    $form['error_handling']['messages']['message_account_blocked'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Local account is blocked'),
+      '#description' => $this->t('Displayed when the Drupal user account belonging to the user logging in via CAS is blocked.'),
+      '#default_value' => $config->get('error_handling.message_account_blocked'),
+    ];
+    $form['error_handling']['messages']['message_username_already_exists'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Local account username already exists'),
+      '#description' => $this->t('Displayed when automatic registraton of new user fails because an existing Drupal user is using the same username.'),
+      '#default_value' => $config->get('error_handling.message_username_already_exists'),
     ];
 
     $form['gateway'] = array(
@@ -527,7 +573,8 @@ class CasSettings extends ConfigFormBase {
     $general_data = $form_state->getValue('general');
     $config
       ->set('login_link_enabled', $general_data['login_link_enabled'])
-      ->set('login_link_label', $general_data['login_link_label']);
+      ->set('login_link_label', $general_data['login_link_label'])
+      ->set('login_success_message', $general_data['login_success_message']);
 
     $condition_values = (new FormState())
       ->setValues($form_state->getValue(['gateway', 'paths']));
@@ -569,6 +616,14 @@ class CasSettings extends ConfigFormBase {
       ->set('user_accounts.auto_assigned_roles', $auto_assigned_roles);
 
     $config->set('error_handling.login_failure_page', trim($form_state->getValue(['error_handling', 'login_failure_page'])));
+    $messages = $form_state->getValue(['error_handling', 'messages']);
+    $config
+      ->set('error_handling.message_validation_failure', trim($messages['message_validation_failure']))
+      ->set('error_handling.message_no_local_account', trim($messages['message_no_local_account']))
+      ->set('error_handling.message_subscriber_denied_reg', trim($messages['message_subscriber_denied_reg']))
+      ->set('error_handling.message_subscriber_denied_login', trim($messages['message_subscriber_denied_login']))
+      ->set('error_handling.message_account_blocked', trim($messages['message_account_blocked']))
+      ->set('error_handling.message_username_already_exists', trim($messages['message_username_already_exists']));
 
     $config
       ->set('advanced.debug_log', $form_state->getValue(['advanced', 'debug_log']))
