@@ -311,3 +311,24 @@ function cas_help($route_name, RouteMatchInterface $route_match) {
       return NULL;
   }
 }
+
+/**
+ * Implements hook_menu_links_discovered_alter().
+ */
+function cas_menu_links_discovered_alter(&$links) {
+  // The "admin toolbar tools" module adds a "Add a new user" menu item to
+  // the "People" admin menu. Here we supplement that with one for adding
+  // CAS users as well. We could also just add this via cas.links.menu.yml,
+  // but we only want it to appear if the admin toolbar tools module is also
+  // enabled.
+  if (\Drupal::moduleHandler()->moduleExists('admin_toolbar_tools')) {
+    $links['cas.bulk_add_users'] = [
+      'title' => t('Add CAS user(s)'),
+      'provider' => 'cas',
+      'route_name' => 'cas.bulk_add_cas_users',
+      'menu_name' => 'admin',
+      'parent' => 'entity.user.collection',
+      'weight' => -1,
+    ];
+  }
+}

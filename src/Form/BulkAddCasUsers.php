@@ -26,6 +26,11 @@ class BulkAddCasUsers extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    $form['intro'] = [
+      '#prefix' => '<p>',
+      '#markup' => $this->t('Use this form to pre-register one or more users, allowing them to log in using CAS.'),
+      '#suffix' => '</p>',
+    ];
     $form['cas_usernames'] = [
       '#type' => 'textarea',
       '#title' => $this->t('CAS username(s)'),
