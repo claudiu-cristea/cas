@@ -34,8 +34,8 @@ user_accounts:
   email_hostname: ''
   email_attribute: ''
   auto_assigned_roles: {}
-  restrict_password_management: false
-  restrict_email_management: false
+  restrict_password_management: true
+  restrict_email_management: true
 error_handling:
   login_failure_page: '/user/login'
   message_validation_failure: 'There was a problem validating your login, please contact a site administrator.'
