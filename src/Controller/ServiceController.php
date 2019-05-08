@@ -253,8 +253,12 @@ class ServiceController implements ContainerInjectionInterface {
    *   The redirect response.
    */
   private function createRedirectResponse(Request $request, $login_failed = FALSE) {
-    // If login failed, we may have a special page to send them to.
+    // If login failed, we may have a failure page to send them to.
     if ($login_failed && $this->settings->get('error_handling.login_failure_page')) {
+      // Remove 'destination' parameter, otherwise Drupal's RedirectResponseSubscriber will send
+      // users to that location instead of the failure page.
+      $request->query->remove('destination');
+
       return RedirectResponse::create(Url::fromUserInput($this->settings->get('error_handling.login_failure_page'))->toString());
     }
     // Otherwise, send them to the homepage, or to the previous page they were
