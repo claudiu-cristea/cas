@@ -61,6 +61,13 @@ class CasHelper {
   const EVENT_PRE_USER_LOAD = 'cas.pre_user_load';
 
   /**
+   * Event type identifier for the CasPreUserLoadRedirectEvent event.
+   *
+   * @var string
+   */
+  const EVENT_PRE_USER_LOAD_REDIRECT = 'cas.pre_user_load.redirect';
+
+  /**
    * Event type identifier for the CasPreRegisterEvent.
    *
    * @var string

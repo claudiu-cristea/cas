@@ -1,0 +1,5 @@
+name: 'CAS User Interaction Test'
+type: module
+description: 'Support for testing insertion of user interaction into the flow.'
+core: 8.x
+package: Testing

@@ -4,7 +4,7 @@ namespace Drupal\Tests\cas\Unit\Service;
 
 use Drupal\cas\Event\CasPreLoginEvent;
 use Drupal\cas\Event\CasPreRegisterEvent;
-use Drupal\cas\Event\CasPreUserLoadEvent;
+use Drupal\cas\Service\CasProxyHelper;
 use Drupal\cas\Service\CasUserManager;
 use Drupal\Tests\UnitTestCase;
 use Drupal\cas\CasPropertyBag;
@@ -77,6 +77,11 @@ class CasUserManagerTest extends UnitTestCase {
   protected $casHelper;
 
   /**
+   * @var \Prophecy\Prophecy\ObjectProphecy
+   */
+  protected $casProxyHelper;
+
+  /**
    * The mocked user account.
    *
    * @var \Drupal\user\UserInterface
@@ -113,6 +118,7 @@ class CasUserManagerTest extends UnitTestCase {
     $this->account = $this->getMockBuilder('Drupal\user\UserInterface')
       ->disableOriginalConstructor()
       ->getMock();
+    $this->casProxyHelper = $this->prophesize(CasProxyHelper::class);
   }
 
   /**
@@ -144,6 +150,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->connection,
         $this->eventDispatcher,
         $this->casHelper,
+        $this->casProxyHelper->reveal()
       ))
       ->getMock();
 
@@ -174,6 +181,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->connection,
         $this->eventDispatcher,
         $this->casHelper,
+        $this->casProxyHelper->reveal(),
       ))
       ->getMock();
 
@@ -218,6 +226,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->connection,
         $this->eventDispatcher,
         $this->casHelper,
+        $this->casProxyHelper->reveal(),
       ))
       ->getMock();
 
@@ -273,6 +282,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->connection,
         $this->eventDispatcher,
         $this->casHelper,
+        $this->casProxyHelper->reveal(),
       ))
       ->getMock();
 
@@ -304,7 +314,8 @@ class CasUserManagerTest extends UnitTestCase {
 
     $this->externalAuth
       ->expects($this->once())
-      ->method('userLoginFinalize');
+      ->method('userLoginFinalize')
+      ->willReturn($this->account);
 
     $cas_property_bag = new CasPropertyBag('test');
     $cas_property_bag->setAttributes(['email' => 'test_email@foo.com']);
@@ -341,6 +352,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->connection,
         $this->eventDispatcher,
         $this->casHelper,
+        $this->casProxyHelper->reveal(),
       ))
       ->getMock();
 
@@ -374,49 +386,6 @@ class CasUserManagerTest extends UnitTestCase {
   }
 
   /**
-   * An event listener alters username before attempting to load user.
-   *
-   * @covers ::login
-   */
-  public function testEventListenerChangesCasUsername() {
-    $cas_user_manager = $this->getMockBuilder('Drupal\cas\Service\CasUserManager')
-      ->setMethods(array('storeLoginSessionData'))
-      ->setConstructorArgs(array(
-        $this->externalAuth,
-        $this->authmap,
-        $this->getConfigFactoryStub(),
-        $this->session,
-        $this->connection,
-        $this->eventDispatcher,
-        $this->casHelper,
-      ))
-      ->getMock();
-
-    $this->eventDispatcher
-      ->method('dispatch')
-      ->willReturnCallback(function ($event_type, $event) {
-        if ($event instanceof CasPreUserLoadEvent) {
-          $event->getCasPropertyBag()->setUsername('foobar');
-        }
-      });
-
-    $this->account
-      ->method('isactive')
-      ->willReturn(TRUE);
-
-    $this->externalAuth
-      ->method('load')
-      ->with('foobar')
-      ->willReturn($this->account);
-
-    $this->externalAuth
-      ->expects($this->once())
-      ->method('userLoginFinalize');
-
-    $cas_user_manager->login(new CasPropertyBag('test'), 'ticket');
-  }
-
-  /**
    * A user is able to login when their account exists.
    *
    * @covers ::login
@@ -432,6 +401,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->connection,
         $this->eventDispatcher,
         $this->casHelper,
+        $this->casProxyHelper->reveal(),
       ))
       ->getMock();
 
@@ -449,7 +419,8 @@ class CasUserManagerTest extends UnitTestCase {
 
     $this->externalAuth
       ->expects($this->once())
-      ->method('userLoginFinalize');
+      ->method('userLoginFinalize')
+      ->willReturn($this->account);
 
     $attributes = ['attr1' => 'foo', 'attr2' => 'bar'];
     $this->session
@@ -481,6 +452,7 @@ class CasUserManagerTest extends UnitTestCase {
         $this->connection,
         $this->eventDispatcher,
         $this->casHelper,
+        $this->casProxyHelper->reveal(),
       ))
       ->getMock();
 

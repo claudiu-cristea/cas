@@ -5,3 +5,5 @@ core: 8.x
 configure: cas.settings
 dependencies:
   - externalauth:externalauth
+test_dependencies:
+  - cas_mock_server:cas_mock_server
